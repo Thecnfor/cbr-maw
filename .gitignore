@@ -20,3 +20,9 @@ Thumbs.db
 
 *.egg-info/
 .venv-probe/
+
+# React 前端
+web/node_modules/
+.references/
+
+web/.tmp-*/

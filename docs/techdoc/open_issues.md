@@ -1,7 +1,7 @@
 # 第四章 open issues / TODO 清单（待实验、待实现、待同步）
 
-> 维护：doc-writer（task-6）｜版本：v0.3（2026-10-18）｜代码快照：data-model 修复 + PIT 重建后
-> 对应正文：[chapter4_method.md](chapter4_method.md) v0.5（11,937 汉字，不含表格代码；5 图 / 13 表 / 21 公式）
+> 维护：doc-writer（task-6）｜版本：v0.4（2026-10-18）｜代码快照：React 前端重构 + 真实 DeepSeek 复跑 + 指标 v2
+> 对应正文：[chapter4_method.md](chapter4_method.md) v0.6（11,9xx 汉字；5 图 / 13 表 / 21 公式；4.5.1 已补 React 前端与 `/ui` 托管）
 > 用途：把正文中所有"待实验/待验证/待实现/待同步"点收敛为可逐条关闭的清单；每关闭一项在文末"关闭记录"追加日期与说明。
 > 状态取值：`open` / `in-progress` / `closed` / `accepted`（已知限制，不计划关闭但需在论文中报告）。
 
@@ -124,3 +124,28 @@
 | 2026-10-18 | CLS-10～CLS-14、DOC-02/03/04/08 | v0.4 集成后同步（装配、API、决策卡字段、rounds/cost/escalated、trace） | chapter4_method.md v0.4 |
 | 2026-10-18 | INT-01/02/05/07 | 集成验证：build_service、risk_signal、UI 导出、API 端到端 | 联调快照 |
 | 2026-10-18 | INT-09/INT-10/INT-03/EXP-01、CLS-15～17、DOC-01/05 | data-model 修复与 PIT 重建后终核；P1 pilot 指针入清单；R2/HITL 口径修正；正文 v0.5 | chapter4_method.md v0.5、data/pit_manifest.json |
+| 2026-10-18 | INT-11/INT-12/INT-13、DOC-09 | React 驾驶台重构（`web/`，light/dark，FastAPI `/ui` 托管 + 30 分钟决策缓存）；真实 DeepSeek 复跑（p2_real/p3_real，18 runs/54 calls，0 失败）；正文 v0.6 同步 4.5.1 目录与模块表 | `web/`、`docs/architecture/CBR-MAW_architecture_v1.md`、`pilot_results_real_llm.md`、chapter4_method.md v0.6 |
+
+---
+
+## 8. v0.6 增量（React 前端 / 真实 LLM / 指标 v2）
+
+### 8.1 新增集成事实
+
+- **React 驾驶台（主 UI）**：`web/` 使用 React 19 + Vite + Tailwind v4，token 派生自 Xra-space `packages/ui/src/styles/tokens.css`，组件与信息密度遵循 `Thecnfor/design-stack` 的 shadcn-conventions 与 cross-dashboard `DESIGN.md`（Linear/Vercel 级）；light/dark 双主题、证据 Dialog、对话页、导出、skeleton/空/错状态；FastAPI 以 `/ui` 静态托管，`/` 307 跳转，`/api/decision` 增加 30 分钟缓存（`refresh=true` 强制重算）；Streamlit 保留为回退 UI。
+- **真实 DeepSeek 复跑**：P2（3 日 × full/no_tools）+ P3（4 日 × 三模式），18 次运行 / 54 次 LLM 调用全部成功，0 错误/超时/Schema 失败/重试/降级；实际 API tokens 323,431，费用约 ¥0.70（上限 ¥0.88）；报告 [pilot_results_real_llm.md](pilot_results_real_llm.md)。
+- **指标 v2（scripts/run_experiment.py）**：新增 `task_completion_tool_evidence_gated`（工具/KB 证据门槛）、`llm_tokens_actual`/`llm_calls_actual`（真实 API 用量）、`trace_claim_rejected`/`trace_tool_denied`/`trace_budget_exceeded`（草稿级核验），P2/P3 表头动态标注 LLM 后端；P2 单日复测：full `n_numeric_claims=11 / tool_gated=1.0`，no_tools `n_numeric_claims=0 / tool_gated=0.0 / claim_rejected=8 / tool_denied=17`。
+
+### 8.2 新增/更新的 issue 行
+
+| ID | 位置（正文） | 内容 | 关闭判定 | 状态 |
+|----|--------------|------|----------|------|
+| INT-11 | 4.4.4、4.5.1、附录 A | React 19 + Vite + Tailwind v4 驾驶台/对话，FastAPI `/ui` 托管 + 决策缓存 | `/ui/` 可访问、light/dark 截图、构建通过、API 联调 | **closed** |
+| INT-12 | 4.4.4 | 设计规范落地（shadcn-conventions + Linear；token 化；a11y；reduced-motion） | token 映射表 + 截图 + DESIGN-NOTES | **closed** |
+| INT-13 | 4.3、4.5.1 | DeepSeek 真实接入与 P2/P3 复跑 | 18 次运行全成功 + 报告 | **closed** |
+| INT-14 | 4.4.4 | HITL 交互式审批面板（承接 INT-06）；新前端当前只读展示 escalated/待复核 | 面板可 approve/reject/override 并写 trace | open |
+| EXP-13 | 4.2.4、4.4.5、6.2/6.3 | P2/P3 真实 LLM 试点（p2_real/p3_real）已完成；正式实验需扩评估日、多次重复与置信区间 | 6.2/6.3 结果表 + CI | in-progress（pilot 已有） |
+| EXP-14 | 4.2.3、4.5.3 | 草稿级幻觉指标（回填前数值差异、被拒 claim 比例）与证据门槛任务完成率需正式化 | 指标定义 + 结果表 | open |
+| LIM-09 | 4.2.3、4.5.4 | 真实 LLM 下终卡 `numeric_error_rate=0` / `unsupported_claim_rate=0` 是"自检回填 + 证据过滤后"的饱和值，不能解释为模型事实性 | 6.2/7.2 如实说明并用草稿级指标补充 | accepted |
+| LIM-10 | 4.5.2、4.5.3 | 12,000 token 记账预算低于真实 prompt（约 18k/次，18/18 次撞上限），报告 tokens 比实际少约 33% | 正式实验校准 `max_tokens_per_agent` 或外置 Schema，并在 5.2 说明预算口径 | accepted |
+| DOC-09 | 4.5.1、表 4-8 | React 前端与 `/ui` 托管、决策缓存写入正文；DOCX 需按 v0.6 重新生成 | 正文 v0.6 + DOCX 重生成 | in-progress（正文已改，DOCX 待重生成） |

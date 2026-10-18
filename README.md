@@ -11,8 +11,9 @@
 - **三类主体智能体**：监管（市场压力与外溢）、投资（组合尾部损失）、融资（融资成本与现金流压力）；
 - **协同机制**：共享证据黑板 → 交叉验证 → 分歧识别（事实/方向/偏好）→ 协调仲裁 → 汇总决策卡；
 - **可信机制**：所有数值由版本化工具计算（LLM 不产数值）、文本结论引用时点过滤的知识库、越权工具调用被阻断、全链路审计 trace；
-- **两套入口**：Web 风险驾驶台（时间轴回放 / 三智能体卡片 / 证据板 / 分歧面板 / 核验审计）+ 对话入口（自然语言问风险，带证据回答）；
-- **可消融实验**：单智能体 / 三个独立智能体 / 完整协同系统，同一代码路径、可比资源预算。
+- **两套入口**：React 驾驶台（时间轴回放 / 三智能体卡片 / 证据板 / 分歧面板 / 核验审计 / 导出）+ 对话入口（自然语言问风险，带证据回答）；Streamlit 保留为回退 UI；
+- **可消融实验**：单智能体 / 三个独立智能体 / 完整协同系统，同一代码路径、可比资源预算；
+- **设计规范**：React 前端按 `Thecnfor/design-stack` 的 shadcn-conventions + Linear 级规范实现（token 派生自 XRAK `packages/ui`，参考 cross-dashboard `DESIGN.md`），light/dark 双主题、可访问焦点环、reduced-motion 降级；详见 [web/DESIGN-NOTES.md](web/DESIGN-NOTES.md)。
 
 ## 2. 快速开始（Windows / Python 3.12）
 
@@ -29,12 +30,20 @@ python -m venv .venv
 # 3) 运行测试
 .venv\Scripts\python.exe -m pytest -q
 
-# 4) 启动 Web 驾驶台（含对话入口）
-.venv\Scripts\python.exe -m streamlit run app\dashboard.py --server.port 8501
+# 4) 构建 React 驾驶台（主界面，遵循 shadcn/ui + Linear 设计规范）
+cd web
+bun install
+bun run build
+cd ..
 
-# 5) 可选：启动 REST API
+# 5) 启动服务：API + React 驾驶台（http://127.0.0.1:8000/ui/）
 .venv\Scripts\python.exe -m uvicorn cbr.api.main:app --host 127.0.0.1 --port 8000
 ```
+
+- 驾驶台（推荐）：<http://127.0.0.1:8000/ui/>（light/dark 双主题，页面右上角切换）
+- API 文档：<http://127.0.0.1:8000/docs>
+- 回退 UI（Streamlit）：`.venv\Scripts\python.exe -m streamlit run app\dashboard.py --server.port 8501`
+- 前端开发模式：`cd web && bun run dev`（http://127.0.0.1:5173，/api 代理到 8000）
 
 ## 3. 接入真实数据（用户自建数据集）
 
@@ -72,9 +81,10 @@ src/cbr/
   llm/ agents/              DeepSeek/Mock 抽象、三角色智能体（P2/P3）
   orchestration/ verification/  黑板/协同/冲突协调/HITL、核验与审计 trace（P3）
   eval/                     指标与统计检验
-  api/                      FastAPI 服务
-app/                Streamlit 风险驾驶台 + 对话入口
-artifacts/          模型、trace、实验运行结果、导出报告（运行时生成）
+  api/                      FastAPI 服务（含 /ui 静态托管）
+web/                React 19 + Vite + Tailwind v4 驾驶台/对话（shadcn/ui + Linear 规范）
+app/                Streamlit 风险驾驶台 + 对话入口（回退 UI）
+artifacts/          模型、trace、实验运行结果、导出报告、UI 截图（运行时生成）
 docs/
   architecture/     架构设计文档
   techdoc/          技术文档（第四章方法论）
@@ -86,7 +96,9 @@ docs/
 - 架构设计（实现定稿）：[docs/architecture/CBR-MAW_architecture_v1.md](docs/architecture/CBR-MAW_architecture_v1.md)
 - 技术文档第四章（Markdown）：[docs/techdoc/chapter4_method.md](docs/techdoc/chapter4_method.md)
 - 技术文档第四章（Word）：[docs/techdoc/第四章_多模态多智能体协同预警方法.docx](docs/techdoc/第四章_多模态多智能体协同预警方法.docx)
+- 前端设计与规范：[web/DESIGN-NOTES.md](web/DESIGN-NOTES.md)、[web/README.md](web/README.md)
 - 待办与集成核对清单：[docs/techdoc/open_issues.md](docs/techdoc/open_issues.md)
+- 试点实验：[pilot_results_synthetic.md](docs/techdoc/pilot_results_synthetic.md)（Mock/规则后端）、[pilot_results_real_llm.md](docs/techdoc/pilot_results_real_llm.md)（真实 DeepSeek P2/P3）
 - 调研报告：[docs/research/multi_agent_frameworks.md](docs/research/multi_agent_frameworks.md)、[docs/research/data_sources.md](docs/research/data_sources.md)
 
 ### 重新生成 Word 文档
@@ -100,12 +112,13 @@ docs/
 
 ## 7. 当前实现状态（2026-10-18，本机实测）
 
-- 全量 pytest：**205 项（204 passed + 1 skipped）**，含 6 项真实装配端到端集成与 1 项自建数据接入测试；无 DeepSeek key 时 Mock LLM 全链路可跑。
+- 全量 pytest：**206 项全部通过**（含 DeepSeek 真实调用测试、6 项端到端集成、1 项自建数据接入测试）。
+- React 驾驶台（`web/`）：light/dark 双主题、证据 Dialog、对话页、导出；`bun run build` 产物由 FastAPI `/ui` 托管，截图见 `artifacts/ui/`（`dashboard_light.png` / `dashboard_dark.png` / `chat_light.png` / `chat_dark.png`）。
 - 数据快照：27 个序列 / 41,367 条观测 / 2,207 篇文档；`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`（`data/pit_manifest.json`）。
-- `/api/decision` 真实端到端：3 张风险卡、20 条证据、4 个冲突全部解决、核验通过（数值错误率 0、证据准确率 100%、越权/泄漏/schema 错误 0）；PIT 快路径约 1.4s。
-- `/api/chat` 返回带引用（10 条）的回答 + 决策卡；Streamlit 驾驶台 6 页签 + 对话页（AppTest 无异常）。
-- 实验脚本：`scripts/run_experiment.py --kind p1|p2|p3|all`，产物在 `artifacts/runs/<run_id>/`；试点结果见 [pilot_results_synthetic.md](docs/techdoc/pilot_results_synthetic.md)。
-- 样例数据为 **SYNTHETIC 仿真数据**，实验指标仅用于流程验证；正式论文实验需接入真实数据与 DeepSeek 后重跑。
+- `/api/decision` 真实 DeepSeek 端到端：3 张风险卡、20 条证据、冲突全部解决、核验通过（数值错误率 0、证据准确率 100%、越权/泄漏/schema 错误 0），首次约 15s、缓存后 <50ms（30 分钟 TTL）。
+- 真实 LLM 复跑：P2（3 日 × 2 变体）+ P3（4 日 × 3 模式）= 18 次运行 / 54 次调用全部成功，0 错误/超时/Schema 失败；实际 tokens 323,431、费用约 ¥0.70；详见 [pilot_results_real_llm.md](docs/techdoc/pilot_results_real_llm.md)。
+- 实验脚本：`scripts/run_experiment.py --kind p1|p2|p3|all`（v2 指标：证据门槛任务完成率、真实 API tokens、草稿级 trace 指标），产物在 `artifacts/runs/<run_id>/`。
+- 样例数据为 **SYNTHETIC 仿真数据**，实验指标仅用于流程验证；正式论文实验需接入真实数据后重跑。
 
 ## 8. 说明
 

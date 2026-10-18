@@ -373,29 +373,40 @@ class FakeService:
 
 @pytest.fixture()
 def fake_service(tmp_path: Path) -> FakeService:
+    from cbr.api import main as api_main
+
     api_state.reset_cache()
+    api_main.clear_decision_cache()
     return FakeService(tmp_path / "artifacts")
 
 
 @pytest.fixture()
 def client(fake_service: FakeService, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    from cbr.api import main as api_main
+
     monkeypatch.setattr(service_module, "get_service", lambda: fake_service)
     api_state.reset_cache()
+    api_main.clear_decision_cache()
     with TestClient(app) as test_client:
         yield test_client
     api_state.reset_cache()
+    api_main.clear_decision_cache()
 
 
 @pytest.fixture()
 def degraded_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    from cbr.api import main as api_main
+
     def _not_ready() -> Any:
         raise ImportError("No module named 'cbr.orchestration'")
 
     monkeypatch.setattr(service_module, "get_service", _not_ready)
     api_state.reset_cache()
+    api_main.clear_decision_cache()
     with TestClient(app) as test_client:
         yield test_client
     api_state.reset_cache()
+    api_main.clear_decision_cache()
 
 
 # --------------------------------------------------------------------------- #
@@ -465,6 +476,21 @@ def test_decision_explicit_params(fake_service: FakeService, client: TestClient)
     }
     assert body["mode"] == "independent"
     assert body["as_of"] == "2020-03-16"
+
+
+def test_decision_cache_reuses_result(
+    fake_service: FakeService, client: TestClient
+) -> None:
+    """同一 (as_of, mode, scenario) 的重复请求应命中缓存；refresh=true 强制重算。"""
+    first = client.get("/api/decision")
+    second = client.get("/api/decision")
+    assert first.status_code == 200 and second.status_code == 200
+    assert first.json()["run_id"] == second.json()["run_id"]
+    assert len(fake_service.orchestrator.run_calls) == 1
+
+    refreshed = client.get("/api/decision", params={"refresh": True})
+    assert refreshed.status_code == 200
+    assert len(fake_service.orchestrator.run_calls) == 2
 
 
 def test_decision_invalid_mode_returns_422(client: TestClient) -> None:
@@ -622,7 +648,11 @@ def test_trace_artifact_fallback(
 
 
 def test_root_index(client: TestClient) -> None:
-    response = client.get("/")
+    """有 React 构建产物时根路径 307 跳转 /ui/；无产物时返回 API 入口 JSON。"""
+    response = client.get("/", follow_redirects=False)
+    if response.status_code == 307:
+        assert response.headers["location"] == "/ui/"
+        return
     assert response.status_code == 200
     body = response.json()
     assert body["name"] == "CBR-MAW API"

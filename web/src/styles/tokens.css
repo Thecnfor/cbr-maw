@@ -1,0 +1,550 @@
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   CBR-MAW Design Tokens — Tailwind CSS v4（无 tailwind.config.*）
+   ----------------------------------------------------------------------------
+   基准层：Xra-space packages/ui/src/styles/tokens.css（light / dark 全量 OKLCH）
+   扩展层：cross-dashboard app/globals.css（surface 三层 / viz 八色 / elevation 三档）
+   本仓补充：可访问性 ink 色、terminal 观感、控件底色、布局常量、字号阶梯。
+
+   约束：
+   - 颜色只在 :root / .dark 定义，经 @theme inline 映射为工具类；
+   - 组件禁止硬编码 hex / oklch / rgb，禁止自写 box-shadow；
+   - 阴影只有三档（elevation-card / raised / overlay），映射为
+     shadow-card / shadow-raised / shadow-overlay 三个 Tailwind 工具类；
+   - 圆角：--radius 10px 派生小圆角，--radius-card 20px 仅用于卡片，卡内元素更小。
+   ========================================================================== */
+
+@theme inline {
+  /* ── 字体：Geist Sans / Mono（本地 woff2，见 index.css），中文回退系统字体 ── */
+  --font-sans:
+    "Geist Variable", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei",
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "Geist Mono Variable", "SF Mono", "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
+
+  /* ── 圆角阶梯（以 --radius 为基准的加减法） ── */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-card: 1.25rem;
+
+  /* ── 字号阶梯（替代 text-[13px] 任意值） ── */
+  --text-tiny: 0.625rem;
+  --text-tiny--line-height: 1.4;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1.45;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.55;
+  --text-desc: 0.84375rem;
+  --text-desc--line-height: 1.6;
+  --text-panel: 0.9375rem;
+  --text-panel--line-height: 1.45;
+  --text-h1: 1.625rem;
+  --text-h1--line-height: 1.2;
+  --text-metric: 2.5rem;
+  --text-metric--line-height: 1.05;
+
+  /* ── 基础语义色 ── */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-ink: var(--destructive-ink);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ── 语义状态色（只表达状态，不做装饰） ── */
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-info: var(--info);
+  --color-info-ink: var(--info-ink);
+  --color-status-online: var(--status-online);
+  --color-status-offline: var(--status-offline);
+  --color-status-busy: var(--status-busy);
+  --color-chart-target: var(--chart-target);
+
+  /* ── 表面层级：底 → 卡 → 卡内嵌套 ── */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-control-track: var(--control-track);
+  --color-control-active: var(--control-active);
+
+  /* ── 数据可视化 8 色（顺序使用，同指标同色） ── */
+  --color-viz-1: var(--viz-1);
+  --color-viz-2: var(--viz-2);
+  --color-viz-3: var(--viz-3);
+  --color-viz-4: var(--viz-4);
+  --color-viz-5: var(--viz-5);
+  --color-viz-6: var(--viz-6);
+  --color-viz-7: var(--viz-7);
+  --color-viz-8: var(--viz-8);
+
+  /* ── 等宽 terminal 观感（审计 trace / payload 预览） ── */
+  --color-terminal: var(--terminal-bg);
+  --color-terminal-fg: var(--terminal-fg);
+  --color-terminal-muted: var(--terminal-muted);
+
+  /* ── shadcn 兼容：sidebar / chart ── */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ── 阴影三档 → shadow-card / shadow-raised / shadow-overlay ── */
+  --shadow-card: var(--elevation-card);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+/* ============================================================================
+   Light theme
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* ── Xra-space 基准 token（全量复制） ── */
+  --radius: 0.625rem;
+  --header-pt: 0.95rem;
+  --header-pb: 0.75rem;
+  --header-height: calc(var(--header-pt) + var(--header-pb) + 2.75rem);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0 0 0 / 6%);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0 0 0 / 6%);
+  --muted-foreground: oklch(0 0 0 / 70%);
+  --accent: oklch(0 0 0 / 8%);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 12%);
+  /* 焦点环：由 28% 提升到 45%，保证 3:1 以上的可见焦点（WCAG 2.2） */
+  --ring: oklch(0 0 0 / 45%);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0 0 0 / 8%);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0 / 10%);
+  --sidebar-ring: oklch(0 0 0 / 28%);
+  --primary-hover: oklch(0 0 0 / 85%);
+  --status-online: oklch(0.627 0.194 142.495);
+  --status-offline: oklch(0.577 0.245 27.325);
+  --status-busy: oklch(0.795 0.178 86.047);
+  --chart-target: oklch(0.577 0.245 27.325);
+
+  /* Xra 动效 DNA（保留，供全局过渡复用） */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-sidebar: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-nav: 0.6s;
+  --duration-sidebar: 0.64s;
+  --duration-fast: 0.3s;
+  --xra-loading-bg-raw: #000000;
+  --xra-loading-fg-raw: #ffffff;
+
+  /* ── cross-dashboard 扩展：surface 三层（light） ── */
+  --surface-0: oklch(0.985 0 0);
+  --surface-1: oklch(1 0 0);
+  --surface-2: oklch(0.97 0 0);
+
+  /* ── 控件底色（segmented control / 输入轨道） ── */
+  --control-track: oklch(0 0 0 / 6%);
+  --control-active: oklch(1 0 0);
+
+  /* ── 语义状态色（cross-dashboard 基准 + 可访问 ink） ── */
+  --destructive-foreground: oklch(1 0 0);
+  --destructive-ink: #b91c1c;
+  --success: #16a34a;
+  --success-ink: #15803d;
+  --warning: #d97706;
+  --warning-ink: #b45309;
+  --info: #2563eb;
+  --info-ink: #1d4ed8;
+
+  /* ── 数据可视化 8 色（cross-dashboard light） ── */
+  --viz-1: oklch(0.62 0.19 260);
+  --viz-2: oklch(0.6 0.21 295);
+  --viz-3: oklch(0.68 0.17 45);
+  --viz-4: oklch(0.66 0.16 165);
+  --viz-5: oklch(0.66 0.13 215);
+  --viz-6: oklch(0.63 0.2 350);
+  --viz-7: oklch(0.66 0.19 25);
+  --viz-8: oklch(0.58 0.12 130);
+
+  /* ── 阴影三档（light） ── */
+  --elevation-card:
+    0 1px 2px oklch(0 0 0 / 0.04), 0 4px 12px -6px oklch(0 0 0 / 0.08);
+  --elevation-raised:
+    0 1px 2px oklch(0 0 0 / 0.05), 0 12px 32px -16px oklch(0 0 0 / 0.16);
+  --elevation-overlay: 0 24px 64px -24px oklch(0 0 0 / 0.28);
+
+  /* ── 动效 token（统一节奏，禁止自创） ── */
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 420ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* ── 布局常量 ── */
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 64px;
+  --topbar-height: 52px;
+  --page-max-width: 1200px;
+
+  /* ── terminal（审计 trace / payload）——两套主题都保持深色终端观感，
+        以“内嵌仪器”而非主视觉的方式出现 ── */
+  --terminal-bg: oklch(0.17 0 0);
+  --terminal-fg: oklch(0.93 0 0);
+  --terminal-muted: oklch(0.66 0 0);
+}
+
+/* ============================================================================
+   Dark theme
+   ========================================================================== */
+.dark {
+  color-scheme: dark;
+
+  /* ── Xra-space 基准 token（dark 全量） ── */
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(1 0 0 / 10%);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(1 0 0 / 10%);
+  --muted-foreground: oklch(1 0 0 / 72%);
+  --accent: oklch(1 0 0 / 12%);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(1 0 0 / 45%);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(1 0 0 / 12%);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(1 0 0 / 28%);
+  --primary-hover: oklch(1 0 0 / 85%);
+  --status-online: oklch(0.627 0.194 142.495);
+  --status-offline: oklch(0.704 0.191 22.216);
+  --status-busy: oklch(0.795 0.178 86.047);
+  --chart-target: oklch(0.704 0.191 22.216);
+  --xra-loading-bg-raw: #ffffff;
+  --xra-loading-fg-raw: #000000;
+
+  /* ── cross-dashboard 扩展：surface 三层（dark，反向提亮） ── */
+  --surface-0: oklch(0.145 0 0);
+  --surface-1: oklch(0.205 0 0);
+  --surface-2: oklch(0.235 0 0);
+
+  /* ── 控件底色（dark） ── */
+  --control-track: oklch(0.13 0 0);
+  --control-active: oklch(0.27 0 0);
+
+  /* ── 语义状态色（dark 提亮；ink 保证文字对比度） ── */
+  --destructive-foreground: oklch(0.145 0 0);
+  --destructive-ink: #f87171;
+  --success: #22c55e;
+  --success-ink: #4ade80;
+  --warning: #f59e0b;
+  --warning-ink: #fbbf24;
+  --info: #3b82f6;
+  --info-ink: #60a5fa;
+
+  /* ── 数据可视化 8 色（cross-dashboard dark） ── */
+  --viz-1: oklch(0.7 0.16 260);
+  --viz-2: oklch(0.68 0.19 295);
+  --viz-3: oklch(0.76 0.15 70);
+  --viz-4: oklch(0.74 0.15 165);
+  --viz-5: oklch(0.74 0.12 215);
+  --viz-6: oklch(0.7 0.18 350);
+  --viz-7: oklch(0.73 0.16 40);
+  --viz-8: oklch(0.68 0.11 130);
+
+  /* ── 阴影三档（dark 收敛） ── */
+  --elevation-card: 0 1px 2px oklch(0 0 0 / 0.32);
+  --elevation-raised: 0 8px 24px -8px oklch(0 0 0 / 0.5);
+  --elevation-overlay: 0 24px 64px -20px oklch(0 0 0 / 0.65);
+
+  /* ── terminal（dark） ── */
+  --terminal-bg: oklch(0.1 0 0);
+  --terminal-fg: oklch(0.91 0 0);
+  --terminal-muted: oklch(0.6 0 0);
+}
+
+/* ============================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--surface-0);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 18%, transparent);
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ============================================================================
+   Utilities
+   ========================================================================== */
+@layer utilities {
+  /* 统一页面容器：行宽 1200，水平留白 clamp(16px, 3vw, 32px) */
+  .page-container {
+    width: 100%;
+    max-width: var(--page-max-width);
+    margin-inline: auto;
+    padding: 24px clamp(16px, 3vw, 32px) 40px;
+  }
+
+  /* 指标数值：等宽 + tabular-nums + 负字距 */
+  .metric-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* 面包屑：等宽 12px */
+  .dash-crumbs {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--muted-foreground);
+  }
+
+  .dash-crumbs b {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+
+  /* 页面头：H1 26px / -0.02em，描述 13.5px muted */
+  .dash-pagehead h1 {
+    margin: 6px 0 0;
+    font-size: 1.625rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .dash-desc {
+    margin: 6px 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.84375rem;
+    line-height: 1.6;
+  }
+
+  /* 发丝线 */
+  .hairline {
+    height: 1px;
+    width: 100%;
+    background: var(--border);
+  }
+
+  /* 骨架屏：仅透明度呼吸，不用渐变 */
+  .skeleton {
+    background: color-mix(in oklch, var(--foreground) 7%, var(--surface-1));
+    border-radius: var(--radius-md);
+    animation: cbr-pulse 1.8s ease-in-out infinite;
+  }
+
+  /* 终端观感（审计 trace / payload） */
+  .terminal {
+    background: var(--terminal-bg);
+    color: var(--terminal-fg);
+    border: 1px solid color-mix(in oklch, var(--terminal-fg) 12%, transparent);
+    border-radius: var(--radius-lg);
+  }
+
+  .terminal-muted {
+    color: var(--terminal-muted);
+  }
+
+  /* 细滚动条 */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 动效：只动 transform / opacity */
+  .animate-rise {
+    animation: cbr-rise var(--dur-base) var(--ease-out) both;
+  }
+
+  .animate-fade {
+    animation: cbr-fade var(--dur-fast) ease-out both;
+  }
+
+  .animate-dialog {
+    animation: cbr-dialog var(--dur-fast) var(--ease-out) both;
+  }
+}
+
+@keyframes cbr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cbr-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cbr-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes cbr-dialog {
+  from {
+    opacity: 0;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* 无边框输入聚焦时的光标颜色 */
+input,
+textarea {
+  caret-color: var(--foreground);
+}
+
+/* ── 动效降级：所有动画/过渡近乎瞬时，但不改变布局 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

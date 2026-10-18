@@ -1,6 +1,8 @@
 # CBR-MAW 试点实验结果（SYNTHETIC 仿真数据）
 
 > 用途：验证系统 pipeline 的**判别能力、消融机制与工程可复现性**，不构成任何真实市场结论。
+> 真实 LLM（DeepSeek）复跑的 P2/P3 结果见 [pilot_results_real_llm.md](pilot_results_real_llm.md)；本文为 Mock LLM / 规则模型后端下的流程验证。
+> 指标 v2（2026-10-18）：`scripts/run_experiment.py` 已新增 `task_completion_tool_evidence_gated`、`llm_tokens_actual`/`llm_calls_actual`、`trace_claim_rejected`/`trace_tool_denied`/`trace_budget_exceeded` 等草稿级/真实用量指标，正式实验请以 v2 输出为准。
 > 数据：确定性仿真 DGP（`data/samples`，seed=0，2018-01-02 ~ 2025-09-30；27 序列 / 41,367 观测 / 2,207 篇文档）。
 > 快照：`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`，`corpus_hash=corpus_7ac20be6ce7d622c8308`（`data/pit_manifest.json`）。
 > 运行环境：Mock LLM（无 API key 的确定性模式），Python 3.12，`fusion-xgb-v1` 滚动快照（79 个，retrain_every=20）。

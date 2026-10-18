@@ -22,13 +22,17 @@
 from __future__ import annotations
 
 import datetime as dt
+import os
+import time
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from cbr.api import readiness, state
 from cbr.schemas import (
@@ -43,6 +47,39 @@ from cbr.schemas import (
 
 API_VERSION = "0.1.0"
 MODE_LITERAL = Literal["collaborative", "independent", "single"]
+
+# React 前端（web/dist）静态托管路径；不存在时 API 仍可用，根路径回退为 JSON 说明。
+ROOT_DIR = Path(__file__).resolve().parents[3]
+WEB_DIST = Path(os.environ.get("CBR_WEB_DIST", str(ROOT_DIR / "web" / "dist")))
+
+# 决策结果短时缓存：避免前端刷新/切换页签时重复调用真实 LLM（成本与延迟）。
+# 键 = (as_of, mode, scenario)；TTL 默认 30 分钟，可用 CBR_DECISION_CACHE_TTL 覆盖。
+_DECISION_CACHE: dict[tuple[str, str, str], tuple[float, DecisionCard]] = {}
+_DECISION_CACHE_TTL = float(os.environ.get("CBR_DECISION_CACHE_TTL", "1800"))
+
+
+def _decision_cache_key(as_of: dt.date, mode: str, scenario: str | None) -> tuple[str, str, str]:
+    return (as_of.isoformat(), mode, scenario or "")
+
+
+def _decision_cache_get(key: tuple[str, str, str]) -> DecisionCard | None:
+    item = _DECISION_CACHE.get(key)
+    if item is None:
+        return None
+    ts, card = item
+    if time.time() - ts > _DECISION_CACHE_TTL:
+        _DECISION_CACHE.pop(key, None)
+        return None
+    return card
+
+
+def _decision_cache_put(key: tuple[str, str, str], card: DecisionCard) -> None:
+    _DECISION_CACHE[key] = (time.time(), card)
+
+
+def clear_decision_cache() -> None:
+    """清空决策缓存（测试/演示时强制重新生成时使用）。"""
+    _DECISION_CACHE.clear()
 
 app = FastAPI(
     title="CBR-MAW API",
@@ -63,6 +100,8 @@ app.add_middleware(
         "http://localhost:8501",
         "http://127.0.0.1:8000",
         "http://localhost:8000",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
     ],
     allow_credentials=False,
     allow_methods=["*"],
@@ -169,13 +208,16 @@ async def _unhandled_exception_handler(_request: Any, exc: Exception) -> JSONRes
 # 端点
 # --------------------------------------------------------------------------- #
 @app.get("/", include_in_schema=False)
-def index() -> dict[str, Any]:
-    """API 入口说明（方便浏览器直接打开）。"""
+def index() -> Any:
+    """有 React 构建产物时跳转到驾驶台 /ui/；否则返回 API 入口说明。"""
+    if WEB_DIST.is_dir() and (WEB_DIST / "index.html").exists():
+        return RedirectResponse(url="/ui/", status_code=307)
     return {
         "name": "CBR-MAW API",
         "version": API_VERSION,
         "docs": "/docs",
         "health": "/api/health",
+        "ui": "未找到 web/dist（运行 bun run build 后可通过 /ui/ 访问 React 驾驶台）",
         "endpoints": [
             "GET /api/health",
             "GET /api/scenarios",
@@ -280,6 +322,7 @@ def get_decision(
     as_of: dt.date | None = Query(None, description="分析时点 YYYY-MM-DD；缺省取场景日期或最近场景"),
     scenario: str | None = Query(None, description="场景 id（见 /api/scenarios）"),
     mode: MODE_LITERAL = Query("collaborative", description="实验模式：协同/独立/单智能体"),
+    refresh: bool = Query(False, description="true 时跳过 30 分钟结果缓存，强制重新生成"),
 ) -> DecisionCard:
     service = _service_or_503()
     orchestrator = getattr(service, "orchestrator", None)
@@ -290,6 +333,11 @@ def get_decision(
             detail="编排层未就绪：Orchestrator 未实现 run(as_of, mode, scenario) 接口（见 contracts.py）。",
         )
     target_date = as_of or _default_as_of(service, scenario)
+    cache_key = _decision_cache_key(target_date, mode, scenario)
+    if not refresh:
+        cached = _decision_cache_get(cache_key)
+        if cached is not None:
+            return cached
     raw = _call_core(
         "生成预警决策",
         run,
@@ -299,6 +347,7 @@ def get_decision(
     )
     card = _coerce(DecisionCard, raw, "决策卡")
     state.remember_decision(card)
+    _decision_cache_put(cache_key, card)
     return card
 
 
@@ -378,6 +427,19 @@ def get_trace(run_id: str) -> list[TraceEvent]:
             ),
         )
     return events
+
+
+# --------------------------------------------------------------------------- #
+# React 前端静态托管（web/dist；由 bun run build 生成）
+# --------------------------------------------------------------------------- #
+def _mount_web_ui() -> None:
+    """存在构建产物时把 /ui 挂载为 React 驾驶台；不存在时保持纯 API 模式。"""
+    if not (WEB_DIST.is_dir() and (WEB_DIST / "index.html").exists()):
+        return
+    app.mount("/ui", StaticFiles(directory=str(WEB_DIST), html=True), name="web-ui")
+
+
+_mount_web_ui()
 
 
 def run() -> None:  # pragma: no cover - 手动启动入口

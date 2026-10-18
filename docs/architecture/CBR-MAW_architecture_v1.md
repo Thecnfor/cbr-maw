@@ -25,7 +25,7 @@
 | 智能体 | 监管 / 投资 / 融资三角色 + 单智能体基线 + 协调者/核验器逻辑 |
 | 协同 | R0 独立分析 → R1 证据共享 → R2 交叉验证 → R3 分歧识别 → R4 冲突协调 → R5 决策卡；三模式（single / independent / collaborative）同一代码路径 |
 | 核验 | 数值核验、引文核验、时点泄漏、越权阻断、schema、无依据断言六类；审计 trace 落盘 |
-| 交互 | Streamlit 驾驶台（6 页签 + 对话页）、FastAPI 8 个端点 |
+| 交互 | **React 19 + Vite + Tailwind v4 驾驶台**（shadcn/ui 组件规范 + Linear 级信息密度，light/dark 双主题，FastAPI `/ui` 静态托管）+ 对话页；Streamlit 保留为回退 UI；FastAPI 8 个端点 + 30 分钟决策缓存 |
 | 测试 | 全量 pytest（含 6 项真实装配端到端集成）通过（详见 §7） |
 | 实验 | P1 模态消融、P2 工具/知识增强消融、P3 三模式对照的试点运行可复现 |
 
@@ -82,8 +82,9 @@
 | L5 黑板/冲突/HITL | `blackboard.py` / `conflict.py` / `hitl.py` | Evidence 去重；冲突三分类（fact/directional/preference）；仲裁规则可配置；HITL 队列支持 approve/reject/override 并写 trace；无人工时自动升级标记 |
 | 横切 A 核验 | `cbr.verification.verify(...)`；`TraceWriter` | 六类核验 + 比率（`numeric_error_rate`、`evidence_accuracy`、`unsupported_claim_rate`、`permission_violations`、`leakage_events`、`schema_errors`）；trace `artifacts/traces/<run_id>.jsonl` + `<run_id>.decision.json`，run_id=`{mode}_{as_of}_{uuid8}` |
 | 横切 B 评估 | `cbr.eval.metrics` / `backtest.py`；`scripts/run_experiment.py` | 指标（PR-AUC/ROC-AUC/Recall@10%/Brier/ECE/提前期）+ bootstrap CI + 配对自助法检验；滚动回测；三实验 kind（p1/p2/p3）产 `artifacts/runs/<run_id>/`（json+md） |
-| L6 API | `src/cbr/api/main.py` | `/api/health`、`/api/scenarios`、`/api/decision`、`/api/chat`、`/api/evidence/{id}`、`/api/data-cards`、`/api/trace/{run_id}`、`/`；未就绪 503 中文、参数 422 中文、兜底结构化 500 |
-| L6 UI | `app/dashboard.py` + `app/chat.py` + `app/components.py` | 侧边栏（5 场景 / as_of / 三模式 / 健康状态）→ 一屏信号概览 + 三智能体卡片 → 6 页签（风险仪表盘/证据板/分歧协调/核验审计/数据卡/导出）+ 对话页；核心未就绪时友好降级 |
+| L6 API | `src/cbr/api/main.py` | `/api/health`、`/api/scenarios`、`/api/decision`（30 分钟缓存，`refresh=true` 强制重算）、`/api/chat`、`/api/evidence/{id}`、`/api/data-cards`、`/api/trace/{run_id}`、`/`；`/ui` 静态托管 React 构建产物；未就绪 503 中文、参数 422 中文、兜底结构化 500 |
+| L6 UI（主） | `web/`（React 19 + Vite + Tailwind v4；tokens 派生自 Xra-space `packages/ui`，规范参考 `Thecnfor/design-stack` shadcn-conventions 与 cross-dashboard `DESIGN.md`） | 248px 侧栏（场景/系统状态）+ 52px 顶栏（as_of/场景/三模式/重新生成/主题）+ 页面头；KPI 区（2fr 1fr 1fr）+ 3:2 主网格（信号图/驱动归因/模态贡献/三智能体卡片 ↔ 证据黑板/分歧协调/核验审计/数据卡/导出）+ 对话页；light/dark 双主题、skeleton/空/错状态、键盘焦点与 reduced-motion 降级 |
+| L6 UI（回退） | `app/dashboard.py` + `app/chat.py` + `app/components.py` | Streamlit 驾驶台（6 页签 + 对话页），保留原信息架构用于兼容与对照 |
 
 ---
 
@@ -139,12 +140,17 @@ R5 汇总：DecisionCard（evidence 快照 + conflicts + verification + coordina
 .venv\Scripts\python.exe scripts\build_sample_data.py
 .venv\Scripts\python.exe scripts\build_knowledge.py
 
-# Web 驾驶台（含对话页）
+# React 驾驶台（主 UI）：构建后由 FastAPI 以 /ui 托管
+cd web; bun install; bun run build; cd ..
+.venv\Scripts\python.exe -m uvicorn cbr.api.main:app --host 127.0.0.1 --port 8000
+# 打开 http://127.0.0.1:8000/ui/（light/dark，右上角切换）
+
+# 前端开发模式（热更新，/api 代理到 8000）
+cd web; bun run dev; cd ..
+
+# 回退 UI（Streamlit）
 set PYTHONPATH=src
 .venv\Scripts\python.exe -m streamlit run app\dashboard.py --server.port 8501
-
-# REST API
-.venv\Scripts\python.exe -m uvicorn cbr.api.main:app --host 127.0.0.1 --port 8000
 
 # 实验（P1 模态 / P2 增强 / P3 协同 / 全部）
 .venv\Scripts\python.exe scripts\run_experiment.py --kind all --run-id demo_run
@@ -161,18 +167,20 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 
 | 验证项 | 结果 |
 |---|---|
-| 全量单元/集成测试 | **205 项（204 passed + 1 skipped[DeepSeek 真调用无 key]）**，含 tests/test_integration.py 6 项端到端集成与 tests/test_custom_data.py 自建数据接入测试 |
+| 全量单元/集成测试 | **206 项全部通过（含 DeepSeek 真实调用测试）**，覆盖 tests/test_integration.py 6 项端到端集成与 tests/test_custom_data.py 自建数据接入测试；`pytest -q` 退出码 0 |
+| 真实 DeepSeek 复跑 | P2（3 日 × full/no_tools）+ P3（4 日 × 三模式）= 18 次运行 / 54 次 LLM 调用全部成功；0 错误/超时/Schema 失败；实际 API tokens 323,431、费用约 ¥0.70；详见 [pilot_results_real_llm.md](../techdoc/pilot_results_real_llm.md) |
 | 自建数据接入 | `data.dataset=custom` 时 provider 自动并入 `data/custom`（CSV/Parquet），缺失序列回退 SYNTHETIC；实测数据卡标记 `user-provided`、风险信号与历史序列接口可用（`tests/test_custom_data.py`） |
 | 数据快照 | `dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`；PIT 41,367 观测 / 2,207 文档 / 27 序列元数据；provider 走 `PitStoreDataProvider` |
 | API 端到端 | `/api/decision` 200（3 卡/20 证据/4 冲突全解决/核验通过/成本 0.0424，PIT 快路径约 1.4s）、`/api/chat` 200（10 引用）、health/scenarios/evidence/data-cards/trace 均 200 |
-| Streamlit | AppTest 无异常（5.8s）；6 页签 + 对话页；真实数据渲染 5 个 Plotly 图 |
+| Streamlit（回退） | AppTest 无异常（5.8s）；6 页签 + 对话页；真实数据渲染 5 个 Plotly 图 |
+| React 驾驶台（主 UI） | Vite 构建产物由 FastAPI `/ui` 托管（`/` 307 → `/ui/`）；light/dark 双主题、证据 Dialog、对话页、导出；截图见 `artifacts/ui/` |
 | 三模式预算 | single 12,000 / independent 11,799 / collaborative 11,801 tokens（6 个评估日均值），接近对齐 |
 | 协同机制 | collaborative 平均 4.0 个冲突、全部解决；single/independent 无共享冲突（机制对照成立） |
 | P1 试点（240 个交易日） | PR-AUC：数值-only 0.478/0.428/0.351，融合 0.504/0.451/0.354（h=5/10/20）；Δ = +0.026/+0.023/+0.003，p=0.112/0.088/0.653（**方向为正但不显著**）；Recall@10% 0.429/0.333/0.143；详见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md) |
 | P2 试点（4 个评估日） | full：15 条主张/17 次工具调用/核验通过/任务完成率 1.0；no_tools_no_kb：3 条主张/0 次工具/核验不通过/任务完成率 0（能力消融方向符合预期；Mock 模式下数值错误率恒为 0，真实 LLM 下才具备幻觉风险） |
 | P3 试点（6 个评估日） | 三模式任务完成率 1.0、证据覆盖率 1.0、核验通过；collaborative 平均 4.0 个冲突且全部解决，single/independent 为 0；tokens 12,000/11,799/11,801 对齐 |
 
-> 说明：以上为 **SYNTHETIC 仿真数据 + Mock LLM** 的流程验证结果，不代表真实市场结论。论文正式实验需接入用户真实数据与 DeepSeek 后，按 `configs/experiments/` 与 `ablation_matrix.yaml` 重新执行；P1/P2/P3 试点的指标表与解读见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md)。
+> 说明：以上为 **SYNTHETIC 仿真数据**下的流程验证结果（Mock LLM 与真实 DeepSeek 两种后端均已实测），不代表真实市场结论。论文正式实验需接入用户真实数据，按 `configs/experiments/` 与 `ablation_matrix.yaml` 重新执行；P1（按规则模型）与 P2/P3（按 LLM 后端）试点的指标表与解读分别见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md) 与 [pilot_results_real_llm.md](../techdoc/pilot_results_real_llm.md)。
 
 ---
 
@@ -189,7 +197,13 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 
 ## 9. 已知限制与下一步
 
-**限制**：仿真数据仅用于流程验证；BM25 检索无 embedding/reranker；ΔCoVaR/DY 为简化近似（参数已在 Evidence 中披露）；Mock LLM 不具备真实幻觉风险，P2 数值错误率需真实模型验证；R2 交叉验证为工具重算而非 LLM 同行评议；P1 试点在短窗口/仿真 DGP 下无显著判别力，需真实数据与全窗口实验。
+**限制**：仿真数据仅用于流程验证；BM25 检索无 embedding/reranker；ΔCoVaR/DY 为简化近似（参数已在 Evidence 中披露）；真实 LLM 下终卡数值错误率/无依据断言率是"自检回填 + 证据过滤后"的饱和值，不能直接解释为模型事实性（草稿级指标见真实 LLM 试验报告）；R2 交叉验证为工具重算而非 LLM 同行评议；P1 试点在仿真 DGP 上判别力存在但不显著，需真实数据与全窗口实验；真实 LLM 单次运行的 prompt 约 5.2–5.7k tokens/角色，会撞 12k 统计预算上限，正式实验需校准预算或外置 JSON Schema；P3 的决策损失暂由共享信号主导，协同增益尚未在决策损失维度体现。
+
+**下一步（按优先级）**：
+1. 接入用户自建数据集（`data/custom` + `configs/data_mapping.yaml`）并重建 PIT 快照；
+2. 按真实 LLM 试验报告建议增加**草稿级幻觉指标**（回填前数值差异、被拒 claim 比例）与**证据门槛版任务完成率**，并校准 token 预算（`max_tokens_per_agent` 或外置 Schema）；
+3. 跑全窗口 P1（2021–2025）与 E0–E12 消融矩阵，产出论文 5.x/6.x 结果表；
+4. 用 React 驾驶台完成 light/dark 视觉验收与录屏材料（如需要）。
 
 **下一步（按优先级）**：
 1. 接入用户自建数据集（`data/custom` + `configs/data_mapping.yaml`）并重建 PIT 快照；

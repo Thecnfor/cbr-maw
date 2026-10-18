@@ -2,7 +2,7 @@
 
 > 本章为 CBR-MAW 技术文档的方法章。文中类名、字段名、工具名与配置项以 `src/cbr/` 实现与 `configs/` 配置为准；凡涉及实证结论之处，仅陈述可检验含义与评价口径，实测结果见第五章实验设计与第六章结果分析。
 >
-> 版本：v0.5（2026-10-18）。最终一致性核对：数据卡 27 条、PIT 快照 `ds_1beab3f3ffd9e31a4c5b`（41,367 观测 / 2,207 文档 / 27 序列）、`label_mode`/`threshold_mode` 与 R2/HITL 触发口径已按实现修订；集成与 API/决策卡字段核对见 v0.4 记录。随实验推进继续修订。
+> 版本：v0.6（2026-10-18）。v0.6 变更：L6 决策支持层前端重构为 React 19 + Vite + Tailwind v4（按 shadcn/ui 组件规范与 Linear 级信息密度，light/dark 双主题，FastAPI 以 `/ui` 静态托管，Streamlit 界面保留为回退）；4.5.1 目录与模块表同步更新。v0.5：数据卡 27 条、PIT 快照 `ds_1beab3f3ffd9e31a4c5b`（41,367 观测 / 2,207 文档 / 27 序列）、`label_mode`/`threshold_mode` 与 R2/HITL 触发口径按实现修订。真实模型复跑记录见 `pilot_results_real_llm.md`，不写入方法章结果。
 
 本章提出面向跨境金融风险预警的多模态多智能体协同方法，把预警理解为三个相互衔接的层次：由数值—文本多模态信息融合形成三类主体共享的风险基础信号；由金融知识检索与确定性金融工具提供可溯源、可重算的证据支撑；由监管、投资与融资三类专业化智能体的分工、共享与协调，把公共风险信号转化为主体差异化的预警与决策支持信息。方法设计对应三个研究命题：多模态信息是否带来增量预警能力（P1）、知识与工具能否降低数值错误与无依据断言（P2）、专业化分工与协同能否在可比资源预算下降低预警与决策损失（P3）。
 
@@ -635,9 +635,10 @@ D:\recently\commorcial\
 │  ├─ orchestration/         # Coordinator、黑板、冲突检测、仲裁、HITL
 │  ├─ verification/          # 数值/引文/时点/越权/schema 核验与 trace
 │  ├─ eval/                  # 指标、消融、时点回放、统计检验
-│  └─ api/                   # FastAPI 路由
-├─ app/                      # Streamlit 决策支持驾驶台
-├─ scripts/                  # 数据构建、实验运行、演示种子
+│  └─ api/                   # FastAPI 路由（含 /ui 静态托管 React 构建产物）
+├─ web/                      # React 19 + Vite + Tailwind v4 驾驶台/对话（shadcn/ui + Linear 规范，light/dark）
+├─ app/                      # Streamlit 决策支持驾驶台（回退 UI）
+├─ scripts/                  # 数据构建、实验运行、演示种子、文档/截图工具
 ├─ tests/                    # 单元与集成测试
 ├─ artifacts/                # runs/<run_id>/{config,metrics,trace,figures,tables}
 └─ docs/                     # 架构文档、技术文档第四章、演示脚本
@@ -657,9 +658,10 @@ D:\recently\commorcial\
 | `src/cbr/verification` | 数值/引文/时点/越权/schema 核验、审计轨迹 | `VerificationReport`、`TraceEvent` | 4.2、4.4 |
 | `src/cbr/eval` | 指标计算、消融、时点回放、统计检验 | `ExperimentConfig`、`ExperimentRun`、`MetricResult` | 4.5、第五章 |
 | `configs` | 角色、应用、实验、情景、工具与知识库配置 | YAML → Pydantic 配置对象 | 4.3、4.5 |
-| `app`、`src/cbr/api` | Streamlit 驾驶台与 FastAPI 服务：`/api/decision`、`/api/chat`、`/api/evidence/{id}`、`/api/trace/{run_id}` 等 | HTTP / UI | 4.4.4、6.4 |
+| `web/` | React 19 + Vite + Tailwind v4 决策支持前端（驾驶台/对话，light/dark，token 化设计系统；遵循 shadcn/ui 组件规范与 Linear 级信息密度） | 消费 `/api/decision`、`/api/chat`、`/api/evidence`、`/api/trace` 等 | 4.4.4、6.4 |
+| `app`、`src/cbr/api` | Streamlit 回退驾驶台与 FastAPI 服务：`/api/decision`、`/api/chat`、`/api/evidence/{id}`、`/api/trace/{run_id}` 等；`/ui` 静态托管 React 构建产物 | HTTP / UI | 4.4.4、6.4 |
 
-配置装配由服务容器完成：`build_service()` 依次装配数据、知识、工具、语言模型与编排层，返回 API、驾驶台与实验脚本共用的 `Service` 单例（进程内 `get_service()`）。当前快照由合成 DGP 构建：`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`，PIT 表含 41,367 条序列观测、2,207 篇文档与 27 条序列元数据，数据卡 27 条。语言模型层支持真实 API 与 mock 两种实现，无密钥或复现模式下默认 mock（`llm.mock=true`），使实验与测试不依赖外部服务并保留真实模型切换能力。
+配置装配由服务容器完成：`build_service()` 依次装配数据、知识、工具、语言模型与编排层，返回 API、驾驶台与实验脚本共用的 `Service` 单例（进程内 `get_service()`）。当前快照由合成 DGP 构建：`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`，PIT 表含 41,367 条序列观测、2,207 篇文档与 27 条序列元数据，数据卡 27 条。语言模型层支持真实 API 与 mock 两种实现，无密钥或复现模式下默认 mock（`llm.mock=true`），使实验与测试不依赖外部服务并保留真实模型切换能力。L6 前端以 React 19 + Vite + Tailwind v4 实现双主题与 token 化视觉规范，FastAPI 通过 `/ui` 静态托管，并对 `/api/decision` 设置 30 分钟结果缓存以避免界面操作重复触发真实模型调用；Streamlit 界面保留为回退路径。
 
 ### 4.5.2 配置化实验与消融矩阵
 
