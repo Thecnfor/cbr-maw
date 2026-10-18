@@ -180,6 +180,14 @@ _SPECS: list[SeriesSpec] = [
         notes="派生：cgb_10y - cgb_2y，乘以 100 转为 bp",
     ),
     _spec(
+        "market.cn_bond.cgb_index",
+        "中债国债全价指数（仿真派生）",
+        "market.cn_bond",
+        "点",
+        derived=True,
+        notes="派生：由 10 年期国债收益率日变动按久期约 7.5 年近似，供债券价格类风险测度使用",
+    ),
+    _spec(
         "rates.credit.aa_spread",
         "AA级中票信用利差",
         "rates.credit",
@@ -209,38 +217,34 @@ _SPECS: list[SeriesSpec] = [
         derived=True,
         notes="派生：(usdcnh - usdcny) * 10000，正值表示离岸贬值预期更强",
     ),
-    # -- 全球因子 ---------------------------------------------------------- #
+    # -- 全球因子（按 t-1 海外收盘对齐：北京时间 t 日早间可得） -------------- #
     _spec(
         "market.global.dxy",
         "美元指数",
         "market.global",
         "点",
-        pit_grade="approximate",
-        notes="全球美元流动性/避险需求代理",
+        notes="全球美元流动性/避险需求代理；按 t-1 海外收盘对齐",
     ),
     _spec(
         "market.global.vix",
         "VIX恐慌指数",
         "market.global",
         "点",
-        pit_grade="approximate",
-        notes="全球风险偏好与波动率代理",
+        notes="全球风险偏好与波动率代理；按 t-1 海外收盘对齐",
     ),
     _spec(
         "market.global.sp500",
         "标普500指数",
         "market.global",
         "点",
-        pit_grade="approximate",
-        notes="全球风险资产基准",
+        notes="全球风险资产基准；按 t-1 海外收盘对齐",
     ),
     _spec(
         "market.global.us10y",
         "美国10年期国债收益率",
         "market.global",
         "%",
-        pit_grade="approximate",
-        notes="全球无风险利率；用于中美利差",
+        notes="全球无风险利率；按 t-1 海外收盘对齐，用于中美利差",
     ),
     _spec(
         "market.global.cn_us_spread",
@@ -248,7 +252,6 @@ _SPECS: list[SeriesSpec] = [
         "market.global",
         "bp",
         derived=True,
-        pit_grade="approximate",
         notes="派生：(cgb_10y - us10y) * 100，负值表示中美利差倒挂",
     ),
     # -- 跨境资金 ---------------------------------------------------------- #
@@ -257,7 +260,7 @@ _SPECS: list[SeriesSpec] = [
         "北向资金净流入",
         "crossborder.flows",
         "亿元",
-        notes="沪深港通北向每日净买入；压力期通常转为流出",
+        notes="沪深港通北向每日净买入；压力期通常转为流出；2024-08-16 后停止披露（仿真同样置缺失）",
     ),
     _spec(
         "crossborder.flows.southbound_net",
@@ -271,7 +274,7 @@ _SPECS: list[SeriesSpec] = [
         "北向持股总市值",
         "crossborder.holdings",
         "亿元",
-        notes="外资持仓存量，用于持仓变动/集中度分析",
+        notes="外资持仓存量，用于持仓变动/集中度分析；2024-08-16 后停止披露（仿真同样置缺失）",
     ),
     _spec(
         "crossborder.holdings.southbound_hold",
@@ -360,6 +363,35 @@ DERIVED_SERIES: tuple[str, ...] = tuple(
     sid for sid, spec in SERIES_SPECS.items() if spec.derived
 )
 
+#: 北向资金/持仓披露断点（真实数据自 2024-08-19 起不再披露每日净买入）
+NORTHBOUND_DISCLOSURE_END = date(2024, 8, 16)
+
+#: 兼容别名：历史写法 / 其他模块早期约定 -> 规范序列 ID。
+#: ``DataProvider`` 的读取接口会自动归一化；下游应尽量直接使用规范 ID。
+SERIES_ALIASES: dict[str, str] = {
+    # 工具层默认映射兼容
+    "market.global.us_equity": "market.global.sp500",
+    "market.global.equity": "market.global.sp500",
+    "market.cn_equity": "market.cn_equity.csi300",
+    "market.cn_bond": "market.cn_bond.cgb_index",
+    "crossborder.northbound_net": "crossborder.flows.northbound_net",
+    "crossborder.southbound_net": "crossborder.flows.southbound_net",
+    "crossborder.ah_premium": "crossborder.flows.ah_premium",
+    "crossborder.holdings.northbound": "crossborder.holdings.northbound_hold",
+    "crossborder.holdings.southbound": "crossborder.holdings.southbound_hold",
+    # 常见简写
+    "market.fx.cny": "market.fx.usdcny",
+    "market.fx.cnh": "market.fx.usdcnh",
+    "market.global.vix_level": "market.global.vix",
+    "market.global.dollar_index": "market.global.dxy",
+    "market.global.cn10y": "market.cn_bond.cgb_10y",
+    "market.global.us10y_yield": "market.global.us10y",
+    "rates.credit.credit_spread": "rates.credit.aa_spread",
+    "macro.pmi": "macro.pmi.manufacturing",
+    "macro.cpi": "macro.cpi.yoy",
+    "macro.fx_reserve": "macro.fx_reserves",
+}
+
 #: 信息域 -> 中文说明（用于权限/UI 展示）
 DOMAIN_DESCRIPTIONS: dict[str, str] = {
     "market.cn_equity": "中国权益市场",
@@ -378,16 +410,19 @@ DOMAIN_DESCRIPTIONS: dict[str, str] = {
 def series_domain(series_id: str) -> str:
     """返回序列所属的信息域；未知序列按前缀推断。
 
+    支持兼容别名：先归一化为规范序列 ID，再查目录/前缀。
+
     Args:
         series_id: 序列 ID。
 
     Returns:
         信息域字符串（用于角色信息权限过滤）。
     """
-    spec = SERIES_SPECS.get(series_id)
+    canonical = canonical_series_id(series_id)
+    spec = SERIES_SPECS.get(canonical)
     if spec is not None:
         return spec.domain
-    parts = series_id.split(".")
+    parts = canonical.split(".")
     for i in range(len(parts) - 1, 0, -1):
         candidate = ".".join(parts[:i])
         if candidate in DOMAIN_DESCRIPTIONS:
@@ -399,6 +434,23 @@ def series_unit(series_id: str) -> str | None:
     """返回序列单位；未知序列返回 ``None``。"""
     spec = SERIES_SPECS.get(series_id)
     return spec.unit if spec is not None else None
+
+
+def canonical_series_id(series_id: str) -> str:
+    """把兼容别名归一化为规范序列 ID（未知 ID 原样返回）。
+
+    Args:
+        series_id: 可能是别名或规范 ID 的序列标识。
+
+    Returns:
+        规范序列 ID；若本身就是规范 ID 或未知 ID 则返回原值。
+    """
+    return SERIES_ALIASES.get(series_id, series_id)
+
+
+def resolve_series_id(series_id: str) -> str:
+    """兼容旧名 ``canonical_series_id``（语义更直观的别名解析入口）。"""
+    return canonical_series_id(series_id)
 
 
 def build_data_cards(

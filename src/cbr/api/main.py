@@ -226,6 +226,13 @@ def health() -> dict[str, Any]:
         llm = getattr(service, "llm", None)
         if llm is not None:
             llm_runtime["client"] = type(llm).__name__
+    else:
+        # 核心未就绪时仍报告配置层可用的场景数（前端场景选择器不受影响）
+        try:
+            scenario_count = len(_scenarios_of(None))
+        except Exception:  # noqa: BLE001
+            scenario_count = 0
+        data_status["error"] = "核心服务未就绪，数据源状态不可用"
 
     configured_llm = settings.get("llm", {}) if isinstance(settings, dict) else {}
     llm_status: dict[str, Any] = {
@@ -235,8 +242,8 @@ def health() -> dict[str, Any]:
     }
     llm_status.update(llm_runtime)
 
-    # 只有核心模块全部就绪且服务装配成功才视为 ok
-    status = "ok" if (service_ready and summary["ready"]) else "degraded"
+    # 以「服务是否装配成功」判定整体状态；模块明细单独在 modules/pending_modules 中给出
+    status = "ok" if service_ready else "degraded"
     return {
         "status": status,
         "app": settings.get("app_name", "CBR-MAW") if isinstance(settings, dict) else "CBR-MAW",

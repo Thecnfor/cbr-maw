@@ -17,3 +17,6 @@ artifacts/
 # 系统
 .DS_Store
 Thumbs.db
+
+*.egg-info/
+.venv-probe/

@@ -31,6 +31,7 @@ import pandas as pd
 from cbr.data.catalog import (
     DAILY_SERIES_IDS,
     MONTHLY_SERIES_IDS,
+    NORTHBOUND_DISCLOSURE_END,
     SERIES_IDS,
     SERIES_SPECS,
     SYNTHETIC_NOTE,
@@ -46,8 +47,8 @@ SAMPLE_START = "2018-01-02"
 SAMPLE_END = "2025-09-30"
 #: 文档数量下限（任务要求 ≥300）
 MIN_DOCUMENTS = 300
-#: 文档生成密度（每交易日平均条数）
-DOC_DENSITY = 0.30
+#: 文档生成基础密度（每交易日平均条数；压力期文档量会上升）
+DOC_DENSITY = 0.22
 
 #: 近似中国法定节假日休市区间（仿真用，非精确交易日历；用于跨市场日历对齐演示）
 _CN_HOLIDAY_RANGES: tuple[tuple[str, str], ...] = (
@@ -113,23 +114,35 @@ _CN_HOLIDAY_RANGES: tuple[tuple[str, str], ...] = (
     ("2025-06-02", "2025-06-02"),
 )
 
-#: 潜在压力过程的“历史压力事件”脉冲锚点（仅用于仿真数据生成）
+#: 潜在压力过程的“历史压力事件”脉冲锚点（仅用于仿真数据生成）。
+#:
+#: 设计说明（SYNTHETIC 数据内嵌已知结构，用于检验预警 pipeline 的判别能力）：
+#: - 每个事件在冲击前有约 8~18 个交易日的**可观测累积期**（信贷利差走阔、波动抬升、
+#:   资金流出等），冲击后指数衰减，使“未来 h 日进入高压力”在特征上可学习；
+#: - 2021-2025 每年均布置 1-3 个事件，保证样本外评估窗口内正例不至于过少；
+#: - 这些事件不对应任何真实历史行情，仅为仿真设定。
 _STRESS_EVENTS: tuple[tuple[str, float, int], ...] = (
-    ("2018-02-06", 1.1, 8),
-    ("2018-06-19", 0.9, 10),
-    ("2018-10-11", 2.0, 28),
-    ("2019-05-06", 1.2, 12),
-    ("2019-08-05", 1.8, 20),
-    ("2020-02-03", 2.6, 32),
-    ("2020-03-16", 3.0, 38),
-    ("2021-07-26", 1.0, 8),
-    ("2022-03-07", 1.4, 18),
-    ("2022-04-25", 2.1, 30),
-    ("2022-10-31", 1.4, 20),
-    ("2023-08-11", 1.1, 12),
-    ("2024-01-22", 1.6, 20),
-    ("2024-08-05", 2.2, 22),
-    ("2025-04-07", 1.8, 20),
+    ("2018-02-06", 1.3, 8),
+    ("2018-06-19", 1.2, 10),
+    ("2018-10-11", 2.2, 28),
+    ("2019-05-06", 1.5, 12),
+    ("2019-08-05", 2.0, 20),
+    ("2020-02-03", 2.8, 32),
+    ("2020-03-16", 3.2, 38),
+    ("2021-03-09", 1.9, 14),
+    ("2021-07-26", 1.8, 10),
+    ("2021-12-06", 2.3, 22),
+    ("2022-03-07", 2.5, 26),
+    ("2022-04-25", 2.9, 30),
+    ("2022-10-31", 2.6, 24),
+    ("2023-03-13", 2.4, 22),
+    ("2023-08-11", 2.5, 22),
+    ("2024-01-22", 2.8, 25),
+    ("2024-08-05", 3.1, 28),
+    ("2024-11-06", 2.7, 24),
+    ("2025-02-10", 2.6, 22),
+    ("2025-04-07", 3.0, 28),
+    ("2025-07-15", 2.5, 22),
 )
 
 
@@ -183,14 +196,50 @@ def latent_stress_process(calendar: pd.DatetimeIndex, rng: np.random.Generator) 
         pos = int(calendar.searchsorted(anchor, side="left"))
         if pos >= n:
             continue
-        steps = np.arange(0, min(n - pos, 4 * decay))
-        # 事件前 2 天开始预热（消息面提前反应），事件后指数衰减
-        for offset, weight in ((-2, 0.10), (-1, 0.18), (0, 0.25)):
-            idx = pos + offset
-            if 0 <= idx < n:
-                z[idx] += amplitude * weight
-        z[pos:] += amplitude * np.exp(-steps / float(decay))
+        # 冲击前的可观测累积期（压力在价格/利差/资金流上逐步显现，使未来标签可学习）
+        buildup = int(min(18, max(8, decay // 2)))
+        for offset in range(-buildup, 0):
+            index = pos + offset
+            if 0 <= index < n:
+                weight = 0.8 * float(buildup + offset + 1) / float(buildup)
+                z[index] += amplitude * max(weight, 0.0)
+        # 冲击当日达到峰值，随后指数衰减
+        length = min(n - pos, 4 * decay)
+        steps = np.arange(0, length)
+        z[pos : pos + length] += amplitude * np.exp(-steps / float(decay))
     return z
+
+
+def forward_stress_signal(z: np.ndarray, window: int = 8) -> np.ndarray:
+    """文本生成用的“领先压力”过程：未来 ``window`` 日潜在压力的前视均值。
+
+    仅在**生成仿真文本**时使用（合成数据内嵌已知领先结构），不参与任何特征/标签
+    计算；真实数据接入时不具备该保证（数据卡与 README 已注明）。它使文本语料
+    携带约 5~8 个交易日的领先风险语义，从而可检验文本模态的增量信息价值（P1）。
+    """
+    values = np.asarray(z, dtype=float)
+    n = values.size
+    out = np.zeros(n, dtype=float)
+    for t in range(n):
+        segment = values[t + 1 : min(n, t + 1 + window)]
+        out[t] = float(segment.mean()) if segment.size else 0.0
+    return out
+
+
+#: 文本领先因子进入未来压力过程的滞后交易日（合成数据内嵌的“消息面领先”结构）
+NEWS_LEAD_LAG = 4
+#: 文本领先因子对潜在压力的影响强度（>0 时领先信息部分进入未来压力过程）
+NEWS_LEAD_LOADING = 0.35
+
+
+def news_lead_process(rng: np.random.Generator, n: int) -> np.ndarray:
+    """生成“消息面领先因子”（仅用于仿真数据生成）。
+
+    该因子在 t 日先被文本语料捕捉，随后在 t+``NEWS_LEAD_LAG`` 日进入潜在压力过程，
+    因此文本特征可以携带价格特征之外的**领先信息**。这是合成数据的内嵌假设，
+    用于检验多模态模态增量价值（P1），已在数据卡与 README 中明确标注。
+    """
+    return _ar1(rng, n, 0.85, 0.22)
 
 
 # --------------------------------------------------------------------------- #
@@ -231,10 +280,14 @@ def generate_daily(
     z = np.asarray(z, dtype=float)
     zpos = np.maximum(z, 0.0)
     shocks = _student_t_shocks(rng, n)
-
-    # -- 权益 ------------------------------------------------------------- #
+    # 全球共同冲击：用于制造“压力期跨市场相关性上升”（股/信用/波动率共享因子）
+    global_shock = _student_t_shocks(rng, n)
     eq_vol = 0.0090 * np.exp(0.28 * zpos) * (1.0 + 0.10 * _ar1(rng, n, 0.90, 0.10))
-    eq_ret = -0.0010 * z - 0.00015 + eq_vol * shocks
+    # 压力期共同因子权重上升 -> 跨市场相关性上升（政策/全球冲击的传染效应）
+    w_global = 0.30 + 0.50 * np.clip(zpos / 2.5, 0.0, 1.0)
+    w_idio = 1.0 - w_global
+    combo = (w_global * global_shock + w_idio * shocks) / np.sqrt(w_global**2 + w_idio**2)
+    eq_ret = 0.00040 - 0.00065 * z + eq_vol * combo
     csi300 = 4000.0 * np.exp(np.cumsum(eq_ret))
     idio = 0.0055 * _student_t_shocks(rng, n) * np.exp(0.25 * zpos)
     csi500 = 6200.0 * np.exp(np.cumsum(1.12 * eq_ret + idio))
@@ -243,29 +296,30 @@ def generate_daily(
 
     # -- 利率与信用 ------------------------------------------------------- #
     t_grid = np.arange(n, dtype=float)
-    cgb10 = 3.85 - 0.00090 * t_grid - 0.22 * zpos + 0.05 * _ar1(rng, n, 0.985, 0.010)
-    cgb2 = 3.10 - 0.00065 * t_grid - 0.26 * zpos + 0.05 * _ar1(rng, n, 0.985, 0.010)
-    repo7 = 2.55 - 0.00025 * t_grid + 0.20 * zpos + 0.04 * _ar1(rng, n, 0.97, 0.010)
-    aa_spread = 75.0 + 46.0 * zpos + 0.8 * _ar1(rng, n, 0.97, 0.60)
+    cgb10 = 3.85 - 0.00090 * t_grid - 0.10 * zpos + 0.05 * _ar1(rng, n, 0.985, 0.010)
+    cgb2 = 3.10 - 0.00065 * t_grid + 0.12 * zpos + 0.05 * _ar1(rng, n, 0.985, 0.010)
+    repo7 = 2.55 - 0.00025 * t_grid + 0.22 * zpos + 0.04 * _ar1(rng, n, 0.97, 0.010)
+    aa_spread = 75.0 + 46.0 * zpos - 14.0 * global_shock + 0.8 * _ar1(rng, n, 0.97, 0.60)
     aa_spread = np.clip(aa_spread, 40.0, 360.0)
+    # 债券全价指数：久期约 7.5 年的国债指数（派生序列，供价格类风险测度）
+    dy10 = np.diff(cgb10, prepend=cgb10[0])
+    bond_ret = -7.5 * dy10 / 100.0 + 0.0004 * _ar1(rng, n, 0.90, 0.20)
+    cgb_index = 100.0 * np.exp(np.cumsum(bond_ret))
 
-    # -- 汇率 ------------------------------------------------------------- #
-    log_cny = np.log(6.65) + np.zeros(n)
-    log_cny[0] = np.log(6.50)
-    cny_dev = _ar1(rng, n, 0.996, 0.0008)
+    # -- 汇率（对数偏离的均值回复过程，避免累计误差发散） ------------------ #
+    fx_noise = rng.normal(0.0, 0.0040, n)
+    fx_dev = np.zeros(n, dtype=float)
     for t in range(1, n):
-        log_cny[t] = (
-            log_cny[t - 1] + 0.00012 + 0.0038 * zpos[t] + cny_dev[t]
-        )
-    usdcny = np.exp(log_cny)
+        fx_dev[t] = 0.99 * fx_dev[t - 1] + 0.00045 * zpos[t] + fx_noise[t]
+    usdcny = np.exp(np.log(6.65) + 0.00003 * t_grid + fx_dev)
     cnh_dev = 1.0 + 0.0016 * zpos + 0.0009 * _ar1(rng, n, 0.90, 1.0)
     usdcnh = usdcny * cnh_dev
 
     # -- 全球因子 --------------------------------------------------------- #
     dxy = 91.0 + 0.0055 * t_grid + 2.2 * zpos + _ar1(rng, n, 0.985, 0.25)
-    vix = 13.0 + 7.5 * zpos + 0.85 * zpos**2 + _ar1(rng, n, 0.94, 0.60)
+    vix = 13.0 + 7.5 * zpos + 0.85 * zpos**2 - 1.5 * global_shock + _ar1(rng, n, 0.94, 0.60)
     vix = np.clip(vix, 9.0, 75.0)
-    sp_ret = -0.0007 * z - 0.0001 + 0.0085 * _student_t_shocks(rng, n)
+    sp_ret = 0.00034 - 0.00055 * z + 0.0085 * global_shock
     sp500 = 2700.0 * np.exp(np.cumsum(sp_ret))
     us10y = 2.45 + 0.00075 * t_grid + 0.10 * zpos + 0.03 * _ar1(rng, n, 0.99, 0.010)
 
@@ -298,6 +352,7 @@ def generate_daily(
         "market.cn_bond.cgb_10y": cgb10,
         "market.cn_bond.repo_7d": repo7,
         "market.cn_bond.term_spread": (cgb10 - cgb2) * 100.0,
+        "market.cn_bond.cgb_index": cgb_index,
         "rates.credit.aa_spread": aa_spread,
         "market.fx.usdcny": usdcny,
         "market.fx.usdcnh": usdcnh,
@@ -314,6 +369,12 @@ def generate_daily(
         "crossborder.flows.ah_premium": ah_premium,
     }
     frame = pd.DataFrame(columns, index=idx)
+    # 北向资金/持仓披露断点（模拟真实数据约束：2024-08-16 之后不再披露每日净买入）
+    # 不做 ffill/置 0；特征层用 northbound 缺失标记与南向/持股代理处理。
+    cutoff = pd.Timestamp(NORTHBOUND_DISCLOSURE_END)
+    after = idx > cutoff
+    frame.loc[after, "crossborder.flows.northbound_net"] = np.nan
+    frame.loc[after, "crossborder.holdings.northbound_hold"] = np.nan
     return frame.loc[:, list(DAILY_SERIES_IDS)]
 
 
@@ -355,7 +416,8 @@ def generate_macro(
         ``values`` 为宏观指标值，``release`` 为对应的发布时刻 Timestamp。
     """
     month_ends = _month_ends(calendar[0], calendar[-1])
-    eps = rng.normal(0.0, 1.0, (len(month_ends), 8))    rows: dict[str, list[float]] = {sid: [] for sid in MONTHLY_SERIES_IDS}
+    eps = rng.normal(0.0, 1.0, (len(month_ends), 8))
+    rows: dict[str, list[float]] = {sid: [] for sid in MONTHLY_SERIES_IDS}
     release = pd.DataFrame(index=month_ends, columns=list(MONTHLY_SERIES_IDS), dtype="datetime64[ns]")
     for i, month_end in enumerate(month_ends):
         stress = _monthly_z(calendar, z, month_end)
@@ -550,44 +612,69 @@ def generate_documents(
     calendar: pd.DatetimeIndex,
     z: np.ndarray,
     rng: np.random.Generator,
+    lead: np.ndarray | None = None,
 ) -> pd.DataFrame:
     """生成政策/新闻仿真语料（≥300 条，含发布时间、来源、标题、正文、URL、哈希）。
 
-    文档的“风险语义强度”与潜在压力过程相关（并带有约 5 日的提前量），
-    从而让文本特征对未来压力具有可学习的增量信息（服务 P1 多模态消融）。
+    合成数据的内嵌结构（**仅用于检验多模态 pipeline，不代表真实新闻规律**）：
+
+    - 文档数量随“领先压力过程”上升：压力事件前 5~8 个交易日新闻/政策关注度、
+      风险语义密度明显抬升；
+    - 风险语义强度由当前压力、未来压力前视均值与**消息面领先因子**共同驱动，
+      其中领先因子先于价格因子出现，使文本模态可能携带增量信息；
+    - 政策类来源保守顺延到下一交易日可用（文本特征层按 shift 1 处理），
+      媒体类按 15:00 收盘切点。
 
     Args:
         calendar: 交易日历。
         z: 潜在压力过程。
         rng: numpy 随机数生成器。
+        lead: 消息面领先因子（None 时退化为仅使用当前/未来压力）。
 
     Returns:
         列见 ``DOC_COLUMNS + DOC_EXTRA_COLUMNS`` 的文档表。
     """
     n = len(calendar)
-    n_docs = max(MIN_DOCUMENTS, int(round(n * DOC_DENSITY)))
-    # 文档发布日期近似服从交易日均匀分布
-    positions = np.sort(rng.integers(0, n, size=n_docs))
+    forward = forward_stress_signal(z, window=8)
+    lead_values = np.asarray(lead, dtype=float) if lead is not None else np.zeros(n, dtype=float)
+    # 文本领先过程 = 当前压力 + 未来压力前视 + 消息面领先因子 + 独立噪声
+    news_noise = _ar1(rng, n, 0.60, 0.08)
+    news_pressure = (
+        0.20 * np.asarray(z, dtype=float) + 0.55 * forward + 0.75 * lead_values + news_noise
+    )
+    # 每日文档数：基础密度 + 领先压力驱动的关注度（泊松分布，确定性种子）
+    rate = 0.30 + 1.30 / (1.0 + np.exp(-1.8 * news_pressure))
+    daily_counts = rng.poisson(rate).astype(int)
+    total = int(daily_counts.sum())
+    if total < MIN_DOCUMENTS:  # 极端短区间兜底：补足到下限
+        extra = MIN_DOCUMENTS - total
+        positions = np.argsort(-news_pressure)[: min(extra, n)]
+        daily_counts[positions] += 1
     source_names = [name for name, _ in _SOURCE_WEIGHTS]
     source_probs = np.array([weight for _, weight in _SOURCE_WEIGHTS])
     source_probs = source_probs / source_probs.sum()
     hours = np.array([8, 9, 10, 11, 14, 15, 16, 17, 20])
     hour_probs = np.array([0.08, 0.16, 0.14, 0.10, 0.10, 0.12, 0.12, 0.10, 0.08])
-    forward_window = 5
     records: list[dict[str, Any]] = []
-    for i, pos in enumerate(positions):
+    doc_index = 0
+    for pos in range(n):
+        count = int(daily_counts[pos])
+        if count <= 0:
+            continue
         z_now = float(z[pos])
-        forward = z[pos : min(n, pos + forward_window + 1)]
-        z_forward = float(np.mean(forward)) if len(forward) else z_now
-        logit = 1.6 * z_now + 0.9 * z_forward
-        p_risk = float(np.clip(0.12 + 0.55 / (1.0 + np.exp(-logit)), 0.05, 0.95))
-        risk = bool(rng.random() < p_risk)
-        source = str(rng.choice(source_names, p=source_probs))
+        z_forward = float(forward[pos])
+        z_lead = float(lead_values[pos])
+        logit = 0.6 * z_now + 1.4 * z_forward + 2.2 * z_lead - 1.6
+        p_risk = float(np.clip(0.06 + 0.75 / (1.0 + np.exp(-logit)), 0.03, 0.90))
         day = pd.Timestamp(calendar[pos]).normalize()
-        hour = int(rng.choice(hours, p=hour_probs))
-        minute = int(rng.choice([0, 5, 10, 15, 20, 30, 40, 45, 50], p=np.full(9, 1.0 / 9.0)))
-        publish_ts = day + pd.Timedelta(hours=hour, minutes=minute)
-        records.append(_compose_document(i, publish_ts, source, risk, rng))
+        for _ in range(count):
+            risk = bool(rng.random() < p_risk)
+            source = str(rng.choice(source_names, p=source_probs))
+            hour = int(rng.choice(hours, p=hour_probs))
+            minute = int(rng.choice([0, 5, 10, 15, 20, 30, 40, 45, 50], p=np.full(9, 1.0 / 9.0)))
+            publish_ts = day + pd.Timedelta(hours=hour, minutes=minute)
+            records.append(_compose_document(doc_index, publish_ts, source, risk, rng))
+            doc_index += 1
     frame = pd.DataFrame(records)
     return frame.loc[:, list(DOC_COLUMNS) + list(DOC_EXTRA_COLUMNS)]
 
@@ -633,6 +720,7 @@ def _build_obs(
         )
         rows.append(frame)
     obs = pd.concat(rows, ignore_index=True)
+    obs = obs.dropna(subset=["value"]).reset_index(drop=True)
     return obs.loc[:, list(OBS_COLUMNS)]
 
 
@@ -660,9 +748,16 @@ def generate_dataset(
         raise ValueError(f"样本区间 {start}~{end} 内没有交易日")
     rng = np.random.default_rng(seed)
     z = latent_stress_process(calendar, rng)
-    daily = generate_daily(calendar, z, rng)
-    macro_values, macro_release = generate_macro(calendar, z, rng)
-    documents = generate_documents(calendar, z, rng)
+    # 消息面领先因子：先在 t 日进入文本语料，随后 t+NEWS_LEAD_LAG 日进入价格/压力过程，
+    # 使文本模态可能蕴含价格特征之外的领先信息（合成数据内嵌假设，见 README/数据卡）。
+    lead = news_lead_process(rng, len(calendar))
+    z_total = z.copy()
+    lag = int(NEWS_LEAD_LAG)
+    if lag > 0:
+        z_total[lag:] += NEWS_LEAD_LOADING * lead[:-lag]
+    daily = generate_daily(calendar, z_total, rng)
+    macro_values, macro_release = generate_macro(calendar, z_total, rng)
+    documents = generate_documents(calendar, z_total, rng, lead=lead)
     obs = _build_obs(daily, macro_values, macro_release)
     dataset = MarketDataset(
         obs=obs,
@@ -678,9 +773,45 @@ def generate_dataset(
             "n_trading_days": int(len(calendar)),
             "n_documents": int(len(documents)),
             "calendar": "approximate CN A-share trading calendar (weekdays minus holidays)",
+            "embedded_structure": (
+                "SYNTHETIC 数据内嵌已知结构：压力事件前有可观测累积期；文本语料由"
+                "当前压力+未来压力前视+消息面领先因子驱动（领先因子滞后 4 个交易日进入压力过程）"
+            ),
+            "news_lead_lag": int(NEWS_LEAD_LAG),
+            "news_lead_loading": float(NEWS_LEAD_LOADING),
         },
     )
     return dataset
+
+
+def dataset_fingerprint(dataset: MarketDataset) -> dict[str, str]:
+    """计算数据集指纹：观测快照 ID 与文本语料哈希（写入 MANIFEST/PIT 清单）。
+
+    - ``dataset_snapshot_id``：对 ``(series_id, obs_date, value)`` 排序后做 sha256，
+      用于标识一次数据快照，实验可据此复现；
+    - ``corpus_hash``：对全部文档 hash 排序后做 sha256，用于标识文本语料版本。
+
+    Args:
+        dataset: 时点数据集。
+
+    Returns:
+        ``{"dataset_snapshot_id": "ds_xxx", "corpus_hash": "corpus_xxx"}``。
+    """
+    obs = dataset.obs.sort_values(["series_id", "obs_date"], kind="mergesort")
+    obs_hash = hashlib.sha256()
+    for row in obs.itertuples(index=False):
+        obs_hash.update(
+            f"{row.series_id}|{pd.Timestamp(row.obs_date).date()}|{float(row.value):.10g}".encode("utf-8")
+        )
+    for series_id in sorted(dataset.obs["series_id"].unique()):
+        obs_hash.update(f"series:{series_id}".encode("utf-8"))
+    corpus_hash = hashlib.sha256()
+    for doc_hash in sorted(dataset.documents["hash"].astype(str).tolist()):
+        corpus_hash.update(doc_hash.encode("utf-8"))
+    return {
+        "dataset_snapshot_id": f"ds_{obs_hash.hexdigest()[:20]}",
+        "corpus_hash": f"corpus_{corpus_hash.hexdigest()[:20]}",
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -744,6 +875,7 @@ def write_sample_data(dataset: MarketDataset, out_dir: str | Path) -> dict[str, 
     paths["series_catalog_json"] = out / "series_catalog.json"
     paths["series_catalog_json"].write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
     # MANIFEST（明确标注 synthetic）
+    fingerprint = dataset_fingerprint(dataset)
     manifest = {
         "dataset": "cbr-maw-synthetic-sample",
         "synthetic": True,
@@ -752,9 +884,15 @@ def write_sample_data(dataset: MarketDataset, out_dir: str | Path) -> dict[str, 
         "seed": dataset.seed,
         "start": dataset.meta.get("start"),
         "end": dataset.meta.get("end"),
+        "dataset_snapshot_id": fingerprint["dataset_snapshot_id"],
+        "corpus_hash": fingerprint["corpus_hash"],
         "n_trading_days": int(len(daily)),
         "n_series": int(len(dataset.obs["series_id"].unique())),
         "n_documents": int(len(documents)),
+        "embedded_structure": (
+            "SYNTHETIC 数据内嵌已知结构：压力事件前存在可观测累积期、文本语料携带约 5-8 个交易日"
+            "领先风险语义；仅用于检验预警 pipeline 的判别与消融能力，不代表真实市场规律"
+        ),
         "files": {key: path.name for key, path in paths.items() if key != "manifest_json" and key != "readme"},
         "usage": "python scripts/build_sample_data.py 可复现；禁止用于真实投资/监管决策",
     }
@@ -765,6 +903,7 @@ def write_sample_data(dataset: MarketDataset, out_dir: str | Path) -> dict[str, 
         "> **本目录全部为确定性仿真数据（synthetic），不映射任何真实历史行情；**\n"
         "> 仅用于 CBR-MAW 演示、单元测试与方法学验证，不得用于真实投资/监管决策。\n\n"
         f"- 随机种子：`{dataset.seed}`（固定，可复现）\n"
+        f"- 数据快照 ID：`{fingerprint['dataset_snapshot_id']}`；文本语料哈希：`{fingerprint['corpus_hash']}`\n"
         f"- 覆盖区间：{manifest['start']} ~ {manifest['end']}（{manifest['n_trading_days']} 个交易日）\n"
         f"- 序列数：{manifest['n_series']}（日频 + 月频 + 派生序列）\n"
         f"- 文本语料：{manifest['n_documents']} 条（含发布时间/来源/标题/正文/URL/哈希）\n\n"
@@ -775,6 +914,11 @@ def write_sample_data(dataset: MarketDataset, out_dir: str | Path) -> dict[str, 
         "- `data_cards.json`：每个序列的数据卡（口径/单位/来源/时点评级）\n"
         "- `series_catalog.json`：序列目录（ID/域/单位/频率/发布时滞）\n"
         "- `MANIFEST.json`：数据集清单与声明\n\n"
+        "## 仿真数据的已知内嵌结构（非真实市场规律）\n\n"
+        "- 压力事件前存在 8~18 个交易日的可观测累积期（波动抬升、信用利差走阔、资金流出），\n"
+        "  使未来 h 日高压力标签可由历史特征学习；\n"
+        "- 文本语料内嵌约 5~8 个交易日的领先风险语义（用于检验文本模态增量价值）；\n"
+        "- 北向资金/持仓在 2024-08-16 后停止披露（模拟真实数据口径断点）。\n\n"
         "重新生成：`python scripts/build_sample_data.py`\n"
     )
     paths["readme"] = out / "README.md"
@@ -838,6 +982,7 @@ def load_sample_dataset(sample_dir: str | Path) -> MarketDataset:
             )
         )
     obs = pd.concat(rows, ignore_index=True)
+    obs = obs.dropna(subset=["value"]).reset_index(drop=True)
     return MarketDataset(
         obs=obs,
         documents=documents,
@@ -845,4 +990,3 @@ def load_sample_dataset(sample_dir: str | Path) -> MarketDataset:
         source=SYNTHETIC_SOURCE,
         meta={**manifest, "reloaded": True},
     )
-                     

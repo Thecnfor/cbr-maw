@@ -197,13 +197,17 @@ class BaseLLMClient(ABC):
 
     @staticmethod
     def estimate_tokens(text: str) -> int:
-        """粗略 token 估计（中文约 1.5 字符/token，保守按 1.25 字符/token）。"""
+        """粗略 token 估计（中文约 1.8 字符/token，英文约 4 字符/token）。
+
+        与 DeepSeek 实际分词比例接近，使 mock 模式的 token 预算统计对真实模式
+        有参考意义（不刻意高估，避免演示时误触发 token_budget_exceeded）。
+        """
 
         if not text:
             return 0
         cjk = sum(1 for ch in text if "\u4e00" <= ch <= "\u9fff")
         other = len(text) - cjk
-        return max(1, int(cjk / 1.5 + other / 4.0))
+        return max(1, int(cjk / 1.8 + other / 4.0))
 
     def _set_last_call(self, **meta: Any) -> None:
         self._last_call = dict(meta)

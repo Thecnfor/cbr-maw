@@ -42,6 +42,11 @@ orchestration:
   modes: [single, independent, collaborative]
   human_in_the_loop: true
   trace_dir: artifacts/traces
+  # 协同成本折算（统一成本单位；J = L + μ·C）
+  cost_per_tool_call: 0.001
+  cost_per_1k_tokens: 0.001
+  cost_per_latency_ms: 0.00001
+  coordination_weight_mu: 0.1
 
 server:
   api_host: 127.0.0.1

@@ -1,0 +1,37 @@
+[
+  {
+    "index": 1,
+    "source_sha": "7b34c04d00e6",
+    "path": "docs\\techdoc\\figures\\fig_01.png",
+    "ok": true,
+    "bytes": 1353001
+  },
+  {
+    "index": 2,
+    "source_sha": "e972515804e1",
+    "path": "docs\\techdoc\\figures\\fig_02.png",
+    "ok": true,
+    "bytes": 192007
+  },
+  {
+    "index": 3,
+    "source_sha": "273cd01feeda",
+    "path": "docs\\techdoc\\figures\\fig_03.png",
+    "ok": true,
+    "bytes": 2740661
+  },
+  {
+    "index": 4,
+    "source_sha": "b3a344cc07a7",
+    "path": "docs\\techdoc\\figures\\fig_04.png",
+    "ok": true,
+    "bytes": 582402
+  },
+  {
+    "index": 5,
+    "source_sha": "eb16f7789ddd",
+    "path": "docs\\techdoc\\figures\\fig_05.png",
+    "ok": true,
+    "bytes": 606707
+  }
+]

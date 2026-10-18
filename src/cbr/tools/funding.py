@@ -29,7 +29,7 @@ class FundingCostParams(BaseModel):
     spread_series_id: str | None = None
     lookback: int = Field(252, ge=60, le=2000)
     momentum_window: int = Field(20, ge=1, le=120)
-    spread_unit: Literal["pct", "bp"] = "pct"
+    spread_unit: Literal["pct", "bp"] = "bp"
     cost_jump_bp: float = Field(50.0, gt=0.0)
     cost_medium_bp: float = Field(25.0, ge=0.0)
     refinancing_horizon_days: int = Field(90, ge=1, le=365)

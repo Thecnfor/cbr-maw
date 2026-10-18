@@ -1,6 +1,6 @@
 # 第四章《多模态多智能体协同预警方法》· 章节大纲与写作计划
 
-> 交付人：doc-writer（task-6）｜版本：v0.1（2026-10-18）｜状态：待 Lead 确认结构
+> 交付人：doc-writer（task-6）｜版本：v0.5（2026-10-18）｜状态：Lead 已确认；正文 v0.5 完成最终一致性核对（数据快照/数据卡、label/threshold 口径、R2 条数、HITL 触发等级、合成数据限制），open_issues 已同步关闭已完成项
 > 主文档：`docs/techdoc/chapter4_method.md`（中文，目标 8000–12000 字，不含表格与代码）
 > 依据：`docs/direction2_extracted.txt`、`docs/architecture/CBR-MAW_architecture_v0.md`、`src/cbr/schemas.py`、`src/cbr/contracts.py`、`configs/roles.yaml`、`configs/app.yaml`、`configs/experiments/p1_modality.yaml`
 

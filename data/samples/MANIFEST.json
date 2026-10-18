@@ -1,0 +1,26 @@
+{
+  "dataset": "cbr-maw-synthetic-sample",
+  "synthetic": true,
+  "source": "synthetic-simulation",
+  "note": "SYNTHETIC 仿真数据：由固定随机种子确定性生成，仅用于演示/测试，非真实市场数据",
+  "seed": 20240601,
+  "start": "2018-01-02",
+  "end": "2025-09-30",
+  "dataset_snapshot_id": "ds_1beab3f3ffd9e31a4c5b",
+  "corpus_hash": "corpus_7ac20be6ce7d622c8308",
+  "n_trading_days": 1884,
+  "n_series": 27,
+  "n_documents": 2207,
+  "embedded_structure": "SYNTHETIC 数据内嵌已知结构：压力事件前存在可观测累积期、文本语料携带约 5-8 个交易日领先风险语义；仅用于检验预警 pipeline 的判别与消融能力，不代表真实市场规律",
+  "files": {
+    "market_daily_parquet": "market_daily.parquet",
+    "market_daily_csv": "market_daily.csv",
+    "macro_monthly_parquet": "macro_monthly.parquet",
+    "macro_monthly_csv": "macro_monthly.csv",
+    "documents_parquet": "documents.parquet",
+    "documents_csv": "documents.csv",
+    "data_cards_json": "data_cards.json",
+    "series_catalog_json": "series_catalog.json"
+  },
+  "usage": "python scripts/build_sample_data.py 可复现；禁止用于真实投资/监管决策"
+}

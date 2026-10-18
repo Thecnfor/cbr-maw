@@ -1,0 +1,15 @@
+{
+  "dataset": "cbr-maw-pit",
+  "synthetic": true,
+  "source": "synthetic-simulation",
+  "dataset_snapshot_id": "ds_1beab3f3ffd9e31a4c5b",
+  "corpus_hash": "corpus_7ac20be6ce7d622c8308",
+  "n_obs": 41367,
+  "n_documents": 2207,
+  "n_series": 27,
+  "start": "2018-01-02",
+  "end": "2025-09-30",
+  "pit_db": "pit.duckdb",
+  "built_at": "2026-10-18T15:46:49",
+  "note": "PIT 库由 scripts/build_dataset.py 从样例/自建数据构建；SYNTHETIC 数据仅用于演示/测试"
+}

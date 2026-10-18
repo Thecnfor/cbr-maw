@@ -1,7 +1,7 @@
 """capital_flow：北向/南向异常净流入 z-score、同步撤离指标、集中度、AH 溢价。
 
 单位约定：资金流沿用 ``flow_unit``（默认"亿元"）；z-score 为无量纲；
-同步撤离份额/集中度/分位为 0~1 比例；AH 溢价为溢价比率（0.35 = 35%）。
+同步撤离份额/集中度/分位为 0~1 比例；AH 溢价为溢价指数点位（基期 100，单位"点"）。
 
 数据仅来自 ``DataProvider.history``；南向与 AH 溢价序列缺失时降级为 None，
 并在 ``missing_series`` 中显式标注（不编造数值）。
@@ -104,7 +104,7 @@ class CapitalFlowTool(BaseTool):
             north_map = series_map(inflow)
             south_map = series_map(outflow)
             joint_dates = sorted(set(north_map) & set(south_map))[-params.lookback :]
-            if len(joint_dates) >= max(10, params.anomaly_z) and len(joint_dates) >= 10:
+            if len(joint_dates) >= 10:
                 both_out = [
                     1.0
                     if (north_map[d] < 0.0 and south_map[d] < 0.0)
@@ -118,7 +118,7 @@ class CapitalFlowTool(BaseTool):
                 data.update(
                     {
                         "outflow_series_id": outflow_id,
-                        "net_outflow_latest": r(south_map[joint_dates[-1]]),
+                        "southbound_net_latest": r(south_map[joint_dates[-1]]),
                         "synchronized_outflow_share": r(sync_share),
                         "synchronized_outflow_flag": bool(
                             north_map[joint_dates[-1]] < 0.0
@@ -172,14 +172,14 @@ class CapitalFlowTool(BaseTool):
             "net_inflow_z": "z",
             "concentration_top_share": "ratio_0_1",
             "flow_hhi": "index_0_1",
-            "net_outflow_latest": params.flow_unit,
+            "southbound_net_latest": params.flow_unit,
             "synchronized_outflow_share": "ratio_0_1",
             "joint_net_flow_latest": params.flow_unit,
             "joint_flow_z": "z",
-            "ah_premium_latest": "ratio",
+            "ah_premium_latest": "点",
             "ah_premium_z": "z",
             "ah_premium_percentile": "quantile_0_1",
-            "ah_premium_change_20d": "ratio_change",
+            "ah_premium_change_20d": "点_变化",
         }
         summary = (
             f"{inflow_id} 最新净流入 {r(inflow_vals[-1]):.2f}{params.flow_unit}，"
@@ -190,7 +190,7 @@ class CapitalFlowTool(BaseTool):
         if "synchronized_outflow_share" in data:
             summary += f"；北向/南向同时净流出日占比 {(r(data['synchronized_outflow_share']) or 0):.0%}"
         if data.get("ah_premium_latest") is not None:
-            summary += f"；AH 溢价 {(r(data['ah_premium_latest']) or 0):.2%}"
+            summary += f"；AH 溢价指数 {(r(data['ah_premium_latest']) or 0):.2f} 点"
         summary += "。"
 
         return ToolOutput(

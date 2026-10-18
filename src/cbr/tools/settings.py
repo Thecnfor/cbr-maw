@@ -16,25 +16,47 @@ from ..config import load_yaml, resolve_path
 
 DEFAULT_TOOLS_CONFIG_PATH = "configs/tools.yaml"
 
-# 数据序列默认映射（configs/tools.yaml 可覆盖；DataProvider 的 series_id 口径以此为准）
+# 数据序列默认映射（configs/tools.yaml 为权威配置；此处仅为缺省兜底。
+# series_id 规范以 data-model 发布的 src/cbr/data/series.py 为准）
 DEFAULT_SERIES: dict[str, str] = {
-    "equity": "market.cn_equity",
-    "bond": "market.cn_bond",
-    "global_equity": "market.global.us_equity",
+    "equity": "market.cn_equity.csi300",
+    "bond": "market.cn_bond.cgb_index",
+    "global_equity": "market.global.sp500",
     "fx_usdcny": "market.fx.usdcny",
     "credit_spread": "rates.credit.aa_spread",
-    "northbound": "crossborder.northbound_net",
-    "southbound": "crossborder.southbound_net",
-    "ah_premium": "crossborder.ah_premium",
+    "northbound": "crossborder.flows.northbound_net",
+    "southbound": "crossborder.flows.southbound_net",
+    "ah_premium": "crossborder.flows.ah_premium",
 }
 
-# 系统性风险工具的跨市场序列集合（DY 溢出指数）
+# 系统性风险工具的跨市场序列集合（DY 溢出指数；统一为价格/点位类序列）
 DEFAULT_DY_SERIES: list[str] = [
-    "market.cn_equity",
-    "market.global.us_equity",
+    "market.cn_equity.csi300",
+    "market.global.sp500",
     "market.fx.usdcny",
-    "rates.credit.aa_spread",
+    "market.global.vix",
 ]
+
+
+# 各工具参数名 -> 序列映射键（仅注入该工具真正拥有的参数，避免 extra_forbidden）
+TOOL_SERIES_PARAMS: dict[str, dict[str, str]] = {
+    "risk_measure": {"series_id": "equity"},
+    "systemic_risk": {"market_series_id": "equity", "asset_series_id": "bond"},
+    "capital_flow": {
+        "inflow_series_id": "northbound",
+        "outflow_series_id": "southbound",
+        "ah_premium_series_id": "ah_premium",
+    },
+    "funding_cost": {"spread_series_id": "credit_spread"},
+    "scenario": {
+        "target_series_id": "equity",
+        "us_equity_series_id": "global_equity",
+        "fx_series_id": "fx_usdcny",
+        "spread_series_id": "credit_spread",
+    },
+    "forecast": {},
+    "knowledge_search": {},
+}
 
 
 class ToolEntry(BaseModel):
@@ -63,24 +85,11 @@ class ToolsConfig(BaseModel):
         return merged
 
     def tool_defaults(self, name: str) -> dict[str, Any]:
-        """把工具配置中的 series 映射注入到该工具的默认参数（仅当参数名匹配）。"""
+        """把该工具的 series 映射注入默认参数；只注入该工具真实拥有的参数名。"""
         entry = self.entry(name)
         defaults = dict(entry.defaults)
         series = self.resolved_series()
-        # 常见参数名 -> 序列映射键
-        param_to_series_key = {
-            "series_id": "equity",
-            "market_series_id": "equity",
-            "asset_series_id": "bond",
-            "inflow_series_id": "northbound",
-            "outflow_series_id": "southbound",
-            "ah_premium_series_id": "ah_premium",
-            "spread_series_id": "credit_spread",
-            "target_series_id": "equity",
-            "us_equity_series_id": "global_equity",
-            "fx_series_id": "fx_usdcny",
-        }
-        for param, series_key in param_to_series_key.items():
+        for param, series_key in TOOL_SERIES_PARAMS.get(name, {}).items():
             if param not in defaults and series_key in series:
                 defaults[param] = series[series_key]
         if name == "systemic_risk" and "series_ids" not in defaults:

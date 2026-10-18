@@ -1,0 +1,362 @@
+{
+  "index_version": "kb-bm25-v1",
+  "built_at": "2026-10-18T07:27:59.679649+00:00",
+  "corpus_hash": "a5c5f05f6a723844e7f909edd8fa5e75720b978bd21acac41f9ffb5520b6e20f",
+  "n_docs": 29,
+  "n_chunks": 32,
+  "chunk_size": 240,
+  "chunk_overlap": 48,
+  "bm25_k1": 1.5,
+  "bm25_b": 0.75,
+  "documents": [
+    {
+      "doc_id": "kb-2018-001",
+      "title": "跨境人民币业务与宏观审慎管理要点（2018年）",
+      "source": "中国人民银行",
+      "publish_time": "2018-01-15",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "货币政策",
+        "跨境人民币",
+        "宏观审慎"
+      ]
+    },
+    {
+      "doc_id": "kb-2018-002",
+      "title": "资管新规要点及其对流动性的影响",
+      "source": "中国人民银行等四部委",
+      "publish_time": "2018-04-27",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "监管政策",
+        "资产管理",
+        "流动性"
+      ]
+    },
+    {
+      "doc_id": "kb-2018-004",
+      "title": "中美贸易摩擦初期的市场反应复盘（2018年）",
+      "source": "研究整理",
+      "publish_time": "2018-07-06",
+      "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html",
+      "tags": [
+        "历史事件",
+        "贸易摩擦",
+        "市场复盘"
+      ]
+    },
+    {
+      "doc_id": "kb-2018-003",
+      "title": "外汇局跨境资本流动监测与宏观审慎调节",
+      "source": "国家外汇管理局",
+      "publish_time": "2018-08-03",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "跨境资本流动",
+        "宏观审慎",
+        "外汇管理"
+      ]
+    },
+    {
+      "doc_id": "kb-2019-001",
+      "title": "2019年1月全面降准的流动性传导",
+      "source": "中国人民银行",
+      "publish_time": "2019-01-04",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "货币政策",
+        "降准",
+        "流动性"
+      ]
+    },
+    {
+      "doc_id": "kb-2019-002",
+      "title": "人民币汇率破7事件复盘（2019年8月）",
+      "source": "研究整理",
+      "publish_time": "2019-08-05",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "历史事件",
+        "汇率",
+        "跨境资金"
+      ]
+    },
+    {
+      "doc_id": "kb-2020-001",
+      "title": "疫情初期央行流动性支持政策要点（2020年2月）",
+      "source": "中国人民银行",
+      "publish_time": "2020-02-03",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "货币政策",
+        "疫情冲击",
+        "流动性"
+      ]
+    },
+    {
+      "doc_id": "kb-2020-002",
+      "title": "2020年3月全球美元流动性危机复盘",
+      "source": "研究整理",
+      "publish_time": "2020-03-23",
+      "url": "https://www.federalreserve.gov/",
+      "tags": [
+        "历史事件",
+        "美元流动性",
+        "全球市场"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-001",
+      "title": "方法学：VaR 与 CVaR 的定义、计算口径与局限",
+      "source": "方法学整理",
+      "publish_time": "2020-05-20",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "VaR",
+        "CVaR",
+        "风险测度"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-002",
+      "title": "方法学：CoVaR、ΔCoVaR 与 MES 的尾部依赖度量",
+      "source": "方法学整理",
+      "publish_time": "2020-06-18",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "CoVaR",
+        "系统性风险"
+      ]
+    },
+    {
+      "doc_id": "kb-2020-003",
+      "title": "平台经济监管与中概股重定价复盘",
+      "source": "研究整理",
+      "publish_time": "2020-11-10",
+      "url": "https://www.csrc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "平台经济",
+        "中概股"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-003",
+      "title": "方法学：Diebold-Yilmaz 溢出指数的计算与解读",
+      "source": "方法学整理",
+      "publish_time": "2021-03-15",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "溢出指数",
+        "连通性"
+      ]
+    },
+    {
+      "doc_id": "kb-2021-001",
+      "title": "教培行业监管政策与中概股重定价复盘（2021年7月）",
+      "source": "研究整理",
+      "publish_time": "2021-07-24",
+      "url": "https://www.csrc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "行业监管",
+        "中概股"
+      ]
+    },
+    {
+      "doc_id": "kb-2021-002",
+      "title": "房地产信用风险与融资约束复盘（2021年9月）",
+      "source": "研究整理",
+      "publish_time": "2021-09-20",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "历史事件",
+        "房地产",
+        "信用风险"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-004",
+      "title": "方法学：北向资金、同步撤离与 AH 溢价的口径",
+      "source": "方法学整理",
+      "publish_time": "2021-11-22",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "方法学",
+        "资金流",
+        "AH溢价"
+      ]
+    },
+    {
+      "doc_id": "kb-2022-001",
+      "title": "美联储加息周期与中美利差倒挂（2022年）",
+      "source": "研究整理",
+      "publish_time": "2022-03-16",
+      "url": "https://www.federalreserve.gov/",
+      "tags": [
+        "历史事件",
+        "美联储",
+        "中美利差"
+      ]
+    },
+    {
+      "doc_id": "kb-2022-002",
+      "title": "2022年4月人民币贬值压力与政策应对",
+      "source": "研究整理",
+      "publish_time": "2022-04-25",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "历史事件",
+        "汇率",
+        "跨境资金"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-005",
+      "title": "方法学：信用利差、融资成本与再融资窗口的口径",
+      "source": "方法学整理",
+      "publish_time": "2022-05-16",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "信用利差",
+        "融资成本"
+      ]
+    },
+    {
+      "doc_id": "kb-2022-003",
+      "title": "2022年10月股债汇市场同步承压复盘",
+      "source": "研究整理",
+      "publish_time": "2022-10-31",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "股债汇",
+        "压力复盘"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-006",
+      "title": "方法学：时点数据（PIT）与未来信息泄漏防控",
+      "source": "方法学整理",
+      "publish_time": "2023-02-27",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "时点数据",
+        "PIT"
+      ]
+    },
+    {
+      "doc_id": "kb-2023-001",
+      "title": "硅谷银行事件与全球流动性传导（2023年3月）",
+      "source": "研究整理",
+      "publish_time": "2023-03-13",
+      "url": "https://www.federalreserve.gov/",
+      "tags": [
+        "历史事件",
+        "银行业",
+        "全球流动性"
+      ]
+    },
+    {
+      "doc_id": "kb-2023-002",
+      "title": "2023年8月北向资金净流出复盘",
+      "source": "研究整理",
+      "publish_time": "2023-08-21",
+      "url": "https://www.csrc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "北向资金",
+        "跨境资金"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-007",
+      "title": "方法学：情景压力测试的线性映射与历史类比",
+      "source": "方法学整理",
+      "publish_time": "2023-09-11",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "情景分析",
+        "压力测试"
+      ]
+    },
+    {
+      "doc_id": "kb-2024-001",
+      "title": "2024年2月中央汇金增持与市场稳定措施",
+      "source": "研究整理",
+      "publish_time": "2024-02-06",
+      "url": "https://www.csrc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "市场稳定",
+        "政策应对"
+      ]
+    },
+    {
+      "doc_id": "kb-meth-008",
+      "title": "方法学：压力分位、最大回撤与资金流集中度",
+      "source": "方法学整理",
+      "publish_time": "2024-03-12",
+      "url": "https://www.bis.org/",
+      "tags": [
+        "方法学",
+        "最大回撤",
+        "集中度"
+      ]
+    },
+    {
+      "doc_id": "kb-2024-002",
+      "title": "2024年8月日元套息交易平仓冲击复盘",
+      "source": "研究整理",
+      "publish_time": "2024-08-05",
+      "url": "https://www.federalreserve.gov/",
+      "tags": [
+        "历史事件",
+        "日元套息",
+        "波动率"
+      ]
+    },
+    {
+      "doc_id": "kb-2024-003",
+      "title": "2024年9月一揽子增量政策要点",
+      "source": "研究整理",
+      "publish_time": "2024-09-24",
+      "url": "https://www.pbc.gov.cn/",
+      "tags": [
+        "政策要点",
+        "稳增长",
+        "资本市场"
+      ]
+    },
+    {
+      "doc_id": "kb-2025-001",
+      "title": "2025年1月跨境融资宏观审慎调节参数调整",
+      "source": "中国人民银行、国家外汇管理局",
+      "publish_time": "2025-01-13",
+      "url": "https://www.safe.gov.cn/",
+      "tags": [
+        "政策要点",
+        "跨境融资",
+        "宏观审慎"
+      ]
+    },
+    {
+      "doc_id": "kb-2025-002",
+      "title": "2025年4月外部关税冲击与稳市场政策组合",
+      "source": "研究整理",
+      "publish_time": "2025-04-07",
+      "url": "https://www.csrc.gov.cn/",
+      "tags": [
+        "历史事件",
+        "关税冲击",
+        "稳市场"
+      ]
+    }
+  ]
+}

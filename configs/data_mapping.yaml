@@ -1,0 +1,51 @@
+# 用户自建数据字段映射（csv / parquet）
+#
+# 使用方式：
+#   1. 把用户数据文件放入 data/custom/（csv 或 parquet）；
+#   2. 在下方 series / documents 中配置字段映射；不配置时脚本会按列名启发式自动识别
+#      （日期列名 date/trade_date/日期，数值列自动转为序列，文件名含 news/doc/text 视为文本）；
+#   3. 运行 python scripts/build_dataset.py --with-custom 把用户数据并入 PIT 数据库，
+#      或直接使用 cbr.data.build_data_provider()（dataset=auto 时优先用自建数据）。
+#
+# 约定：
+#   - release_time_column 缺省时按 obs_date + release_lag_days 天 16:00 近似；
+#     有发布时点列时严格按该列做 point-in-time 过滤。
+#   - series_id 建议使用 cbr.data.series.SERIES_IDS 中的规范 ID；
+#     未列出的自定义序列使用 "custom.<文件名>.<列名>"。
+
+custom_data_dir: data/custom
+
+series: []
+# 示例：
+# series:
+#   - series_id: market.cn_equity.csi300
+#     file: user_csi300.csv
+#     date_column: date
+#     value_column: close
+#     release_time_column: null
+#     release_lag_days: 0
+#     unit: 点
+#     frequency: daily
+#     source: user-provided
+#     name: 用户自建沪深300
+#   - series_id: macro.cpi.yoy
+#     file: user_macro.parquet
+#     date_column: month
+#     value_column: cpi_yoy
+#     release_time_column: release_time
+#     release_lag_days: 10
+#     unit: "%"
+#     frequency: monthly
+#     source: user-provided
+
+documents: []
+# 示例：
+# documents:
+#   - file: user_news.parquet
+#     publish_time_column: publish_time
+#     title_column: title
+#     body_column: content
+#     source_column: source
+#     url_column: url
+#     doc_id_column: doc_id
+#     source_name: user-news

@@ -16,7 +16,7 @@ augment:
   rag: false
   tools: false
 agents:
-  mode: offline       # 本实验只评估融合预测器，不启用 LLM 智能体
+  enabled: false     # 本实验只评估融合预测器，不启用 LLM 智能体
 coordination:
   evidence_share: false
   cross_validation: false

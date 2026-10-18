@@ -129,9 +129,10 @@ class SystemicRiskTool(BaseTool):
         try:
             _, a_list, sigma = fit_var(matrix, params.dy_lag)
             fevd = generalized_fevd(a_list, sigma, params.dy_horizon)
-            dy_index = spillover_index(fevd)
+            dy_pct = spillover_index(fevd)  # 0~100 百分数
         except (ValueError, np.linalg.LinAlgError) as exc:
             raise ToolError(f"VAR/FEVD estimation failed: {exc}") from exc
+        dy_index = dy_pct / 100.0  # 0~1 比例口径，便于与 roles.yaml 阈值（如 0.50）比较
 
         data = {
             "market_series_id": market_id,
@@ -155,7 +156,7 @@ class SystemicRiskTool(BaseTool):
             "tail_observations": int(tail_mask.sum()),
             # ---- 跨市场溢出 ----
             "dy_spillover_index": r(dy_index),          # 0~1 比例
-            "dy_spillover_percent": r(dy_index * 100.0),  # 0~100
+            "dy_spillover_percent": r(dy_pct),           # 0~100
             "dy_series_order": list(dy_data),
             "dy_missing_series": dy_missing,
             "dy_window": int(matrix.shape[0]),
@@ -178,7 +179,7 @@ class SystemicRiskTool(BaseTool):
         summary = (
             f"{market_id}→{asset_id}：市场 {params.tail_q:.0%} 尾部时 ΔCoVaR "
             f"{(r(delta_covar) or 0) * 100:.2f}%、MES {(r(mes) or 0) * 100:.2f}%；"
-            f"DY 溢出指数 {(r(dy_index) or 0) * 100:.1f}%（基于 {len(dy_data)} 条序列，"
+            f"DY 溢出指数 {dy_pct:.1f}%（基于 {len(dy_data)} 条序列，"
             f"{int(matrix.shape[0])} 个观测）。"
         )
         return ToolOutput(

@@ -143,7 +143,22 @@ class DeepSeekClient(BaseLLMClient):
                 {"role": "user", "content": user_content},
             ]
             response = self._create_completion(messages=messages, schema=schema, **kwargs)
-            raw_output = self._extract_content(response)
+            try:
+                raw_output = self._extract_content(response)
+            except LLMOutputError as exc:
+                last_error = None
+                raw_output = exc.raw_output
+                self._logger.warning(
+                    "[LLM] DeepSeek 返回空 content（第 %d/%d 轮），触发修复重试",
+                    attempt + 1,
+                    max_schema_attempts,
+                )
+                user_content = user + _REPAIR_TEMPLATE.format(
+                    errors="- 模型返回空 content，请输出完整 JSON 对象",
+                    fields=", ".join(schema.model_fields.keys()),
+                    schema=schema_json,
+                )
+                continue
             last_content = raw_output
             try:
                 parsed = self._parse_json(schema, raw_output)

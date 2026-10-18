@@ -109,14 +109,21 @@ def not_ready_message(error: str | None = None) -> str:
     """构造面向调用方/用户的中文未就绪提示。"""
     summary = readiness_summary()
     pending = summary.get("pending_modules") or []
-    message = "CBR-MAW 核心服务暂未就绪"
     if pending:
-        message += f"（待实现模块：{'、'.join(pending)}）"
+        message = f"CBR-MAW 核心服务暂未就绪（待实现模块：{'、'.join(pending)}）"
+        if error:
+            message += f"；装配错误：{error}"
+        message += (
+            "。请先完成 data/knowledge/tools/llm/orchestration 五层模块并暴露约定工厂函数，"
+            "或检查 PYTHONPATH=src / 依赖安装后重启服务。"
+        )
+        return message
+    message = "CBR-MAW 核心服务装配失败"
     if error:
-        message += f"；装配错误：{error}"
+        message += f"：{error}"
     message += (
-        "。请先完成 data/knowledge/tools/llm/orchestration 五层模块并暴露约定工厂函数，"
-        "或检查 PYTHONPATH=src / 依赖安装后重启服务。"
+        "。五层模块均已存在，请检查数据文件（data/）、配置文件（configs/）与运行日志后重启服务；"
+        "也可访问 /api/health 查看模块明细。"
     )
     return message
 

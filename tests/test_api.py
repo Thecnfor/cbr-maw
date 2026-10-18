@@ -188,6 +188,7 @@ def _decision_card() -> DecisionCard:
         mode=ExperimentMode.COLLABORATIVE,
         signal=_risk_signal(),
         cards={role.value: _risk_card(role) for role in (Role.REGULATOR, Role.INVESTOR, Role.FINANCING)},
+        evidence=[_signal_evidence(), _tool_evidence()],
         conflicts=[
             Conflict(
                 conflict_id="cf-1",
@@ -250,6 +251,16 @@ def _trace_events() -> list[TraceEvent]:
             latency_ms=15,
         ),
     ]
+
+
+def _run_without_evidence(run_fn: Any) -> Any:
+    """包装 run：返回不带 evidence 快照的决策卡（验证共享信号兜底路径）。"""
+
+    def _wrapped(as_of: dt.date, mode: str = "collaborative", scenario: str | None = None) -> Any:
+        card = run_fn(as_of, mode=mode, scenario=scenario)
+        return card.model_copy(update={"evidence": []}) if isinstance(card, DecisionCard) else card
+
+    return _wrapped
 
 
 # --------------------------------------------------------------------------- #
@@ -336,12 +347,19 @@ class FakeService:
         self.settings = load_settings()
         self.scenarios = [
             Scenario(
+                scenario_id="covid_2020",
+                name="2020 疫情全球冲击",
+                as_of=dt.date(2020, 3, 16),
+                description="全球流动性危机、美元流动性紧张",
+                tags=["全球冲击", "流动性"],
+            ),
+            Scenario(
                 scenario_id="yen_carry_2024",
                 name="2024 日元套息交易逆转",
                 as_of=AS_OF,
                 description="日元套息交易平仓引发全球风险资产波动",
                 tags=["全球冲击", "波动率"],
-            )
+            ),
         ]
         self._artifacts_root = artifacts_root
 
@@ -390,7 +408,7 @@ def test_health_ok(client: TestClient) -> None:
     assert body["status"] == "ok"
     assert body["service_ready"] is True
     assert body["service_error"] is None
-    assert body["scenarios"] == 1
+    assert body["scenarios"] == 2
     assert body["llm"]["mock"] in (True, False)
     assert body["data_sources"]["ready"] is True
     assert body["data_sources"]["data_cards"] == 1
@@ -402,9 +420,11 @@ def test_scenarios(client: TestClient) -> None:
     response = client.get("/api/scenarios")
     assert response.status_code == 200
     scenarios = response.json()
-    assert isinstance(scenarios, list) and scenarios
-    assert scenarios[0]["scenario_id"] == "yen_carry_2024"
-    assert scenarios[0]["as_of"] == "2024-08-05"
+    assert isinstance(scenarios, list) and len(scenarios) == 2
+    ids = {item["scenario_id"] for item in scenarios}
+    assert ids == {"covid_2020", "yen_carry_2024"}
+    by_id = {item["scenario_id"]: item for item in scenarios}
+    assert by_id["yen_carry_2024"]["as_of"] == "2024-08-05"
 
 
 def test_decision_defaults(fake_service: FakeService, client: TestClient) -> None:
@@ -425,6 +445,10 @@ def test_decision_defaults(fake_service: FakeService, client: TestClient) -> Non
     assert body["cards"]["investor"]["claims"][0]["status"] == "verified"
     assert body["verification"]["numeric_error_rate"] == pytest.approx(0.0)
     assert body["conflicts"][0]["type"] == "directional"
+    # DecisionCard.evidence：黑板证据快照随决策卡返回（供 UI 证据板/导出）
+    evidence_ids = {item["evidence_id"] for item in body["evidence"]}
+    assert {SIGNAL_EVIDENCE_ID, TOOL_EVIDENCE_ID} <= evidence_ids
+    assert body["evidence"][0]["kind"] in {"signal", "tool"}
 
 
 def test_decision_explicit_params(fake_service: FakeService, client: TestClient) -> None:
@@ -477,6 +501,39 @@ def test_chat_invalid_body_returns_422(client: TestClient) -> None:
     assert response.json()["detail"] == "请求参数校验失败"
 
 
+def test_chat_defaults_as_of_from_scenario(fake_service: FakeService, client: TestClient) -> None:
+    fake_service.orchestrator.chat = lambda request: ChatResponse(reply="ok")  # type: ignore[assignment]
+    response = client.post("/api/chat", json={"message": "当前风险如何？"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["as_of"] == "2024-08-05"
+    assert body["decision"] is None
+
+
+def test_decision_without_orchestrator_run_returns_503(
+    fake_service: FakeService, client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(fake_service.orchestrator, "run", None)
+    response = client.get("/api/decision")
+    assert response.status_code == 503
+    assert "编排层未就绪" in response.json()["detail"]
+
+
+def test_openapi_contains_all_endpoints(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    paths = set(spec["paths"])
+    expected = {
+        "/api/health",
+        "/api/scenarios",
+        "/api/decision",
+        "/api/chat",
+        "/api/evidence/{evidence_id}",
+        "/api/data-cards",
+        "/api/trace/{run_id}",
+    }
+    assert expected <= paths
+
+
 def test_evidence_found(client: TestClient) -> None:
     response = client.get(f"/api/evidence/{TOOL_EVIDENCE_ID}")
     assert response.status_code == 200
@@ -495,18 +552,32 @@ def test_evidence_not_found_returns_404(client: TestClient) -> None:
     assert "未找到证据" in response.json()["detail"]
 
 
-def test_evidence_from_decision_cache(
+def test_evidence_from_decision_snapshot(
     fake_service: FakeService, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # 模拟编排层未提供 get_evidence：共享信号证据应能从进程缓存解析
+    # 模拟编排层未提供 get_evidence：DecisionCard.evidence 快照里的证据应可解析
     monkeypatch.setattr(fake_service.orchestrator, "get_evidence", None)
+    api_state.reset_cache()
+    assert client.get("/api/decision").status_code == 200
+    for evidence_id, expected_kind in ((SIGNAL_EVIDENCE_ID, "signal"), (TOOL_EVIDENCE_ID, "tool")):
+        response = client.get(f"/api/evidence/{evidence_id}")
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["kind"] == expected_kind
+    signal_response = client.get(f"/api/evidence/{SIGNAL_EVIDENCE_ID}").json()
+    assert signal_response["title"] == "共享多模态融合风险信号"
+    assert signal_response["value"] == pytest.approx(0.47)
+
+
+def test_evidence_from_signal_fallback(fake_service: FakeService, client: TestClient) -> None:
+    # 即便编排层没有 get_evidence、决策卡 evidence 也为空，共享信号仍能包装成证据
+    fake_service.orchestrator.get_evidence = None  # type: ignore[assignment]
+    fake_service.orchestrator.run = _run_without_evidence(fake_service.orchestrator.run)  # type: ignore[assignment]
+    api_state.reset_cache()
     assert client.get("/api/decision").status_code == 200
     response = client.get(f"/api/evidence/{SIGNAL_EVIDENCE_ID}")
     assert response.status_code == 200
-    body = response.json()
-    assert body["kind"] == "signal"
-    assert body["title"] == "共享多模态融合风险信号"
-    assert body["value"] == pytest.approx(0.47)
+    assert response.json()["kind"] == "signal"
 
 
 def test_data_cards(client: TestClient) -> None:
@@ -589,8 +660,8 @@ def test_business_endpoints_503_when_core_not_ready(
     response = call(path, json=payload) if payload is not None else call(path)
     assert response.status_code == 503, response.text
     detail = response.json()["detail"]
-    assert "核心服务暂未就绪" in detail
-    assert "cbr." in detail  # 明确指出待实现模块
+    assert "核心服务" in detail
+    assert "cbr." in detail  # 明确指出待实现模块或装配错误来源
 
 
 def test_scenarios_still_available_when_core_not_ready(degraded_client: TestClient) -> None:
@@ -622,7 +693,7 @@ def test_orchestrator_bad_contract_returns_503(fake_service: FakeService, client
 def test_streamlit_dashboard_smoke(
     fake_service: FakeService, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """驾驶台在核心服务就绪时应能完整渲染（不抛异常）。"""
+    """驾驶台在核心服务就绪时应能完整渲染（不抛异常），且切换场景自动切换 as_of。"""
     pytest.importorskip("streamlit")
     from streamlit.testing.v1 import AppTest
 
@@ -631,6 +702,14 @@ def test_streamlit_dashboard_smoke(
     app_test = AppTest.from_file(str(ROOT / "app" / "dashboard.py"), default_timeout=60)
     app_test.run()
     assert not app_test.exception, [str(exc.value) for exc in app_test.exception]
+    # 默认场景（configs 顺序第一个）自动生成决策
+    assert fake_service.orchestrator.run_calls
+    assert fake_service.orchestrator.run_calls[-1]["as_of"] == dt.date(2020, 3, 16)
+    # 切换场景后自动重新生成，as_of 跟随场景日期
+    app_test.sidebar.selectbox[0].set_value("2024 日元套息交易逆转").run()
+    assert not app_test.exception, [str(exc.value) for exc in app_test.exception]
+    assert fake_service.orchestrator.run_calls[-1]["scenario"] == "yen_carry_2024"
+    assert fake_service.orchestrator.run_calls[-1]["as_of"] == AS_OF
 
 
 def test_streamlit_dashboard_degraded_smoke(monkeypatch: pytest.MonkeyPatch) -> None:

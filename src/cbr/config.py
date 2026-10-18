@@ -78,6 +78,11 @@ class OrchestrationSettings(BaseModel):
     modes: list[str] = Field(default_factory=lambda: ["single", "independent", "collaborative"])
     human_in_the_loop: bool = True
     trace_dir: str = "artifacts/traces"
+    # 协同成本折算（统一成本单位，用于 J = L + μ·C 与 P3 成本比较）
+    cost_per_tool_call: float = 0.001
+    cost_per_1k_tokens: float = 0.001
+    cost_per_latency_ms: float = 1.0e-5
+    coordination_weight_mu: float = 0.1
 
 
 class ServerSettings(BaseModel):
@@ -158,6 +163,30 @@ def load_role_specs(path: str = "configs/roles.yaml") -> dict[Role, RoleSpec]:
         role = Role(key)
         specs[role] = RoleSpec(role=role, **value)
     return specs
+
+
+class RoleRegistryImpl:
+    """contracts.RoleRegistry 的默认实现：角色规范字典的只读包装。"""
+
+    def __init__(
+        self,
+        specs: dict[Role, RoleSpec] | None = None,
+        path: str = "configs/roles.yaml",
+    ) -> None:
+        self._specs: dict[Role, RoleSpec] = dict(specs) if specs is not None else load_role_specs(path)
+
+    def get(self, role: Role | str) -> RoleSpec:
+        return self._specs[Role(role)]
+
+    def all(self) -> list[RoleSpec]:
+        return list(self._specs.values())
+
+    def __contains__(self, role: Role | str) -> bool:
+        return Role(role) in self._specs
+
+
+def load_role_registry(path: str = "configs/roles.yaml") -> RoleRegistryImpl:
+    return RoleRegistryImpl(load_role_specs(path))
 
 
 def load_scenarios(path: str = "configs/scenarios.yaml") -> list[Scenario]:

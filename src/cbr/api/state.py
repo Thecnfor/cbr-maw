@@ -225,15 +225,26 @@ def evidence_from_trace_events(
     return list(collected.values())
 
 
+def decision_evidence(card: Any) -> list[Evidence]:
+    """取出 DecisionCard 内嵌的黑板证据快照（schemas 中 ``DecisionCard.evidence``）。"""
+    decision = as_decision_card(card)
+    if decision is None:
+        return []
+    evidence_list = getattr(decision, "evidence", None) or []
+    return [item for item in evidence_list if isinstance(item, Evidence)]
+
+
 def remember_decision(card: Any) -> DecisionCard | None:
-    """登记一次决策运行：缓存 DecisionCard，并抽取共享信号证据。"""
+    """登记一次决策运行：缓存 DecisionCard 与黑板证据快照。"""
     decision = as_decision_card(card)
     if decision is None:
         return None
     if decision.run_id:
         _remember(_RUNS, str(decision.run_id), decision, _MAX_RUNS)
+    for evidence in decision_evidence(decision):
+        _remember(_EVIDENCE, evidence.evidence_id, evidence, _MAX_EVIDENCE)
     signal_evidence = evidence_from_signal(decision.signal)
-    if signal_evidence is not None:
+    if signal_evidence is not None and signal_evidence.evidence_id not in _EVIDENCE:
         _remember(_EVIDENCE, signal_evidence.evidence_id, signal_evidence, _MAX_EVIDENCE)
     return decision
 
@@ -258,6 +269,8 @@ def referenced_evidence_ids(card: Any) -> list[str]:
 
     if decision is None:
         return []
+    for evidence in decision_evidence(decision):
+        add(evidence.evidence_id)
     add(getattr(decision.signal, "evidence_id", None))
     cards = getattr(decision, "cards", None) or {}
     for risk_card in cards.values():
@@ -440,7 +453,7 @@ def find_trace(service: Any, run_id: str | None) -> list[TraceEvent] | None:
             except Exception:  # noqa: BLE001
                 result = None
             normalized = _normalize_trace(result, service)
-            if normalized is not None:
+            if normalized:  # 空列表视为「未找到」，继续尝试后续兜底
                 return normalized
 
     # 2) 编排层属性（dict 仓库 / list 集合）
@@ -451,7 +464,7 @@ def find_trace(service: Any, run_id: str | None) -> list[TraceEvent] | None:
             store = getattr(target, name, None)
             if isinstance(store, Mapping) and identifier in store:
                 normalized = _normalize_trace(store[identifier], service)
-                if normalized is not None:
+                if normalized:
                     return normalized
             elif isinstance(store, (list, tuple)) and store:
                 normalized = _normalize_trace(store, service)
@@ -611,10 +624,17 @@ def collect_evidence(service: Any, card: Any) -> tuple[list[Evidence], list[str]
     missing: "OrderedDict[str, None]" = OrderedDict()
 
     if decision is not None:
+        # 1) DecisionCard 内嵌的黑板证据快照（schemas.DecisionCard.evidence）
+        for evidence in decision_evidence(decision):
+            found.setdefault(evidence.evidence_id, evidence)
+        # 2) trace 中内嵌的证据
         trace_events = find_trace(service, decision.run_id) or []
         for evidence in evidence_from_trace_events(trace_events):
             found.setdefault(evidence.evidence_id, evidence)
+        # 3) 其余被引用但未内嵌的证据：走编排层接口 / artifacts
         for evidence_id in referenced_evidence_ids(decision):
+            if evidence_id in found:
+                continue
             evidence = find_evidence(service, evidence_id)
             if evidence is not None:
                 found.setdefault(evidence.evidence_id, evidence)
