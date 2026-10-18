@@ -1,11 +1,7 @@
-import { AnalysisProgress } from "@/components/common/analysis-progress";
-
 /** 与真实布局同尺寸的骨架屏：KPI 2fr/1fr/1fr + 主网格 3:2。 */
-export function DashboardSkeleton({ startedAt }: { startedAt: number | null }) {
+export function DashboardSkeleton() {
   return (
     <div className="mt-4 space-y-4" aria-busy="true">
-      {startedAt ? <AnalysisProgress active startedAt={startedAt} /> : null}
-
       <div className="grid gap-3 min-[1180px]:grid-cols-[2fr_1fr_1fr] min-[1180px]:grid-rows-[auto_auto]">
         <div className="skeleton h-[264px] rounded-card min-[1180px]:row-span-2" />
         <div className="skeleton h-[120px] rounded-card" />

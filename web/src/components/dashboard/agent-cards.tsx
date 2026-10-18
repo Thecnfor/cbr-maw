@@ -3,6 +3,7 @@ import {
   ChevronDown,
   FileText,
   Landmark,
+  MessageSquarePlus,
   ShieldCheck,
   TrendingUp,
   Users,
@@ -15,6 +16,8 @@ import { Meter } from "@/components/common/meter";
 import { Panel } from "@/components/common/panel";
 import { RiskBadge } from "@/components/common/risk-badge";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   fmtDuration,
   fmtMetricValue,
@@ -26,6 +29,7 @@ import {
   averageConfidence,
   claimStatusLabel,
   claimTypeLabel,
+  riskMeta,
   roleMeta,
   ROLE_ORDER,
 } from "@/lib/labels";
@@ -96,9 +100,11 @@ function ClaimRow({
 function AgentCardView({
   card,
   onOpenEvidence,
+  onAskAI,
 }: {
   card: RiskCard;
   onOpenEvidence: (id: string) => void;
+  onAskAI?: (prompt: string) => void;
 }) {
   const meta = roleMeta(card.role);
   const Icon = ROLE_ICONS[card.role] ?? Users;
@@ -119,7 +125,7 @@ function AgentCardView({
   const canExpandRecommendation = recommendation.length > 96;
 
   return (
-    <div className="rounded-lg border border-border bg-surface-2 p-3.5">
+    <div className="rounded-lg border border-border bg-surface-2 p-3.5 transition-colors duration-150 hover:border-foreground/20">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2">
           <span className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-surface-1 text-foreground">
@@ -135,9 +141,34 @@ function AgentCardView({
             ) : null}
           </div>
         </div>
-        <Badge variant="outline" className="text-tiny">
-          R{card.round ?? 0}
-        </Badge>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Badge variant="outline" className="text-tiny">
+            R{card.round ?? 0}
+          </Badge>
+          {onAskAI ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-1.5 text-tiny text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    onAskAI(
+                      `解释${meta.label}为什么给出「${riskMeta(card.risk_level).label}」判断，并列出关键证据。`,
+                    )
+                  }
+                  aria-label={`追问${meta.label}`}
+                >
+                  <MessageSquarePlus className="size-3" aria-hidden="true" />
+                  追问该主体
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                跳转对话并预填追问，携带当前 as_of / 场景 / 模式，保留会话
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
       </div>
 
       <p className="mt-2.5 text-body font-medium leading-snug text-foreground">
@@ -255,9 +286,11 @@ function AgentCardView({
 export function AgentCards({
   decision,
   onOpenEvidence,
+  onAskAI,
 }: {
   decision: DecisionCard;
   onOpenEvidence: (id: string) => void;
+  onAskAI?: (prompt: string) => void;
 }) {
   const cards = decision.cards ?? {};
   const orderedRoles = [
@@ -287,6 +320,7 @@ export function AgentCards({
             key={role}
             card={cards[role]}
             onOpenEvidence={onOpenEvidence}
+            onAskAI={onAskAI}
           />
         ))
       )}

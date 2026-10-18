@@ -149,3 +149,31 @@
 | LIM-09 | 4.2.3、4.5.4 | 真实 LLM 下终卡 `numeric_error_rate=0` / `unsupported_claim_rate=0` 是"自检回填 + 证据过滤后"的饱和值，不能解释为模型事实性 | 6.2/7.2 如实说明并用草稿级指标补充 | accepted |
 | LIM-10 | 4.5.2、4.5.3 | 12,000 token 记账预算低于真实 prompt（约 18k/次，18/18 次撞上限），报告 tokens 比实际少约 33% | 正式实验校准 `max_tokens_per_agent` 或外置 Schema，并在 5.2 说明预算口径 | accepted |
 | DOC-09 | 4.5.1、表 4-8 | React 前端与 `/ui` 托管、决策缓存写入正文；DOCX 需按 v0.6 重新生成 | 正文 v0.6 + DOCX 重生成 | in-progress（正文已改，DOCX 待重生成） |
+
+---
+
+## 9. v0.7 增量（AI-native 交互 / SSE 流式）
+
+### 9.1 新增集成事实（2026-10-18）
+
+- **SSE 流式端点**：`GET /api/decision/stream`、`POST /api/chat/stream`（`src/cbr/api/streaming.py`，独立 trace 目录 + 后台线程 tail + 心跳/超时/error 事件；缓存命中直接 `decision`）。真实 DeepSeek 验收：HTTP 200、`run=1 / trace=97 / stage=35 / decision=1`（14.5s）；缓存命中 0.01s 仅 `decision`；chat 流以 `chat` 收尾。
+- **前端 AI-native 升级**（`web/`）：流式运行 RunProgress（R0–R5 时间线 + 三主体状态 + 实时活动流 + 取消/回退）、⌘K 命令面板（导航/场景/模式/操作/AI 快捷问、`?cmd=1`）、对话流式阶段 + 打字机 + 上下文 chip + 追问建议、上下文 AI 动作（智能体卡/证据 Dialog/冲突行 → 对话预填）、协同过程 R0–R5 时间线、toast/tooltip/键盘/a11y/reduced-motion。SSE 不可用时自动回退同步端点并在 UI 明示。
+- **测试**：`249 passed`（206 基线 + 43 streaming）；`web` 构建 `tsc --noEmit && vite build` 通过（dist 约 1.01MB / 7 文件；首屏 gzip 168.65kB）。
+- **截图**：`artifacts/ui-ai/`（`sse_run_progress_light.png`、`final_dashboard_light/dark.png`、`final_palette_light/dark.png`、`sse_chat_done_light.png`、`coordination_timeline_light.png` 等）。
+- **契约与实现说明**：`docs/design/ai-native-interaction-spec.md`、`docs/design/streaming-api-notes.md`；前端 `web/DESIGN-NOTES.md` §15、`web/README.md`。
+
+### 9.2 新增 issue 行
+
+| ID | 位置（正文） | 内容 | 关闭判定 | 状态 |
+|----|--------------|------|----------|------|
+| INT-15 | 4.4.4、附录 A.2 | SSE 流式接口（decision/chat）与前端流式交互 | 端点 + 真实事件验收 + 43 测试 | **closed** |
+| INT-16 | 4.4.4、4.5.1 | AI-native 交互（RunProgress/⌘K/上下文追问/协同过程/打字机/动效/a11y） | 功能清单 + 截图 + 构建通过 | **closed** |
+| INT-14 | 4.4.4 | HITL 交互式审批面板（approve/reject/override 并写 trace）；当前 UI 只读展示 escalated | 面板可操作并写 trace | open |
+| LIM-11 | 4.4.4、4.5.1 | 流式每请求独立编排器 + daemon 线程，无并发上限；300s 超时只保护 SSE 连接、不取消 worker；`artifacts/traces/stream-*` 按 `CBR_STREAM_TRACE_RETENTION`（默认 50）清理 | 在 5.2/6.4/7.2 说明资源与成本边界；正式部署加上限/队列 | accepted |
+| DOC-10 | 4.5.1、附录 A.2 | 正文 v0.7 已补 SSE 端点与 AI-native 前端；DOCX 按 v0.7 重生成 | 正文 v0.7 + DOCX | **closed**（DOCX 随提交重生成） |
+
+### 9.3 关闭记录追加
+
+| 日期 | ID | 变更说明 | commit/产物 |
+|------|----|----------|-------------|
+| 2026-10-18 | INT-15/INT-16/DOC-10、LIM-11 | AI-native 交互 + SSE 流式；正文 v0.7；249 项测试；web dist 与截图 | `src/cbr/api/streaming.py`、`web/`、`docs/design/*`、`artifacts/ui-ai/` |

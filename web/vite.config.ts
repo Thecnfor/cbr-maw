@@ -28,6 +28,15 @@ export default defineConfig(({ command }) => ({
         target: "http://127.0.0.1:8000",
         changeOrigin: true,
       },
+      // 命令面板「打开 API 文档」在开发/预览下也走同源代理
+      "/docs": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/openapi.json": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
     },
   },
   preview: {
@@ -36,6 +45,14 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
     proxy: {
       "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/docs": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/openapi.json": {
         target: "http://127.0.0.1:8000",
         changeOrigin: true,
       },

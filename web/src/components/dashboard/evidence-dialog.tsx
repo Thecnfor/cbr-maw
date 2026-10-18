@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, FileText } from "lucide-react";
+import { CheckCircle2, ExternalLink, FileText, Sparkles } from "lucide-react";
 
 import { DetailRow } from "@/components/common/detail-row";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -175,10 +176,16 @@ interface EvidenceDialogProps {
   evidenceId: string | null;
   evidenceList: Evidence[];
   onOpenChange: (open: boolean) => void;
+  onAskAI?: (prompt: string) => void;
 }
 
 /** 证据 Dialog：优先使用决策卡黑板快照；缺失时回退 GET /api/evidence/{id}。 */
-export function EvidenceDialog({ evidenceId, evidenceList, onOpenChange }: EvidenceDialogProps) {
+export function EvidenceDialog({
+  evidenceId,
+  evidenceList,
+  onOpenChange,
+  onAskAI,
+}: EvidenceDialogProps) {
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -262,7 +269,30 @@ export function EvidenceDialog({ evidenceId, evidenceList, onOpenChange }: Evide
               }
             />
           ) : evidence ? (
-            <EvidenceBody evidence={evidence} />
+            <>
+              <EvidenceBody evidence={evidence} />
+              {onAskAI ? (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                  <span className="text-caption text-muted-foreground">
+                    让 AI 结合当前 as_of / 场景继续解释这条证据
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const title = evidence.title || evidence.evidence_id;
+                      onOpenChange(false);
+                      onAskAI(
+                        `请解释证据「${title}」的含义、来源可靠性与它对当前判断的影响。`,
+                      );
+                    }}
+                  >
+                    <Sparkles aria-hidden="true" />
+                    让 AI 解释这条证据
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : (
             <EmptyState
               title="没有可展示的证据"

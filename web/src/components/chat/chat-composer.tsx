@@ -6,11 +6,12 @@ import { cn } from "@/lib/utils";
 
 interface ChatComposerProps {
   sending: boolean;
+  prefill?: { value: string; nonce: number } | null;
   onSend: (text: string) => void;
   onStop: () => void;
 }
 
-export function ChatComposer({ sending, onSend, onStop }: ChatComposerProps) {
+export function ChatComposer({ sending, prefill, onSend, onStop }: ChatComposerProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -20,6 +21,19 @@ export function ChatComposer({ sending, onSend, onStop }: ChatComposerProps) {
     element.style.height = "auto";
     element.style.height = `${Math.min(element.scrollHeight, 112)}px`;
   }, [value]);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setValue(prefill.value);
+    const element = textareaRef.current;
+    if (!element) return;
+    const end = prefill.value.length;
+    window.requestAnimationFrame(() => {
+      element.focus();
+      element.setSelectionRange(end, end);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill?.nonce]);
 
   const submit = () => {
     const text = value.trim();

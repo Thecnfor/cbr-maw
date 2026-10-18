@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChatProvider } from "@/lib/chat-context";
 import { RunProvider } from "@/lib/run-context";
 import { ThemeProvider } from "@/lib/theme";
+import { ToastProvider } from "@/lib/toast";
 import "@/styles/index.css";
 
 const rootElement = document.getElementById("root");
@@ -19,7 +20,9 @@ createRoot(rootElement).render(
       <RunProvider>
         <ChatProvider>
           <TooltipProvider delayDuration={200}>
-            <App />
+            <ToastProvider>
+              <App />
+            </ToastProvider>
           </TooltipProvider>
         </ChatProvider>
       </RunProvider>

@@ -1,9 +1,10 @@
-import { AlertTriangle, Scale } from "lucide-react";
+import { AlertTriangle, MessageSquarePlus, Scale } from "lucide-react";
 
 import { Callout } from "@/components/common/callout";
 import { MicroLabel } from "@/components/common/detail-row";
 import { Stat } from "@/components/common/stat";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   conflictTypeLabel,
   resolvedByLabel,
@@ -31,7 +32,13 @@ function severityVariant(severity: string | undefined): "destructive" | "warning
   return "muted";
 }
 
-export function ConflictsPanel({ conflicts }: { conflicts: Conflict[] }) {
+export function ConflictsPanel({
+  conflicts,
+  onAskAI,
+}: {
+  conflicts: Conflict[];
+  onAskAI?: (prompt: string) => void;
+}) {
   const resolved = conflicts.filter((conflict) => conflict.resolved);
   const unresolved = conflicts.length - resolved.length;
 
@@ -72,7 +79,7 @@ export function ConflictsPanel({ conflicts }: { conflicts: Conflict[] }) {
           {ordered.map((conflict) => (
             <li
               key={conflict.conflict_id}
-              className="rounded-lg border border-border bg-surface-2 p-3"
+              className="rounded-lg border border-border bg-surface-2 p-3 transition-colors duration-150 hover:border-foreground/20"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex min-w-0 items-start gap-1.5">
@@ -134,6 +141,24 @@ export function ConflictsPanel({ conflicts }: { conflicts: Conflict[] }) {
                   该冲突可能升级至人工介入（HITL）；在人工裁定前不应作为已确认结论使用。
                 </Callout>
               )}
+
+              {onAskAI ? (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-1.5 text-tiny text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      onAskAI(
+                        `请协调者复核分歧「${conflict.subject || conflict.conflict_id}」：双方主张分别是什么，当前解决状态如何，还需要哪些证据才能收敛？`,
+                      )
+                    }
+                  >
+                    <MessageSquarePlus className="size-3" aria-hidden="true" />
+                    请协调者复核该分歧
+                  </Button>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -9,7 +9,9 @@
 - ``GET  /api/health``                服务/LLM/数据源/核心模块就绪状态（永远 200）
 - ``GET  /api/scenarios``             历史压力情景列表
 - ``GET  /api/decision``              生成一次多智能体预警决策（DecisionCard）
+- ``GET  /api/decision/stream``       同上，SSE 流式推送 run/stage/trace/decision（见 streaming.py）
 - ``POST /api/chat``                  自然语言对话（ChatRequest -> ChatResponse）
+- ``POST /api/chat/stream``           同上，SSE 流式推送 run/stage/trace/chat
 - ``GET  /api/evidence/{evidence_id}`` 证据详情
 - ``GET  /api/data-cards``            数据卡（序列口径/时点可得性）
 - ``GET  /api/trace/{run_id}``        审计轨迹事件列表
@@ -35,6 +37,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from cbr.api import readiness, state
+from cbr.api.streaming import router as streaming_router
 from cbr.schemas import (
     ChatRequest,
     ChatResponse,
@@ -222,7 +225,9 @@ def index() -> Any:
             "GET /api/health",
             "GET /api/scenarios",
             "GET /api/decision?as_of=YYYY-MM-DD&scenario=&mode=collaborative|independent|single",
+            "GET /api/decision/stream?as_of=YYYY-MM-DD&scenario=&mode=collaborative|independent|single",
             "POST /api/chat",
+            "POST /api/chat/stream",
             "GET /api/evidence/{evidence_id}",
             "GET /api/data-cards",
             "GET /api/trace/{run_id}",
@@ -427,6 +432,13 @@ def get_trace(run_id: str) -> list[TraceEvent]:
             ),
         )
     return events
+
+
+# --------------------------------------------------------------------------- #
+# 流式端点（SSE）：独立 trace 目录 + 后台线程 tail，实现见 cbr/api/streaming.py
+# 保持现有同步端点不变；此处一次性挂载，避免重写既有路由。
+# --------------------------------------------------------------------------- #
+app.include_router(streaming_router)
 
 
 # --------------------------------------------------------------------------- #

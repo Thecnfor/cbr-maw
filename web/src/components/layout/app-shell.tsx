@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 
+import { CommandPalette } from "@/components/command/command-palette";
 import { SidebarContent } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import {
@@ -17,6 +18,7 @@ interface AppShellProps {
 
 export function AppShell({ page, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const route = useRoute();
 
   // 页面切换（驾驶台 ↔ 对话）时回到内容顶部，避免沿用上一页滚动位置
@@ -41,7 +43,11 @@ export function AppShell({ page, children }: AppShellProps) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <Topbar page={page} onOpenSidebar={() => setMobileOpen(true)} />
+        <Topbar
+          page={page}
+          onOpenSidebar={() => setMobileOpen(true)}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
         <main
           id="main-content"
           tabIndex={-1}
@@ -60,6 +66,8 @@ export function AppShell({ page, children }: AppShellProps) {
           <SidebarContent onNavigate={() => setMobileOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
 }

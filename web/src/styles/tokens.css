@@ -488,6 +488,24 @@
   .animate-dialog {
     animation: cbr-dialog var(--dur-fast) var(--ease-out) both;
   }
+
+  /* 顶部 2px 运行进度条：不确定进度，只动 transform */
+  .animate-run-progress {
+    animation: cbr-run-progress 1.15s var(--ease-out) infinite;
+  }
+
+  /* Tabs 切换淡入（不改变高度，高度由面板固定布局承载） */
+  .animate-tab-in {
+    animation: cbr-tab-in var(--dur-fast) var(--ease-out) both;
+  }
+
+  /* 对话流式打字机光标：只动 opacity */
+  .typewriter-caret::after {
+    content: "▍";
+    margin-left: 1px;
+    color: var(--muted-foreground);
+    animation: cbr-caret 1s steps(1, end) infinite;
+  }
 }
 
 @keyframes cbr-rise {
@@ -528,6 +546,37 @@
   to {
     opacity: 1;
     scale: 1;
+  }
+}
+
+@keyframes cbr-run-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+
+@keyframes cbr-tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cbr-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
   }
 }
 

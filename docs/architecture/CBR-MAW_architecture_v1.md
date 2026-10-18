@@ -25,7 +25,7 @@
 | 智能体 | 监管 / 投资 / 融资三角色 + 单智能体基线 + 协调者/核验器逻辑 |
 | 协同 | R0 独立分析 → R1 证据共享 → R2 交叉验证 → R3 分歧识别 → R4 冲突协调 → R5 决策卡；三模式（single / independent / collaborative）同一代码路径 |
 | 核验 | 数值核验、引文核验、时点泄漏、越权阻断、schema、无依据断言六类；审计 trace 落盘 |
-| 交互 | **React 19 + Vite + Tailwind v4 驾驶台**（shadcn/ui 组件规范 + Linear 级信息密度，light/dark 双主题，FastAPI `/ui` 静态托管）+ 对话页；Streamlit 保留为回退 UI；FastAPI 8 个端点 + 30 分钟决策缓存 |
+| 交互 | **React 19 + Vite + Tailwind v4 AI-native 驾驶台 + 对话**（shadcn/ui 规范 + Linear 级密度，light/dark，FastAPI `/ui` 托管；SSE 流式运行/对话、⌘K 命令面板、上下文 AI 追问、协同过程时间线）；Streamlit 保留为回退 UI；FastAPI 同步端点 + SSE 端点 + 30 分钟决策缓存 |
 | 测试 | 全量 pytest（含 6 项真实装配端到端集成）通过（详见 §7） |
 | 实验 | P1 模态消融、P2 工具/知识增强消融、P3 三模式对照的试点运行可复现 |
 
@@ -82,8 +82,8 @@
 | L5 黑板/冲突/HITL | `blackboard.py` / `conflict.py` / `hitl.py` | Evidence 去重；冲突三分类（fact/directional/preference）；仲裁规则可配置；HITL 队列支持 approve/reject/override 并写 trace；无人工时自动升级标记 |
 | 横切 A 核验 | `cbr.verification.verify(...)`；`TraceWriter` | 六类核验 + 比率（`numeric_error_rate`、`evidence_accuracy`、`unsupported_claim_rate`、`permission_violations`、`leakage_events`、`schema_errors`）；trace `artifacts/traces/<run_id>.jsonl` + `<run_id>.decision.json`，run_id=`{mode}_{as_of}_{uuid8}` |
 | 横切 B 评估 | `cbr.eval.metrics` / `backtest.py`；`scripts/run_experiment.py` | 指标（PR-AUC/ROC-AUC/Recall@10%/Brier/ECE/提前期）+ bootstrap CI + 配对自助法检验；滚动回测；三实验 kind（p1/p2/p3）产 `artifacts/runs/<run_id>/`（json+md） |
-| L6 API | `src/cbr/api/main.py` | `/api/health`、`/api/scenarios`、`/api/decision`（30 分钟缓存，`refresh=true` 强制重算）、`/api/chat`、`/api/evidence/{id}`、`/api/data-cards`、`/api/trace/{run_id}`、`/`；`/ui` 静态托管 React 构建产物；未就绪 503 中文、参数 422 中文、兜底结构化 500 |
-| L6 UI（主） | `web/`（React 19 + Vite + Tailwind v4；tokens 派生自 Xra-space `packages/ui`，规范参考 `Thecnfor/design-stack` shadcn-conventions 与 cross-dashboard `DESIGN.md`） | 248px 侧栏（场景/系统状态）+ 52px 顶栏（as_of/场景/三模式/重新生成/主题）+ 页面头；KPI 区（2fr 1fr 1fr）+ 3:2 主网格（信号图/驱动归因/模态贡献/三智能体卡片 ↔ 证据黑板/分歧协调/核验审计/数据卡/导出）+ 对话页；light/dark 双主题、skeleton/空/错状态、键盘焦点与 reduced-motion 降级 |
+| L6 API | `src/cbr/api/main.py` + `streaming.py` | 同步：`/api/health`、`/api/scenarios`、`/api/decision`（30 分钟缓存，`refresh=true` 强制重算）、`/api/chat`、`/api/evidence/{id}`、`/api/data-cards`、`/api/trace/{run_id}`；SSE：`/api/decision/stream`、`/api/chat/stream`（`run/stage/trace/decision|chat/error` + 心跳，独立 trace 目录 tail 真实 trace）；`/ui` 静态托管 React 构建产物；未就绪 503/SSE error 中文 |
+| L6 UI（主） | `web/`（React 19 + Vite + Tailwind v4；tokens 派生自 Xra-space `packages/ui`，规范参考 `Thecnfor/design-stack` shadcn-conventions 与 cross-dashboard `DESIGN.md`） | 248px 侧栏（场景/系统状态）+ 52px 顶栏（as_of/场景/三模式/重新生成/主题/⌘K）+ 页面头；SSE **RunProgress**（R0–R5 时间线 + 三主体状态 + 实时活动流 + 取消）、KPI 区（2fr 1fr 1fr）、3:2 主网格（信号图/驱动归因/模态贡献/三智能体卡 ↔ 证据黑板/分歧协调/核验-协同过程/数据卡/导出）、上下文 AI 追问（智能体卡/证据/冲突 → 对话预填）、流式对话（阶段 + 打字机 + 追问建议）、双主题与 reduced-motion |
 | L6 UI（回退） | `app/dashboard.py` + `app/chat.py` + `app/components.py` | Streamlit 驾驶台（6 页签 + 对话页），保留原信息架构用于兼容与对照 |
 
 ---
@@ -171,9 +171,10 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 | 真实 DeepSeek 复跑 | P2（3 日 × full/no_tools）+ P3（4 日 × 三模式）= 18 次运行 / 54 次 LLM 调用全部成功；0 错误/超时/Schema 失败；实际 API tokens 323,431、费用约 ¥0.70；详见 [pilot_results_real_llm.md](../techdoc/pilot_results_real_llm.md) |
 | 自建数据接入 | `data.dataset=custom` 时 provider 自动并入 `data/custom`（CSV/Parquet），缺失序列回退 SYNTHETIC；实测数据卡标记 `user-provided`、风险信号与历史序列接口可用（`tests/test_custom_data.py`） |
 | 数据快照 | `dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`；PIT 41,367 观测 / 2,207 文档 / 27 序列元数据；provider 走 `PitStoreDataProvider` |
-| API 端到端 | `/api/decision` 200（3 卡/20 证据/4 冲突全解决/核验通过/成本 0.0424，PIT 快路径约 1.4s）、`/api/chat` 200（10 引用）、health/scenarios/evidence/data-cards/trace 均 200 |
+| API 端到端 | `/api/decision` 200（3 卡/20 证据/冲突全解决/核验通过）、`/api/chat` 200（10 引用）、health/scenarios/evidence/data-cards/trace 均 200 |
 | Streamlit（回退） | AppTest 无异常（5.8s）；6 页签 + 对话页；真实数据渲染 5 个 Plotly 图 |
-| React 驾驶台（主 UI） | Vite 构建产物由 FastAPI `/ui` 托管（`/` 307 → `/ui/`）；light/dark 双主题、证据 Dialog、对话页、导出；截图见 `artifacts/ui/` |
+| React 驾驶台（主 UI） | Vite 构建产物由 FastAPI `/ui` 托管（`/` 307 → `/ui/`）；light/dark 双主题、证据 Dialog、对话页、导出；AI-native 交互升级（SSE RunProgress/⌘K 命令面板/上下文追问/协同过程/打字机）；截图见 `artifacts/ui-ai/` |
+| SSE 流式（真实 DeepSeek） | `/api/decision/stream`：HTTP 200 `text/event-stream`；`run=1 / trace=97 / stage=35 / decision=1`，首个 trace 与最终决策均在真实运行中即时推送（本次 14.5s）；`/api/chat/stream` 以 `chat` 收尾；缓存命中 0.01s 仅 `decision`；`: ping` 心跳 10s；254 项 pytest 全绿（含 43 项 streaming 测试） |
 | 三模式预算 | single 12,000 / independent 11,799 / collaborative 11,801 tokens（6 个评估日均值），接近对齐 |
 | 协同机制 | collaborative 平均 4.0 个冲突、全部解决；single/independent 无共享冲突（机制对照成立） |
 | P1 试点（240 个交易日） | PR-AUC：数值-only 0.478/0.428/0.351，融合 0.504/0.451/0.354（h=5/10/20）；Δ = +0.026/+0.023/+0.003，p=0.112/0.088/0.653（**方向为正但不显著**）；Recall@10% 0.429/0.333/0.143；详见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md) |
@@ -191,7 +192,7 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 3. **核验 `passed` 口径**：`VerificationReport.passed` 仅由 numeric/permission/leakage/schema 派生；citation/unsupported 以 `evidence_accuracy`/`unsupported_claim_rate` 单独度量（不改共享 schema）。
 4. **成本**：v0 仅提"成本度量"；实现给出 `cost_per_tool_call / cost_per_1k_tokens / cost_per_latency_ms / coordination_weight_mu` 配置与 `CoordinationStats.cost_usd` 折算。
 5. **标签**：v0 写"滚动分位阈值"；实现主分析采用训练期冻结阈值（`threshold_mode=frozen`），滚动分位作为稳健性设定。
-6. **UI**：v0 计划"Streamlit 首发、API 分离"；实现 Streamlit 驾驶台 + 对话页 + FastAPI，UI 直接消费 `Service` 单例，API 供外部集成。
+6. **UI**：v0 计划"Streamlit 首发、API 分离"；实现为 React 19 AI-native 驾驶台（SSE 流式/命令面板/上下文追问/协同过程）+ FastAPI `/ui` 托管，Streamlit 保留回退；同步端点与 SSE 端点并存，决策结果 30 分钟缓存。
 
 ---
 
@@ -203,10 +204,4 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 1. 接入用户自建数据集（`data/custom` + `configs/data_mapping.yaml`）并重建 PIT 快照；
 2. 按真实 LLM 试验报告建议增加**草稿级幻觉指标**（回填前数值差异、被拒 claim 比例）与**证据门槛版任务完成率**，并校准 token 预算（`max_tokens_per_agent` 或外置 Schema）；
 3. 跑全窗口 P1（2021–2025）与 E0–E12 消融矩阵，产出论文 5.x/6.x 结果表；
-4. 用 React 驾驶台完成 light/dark 视觉验收与录屏材料（如需要）。
-
-**下一步（按优先级）**：
-1. 接入用户自建数据集（`data/custom` + `configs/data_mapping.yaml`）并重建 PIT 快照；
-2. 配置 DeepSeek key，复跑 P2/P3（真实幻觉风险下的数值/无依据指标）；
-3. 跑全窗口 P1（2021–2025）与 E0–E12 消融矩阵，产出论文 5.x/6.x 结果表；
-4. 补齐 DOCX 正式文档导出与演示材料（如需要）。
+4. HITL 交互式审批面板（approve/reject/override 写 trace）与流式并发上限/成本护栏；如需录屏材料，使用 `web/README.md` 的验收路径与 `artifacts/ui-ai/` 截图。

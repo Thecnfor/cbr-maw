@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { ListTree } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ListTree, Rows3 } from "lucide-react";
 
-import { DetailRow, MicroLabel } from "@/components/common/detail-row";
+import { MicroLabel } from "@/components/common/detail-row";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityItem } from "@/components/dashboard/activity-item";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -13,24 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
+import { groupTraceEvents } from "@/lib/coordination";
 import { summarizeTrace } from "@/lib/decision-utils";
-import { fmtClock, fmtDuration, fmtTokens } from "@/lib/format";
-import { actionLabel, roleMeta } from "@/lib/labels";
+import { fmtDuration, fmtTokens } from "@/lib/format";
+import { actionLabel } from "@/lib/labels";
 import type { TraceResource } from "@/lib/resources";
 import type { TraceEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-function roleShort(role: string | null | undefined): string {
-  return roleMeta(role).label.replace("主体", "").replace("者", "");
-}
-
-function actionDotClass(action: string | undefined): string {
-  if (action === "verify" || action === "finalize") return "bg-success";
-  if (action === "conflict" || action === "hitl") return "bg-warning";
-  if (action === "agent_error" || action === "budget_exceeded") return "bg-destructive";
-  return "bg-terminal-muted";
-}
 
 function SummaryCell({ label, value }: { label: string; value: string }) {
   return (
@@ -41,15 +33,26 @@ function SummaryCell({ label, value }: { label: string; value: string }) {
   );
 }
 
+function eventKey(event: TraceEvent, index: number): string {
+  return `${event.ts}-${event.step ?? ""}-${index}`;
+}
+
 interface TracePanelProps {
   runId: string | null | undefined;
   traceRef?: string | null;
   trace: TraceResource;
 }
 
+/**
+ * 「协同过程」时间线（P1）：把审计 trace 按 R0–R5 分组，
+ * 组头给出事件数 / 工具调用 / 耗时 / tokens，组内复用运行中活动流组件，
+ * 点击任一事件可展开完整原始 JSON。
+ */
 export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
   const [filterAction, setFilterAction] = useState("all");
-  const [selected, setSelected] = useState<TraceEvent | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const initializedRef = useRef<string | null>(null);
 
   const summary = summarizeTrace(trace.events);
   const actionCounts = new Map<string, number>();
@@ -58,18 +61,47 @@ export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
     actionCounts.set(key, (actionCounts.get(key) ?? 0) + 1);
   }
   const actionOptions = [...actionCounts.entries()].sort((left, right) => right[1] - left[1]);
-  const filtered =
-    filterAction === "all"
-      ? trace.events
-      : trace.events.filter((event) => (event.action || "other") === filterAction);
+
+  const filtered = useMemo(
+    () =>
+      filterAction === "all"
+        ? trace.events
+        : trace.events.filter((event) => (event.action || "other") === filterAction),
+    [filterAction, trace.events],
+  );
+  const groups = useMemo(() => groupTraceEvents(filtered), [filtered]);
+  const visibleGroups = groups.filter(
+    (group) => group.bucket !== "other" || group.events.length > 0,
+  );
+
+  useEffect(() => {
+    const key = runId ?? "none";
+    if (initializedRef.current === key) return;
+    initializedRef.current = key;
+    const first = groupTraceEvents(trace.events).find((group) => group.events.length > 0);
+    setExpandedGroups(new Set(first ? [first.bucket] : []));
+    setExpandedEvent(null);
+  }, [runId, trace.events]);
+
+  const toggleGroup = (bucket: string) => {
+    setExpandedGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(bucket)) next.delete(bucket);
+      else next.add(bucket);
+      return next;
+    });
+  };
 
   return (
     <div className="border-t border-border pt-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <ListTree className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <MicroLabel>审计轨迹 trace</MicroLabel>
-          <span className="metric-value truncate text-tiny text-muted-foreground" title={runId ?? undefined}>
+          <MicroLabel>协同过程</MicroLabel>
+          <span
+            className="metric-value truncate text-tiny text-muted-foreground"
+            title={runId ?? undefined}
+          >
             {runId || "—"}
           </span>
         </div>
@@ -78,10 +110,10 @@ export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
             value={filterAction}
             onValueChange={(value) => {
               setFilterAction(value);
-              setSelected(null);
+              setExpandedEvent(null);
             }}
           >
-            <SelectTrigger className="w-[132px]" aria-label="按动作类型过滤审计轨迹">
+            <SelectTrigger className="w-[150px]" aria-label="按动作类型过滤协同过程">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -97,18 +129,18 @@ export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
       </div>
 
       {trace.loading ? (
-        <div className="mt-2 space-y-1.5" aria-busy="true" aria-label="审计轨迹加载中">
+        <div className="mt-2 space-y-1.5" aria-busy="true" aria-label="协同过程加载中">
           <div className="grid grid-cols-2 gap-2">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-11" />
             ))}
           </div>
-          <Skeleton className="h-[220px] rounded-lg" />
+          <Skeleton className="h-[240px] rounded-lg" />
         </div>
       ) : trace.error ? (
         <ErrorState
           className="mt-2"
-          title="审计轨迹读取失败"
+          title="协同过程读取失败"
           message={errorMessage(trace.error)}
           hint={
             runId
@@ -120,7 +152,7 @@ export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
       ) : trace.events.length === 0 ? (
         <EmptyState
           className="mt-2"
-          title="本次运行未获取到审计轨迹"
+          title="本次运行未获取到协同过程"
           description={
             traceRef
               ? `决策卡 trace_ref：${traceRef}。若服务端未暴露轨迹文件，核验结果仍然有效。`
@@ -136,99 +168,106 @@ export function TracePanel({ runId, traceRef, trace }: TracePanelProps) {
             <SummaryCell label="累计 tokens" value={fmtTokens(summary.tokens)} />
           </div>
 
-          <ScrollArea className="terminal mt-2 h-[300px]">
-            <div className="p-2">
-              <ul className="space-y-0.5">
-                {filtered.map((event, index) => {
-                  const key = `${event.ts}-${event.step ?? ""}-${index}`;
-                  const active = selected === event;
-                  return (
-                    <li key={key}>
-                      <button
-                        type="button"
-                        onClick={() => setSelected(active ? null : event)}
-                        aria-pressed={active}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-tiny text-muted-foreground">
+              <Rows3 className="size-3.5" aria-hidden="true" />
+              R0–R5 分组时间线
+            </span>
+            <span className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setExpandedGroups(new Set(visibleGroups.map((group) => group.bucket)))
+                }
+                className="text-tiny text-muted-foreground underline-offset-2 transition-colors duration-150 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                展开全部
+              </button>
+              <span className="text-tiny text-muted-foreground" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpandedGroups(new Set())}
+                className="text-tiny text-muted-foreground underline-offset-2 transition-colors duration-150 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                收起全部
+              </button>
+            </span>
+          </div>
+
+          <ScrollArea className="mt-1.5 h-[340px] rounded-lg border border-border bg-surface-1">
+            <ul>
+              {visibleGroups.map((group) => {
+                const expanded = expandedGroups.has(group.bucket);
+                return (
+                  <li key={group.bucket} className="border-b border-border last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.bucket)}
+                      aria-expanded={expanded}
+                      className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-2 text-left transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    >
+                      <ChevronDown
                         className={cn(
-                          "flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-mono text-caption transition-colors duration-150 hover:bg-terminal-fg/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-fg/60",
-                          active && "bg-terminal-fg/10",
+                          "size-3.5 shrink-0 text-muted-foreground transition-transform duration-150",
+                          expanded && "rotate-180",
                         )}
-                      >
-                        <span className="terminal-muted w-[52px] shrink-0">
-                          {fmtClock(event.ts)}
-                        </span>
-                        <span className="terminal-muted w-[26px] shrink-0 truncate">
-                          {event.step || "—"}
-                        </span>
-                        <span className="terminal-muted w-[26px] shrink-0 truncate">
-                          {roleShort(event.role)}
-                        </span>
-                        <span className="flex w-[78px] shrink-0 items-center gap-1.5 truncate text-terminal-fg/85">
-                          <span
-                            className={cn("size-1.5 shrink-0 rounded-full", actionDotClass(event.action))}
-                            aria-hidden="true"
-                          />
-                          <span className="truncate">{actionLabel(event.action)}</span>
-                        </span>
-                        <span className="terminal-muted min-w-0 flex-1 truncate">
-                          {event.tool || ""}
-                        </span>
-                        <span className="terminal-muted shrink-0 text-right">
-                          {event.latency_ms ? `${event.latency_ms}ms` : ""}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {filtered.length === 0 ? (
-                <p className="terminal-muted p-2 text-caption">当前动作过滤下没有事件。</p>
-              ) : null}
-            </div>
+                        aria-hidden="true"
+                      />
+                      <span className="metric-value text-tiny text-muted-foreground">
+                        {group.code}
+                      </span>
+                      <span className="text-caption font-medium text-foreground">
+                        {group.title}
+                      </span>
+                      <span className="text-tiny text-muted-foreground">
+                        {group.events.length
+                          ? `工具 ${group.toolCalls} · 跨度 ${fmtDuration(group.spanMs)} · ${fmtTokens(group.tokens)} tokens`
+                          : "无事件"}
+                      </span>
+                      <Badge variant="outline" className="ml-auto text-tiny">
+                        {group.events.length}
+                      </Badge>
+                    </button>
+
+                    {expanded ? (
+                      <div className="px-1.5 pb-2">
+                        {group.events.length ? (
+                          <ul className="space-y-0.5">
+                            {group.events.map((event, index) => {
+                              const key = eventKey(event, index);
+                              return (
+                                <ActivityItem
+                                  key={key}
+                                  event={event}
+                                  variant="row"
+                                  expanded={expandedEvent === key}
+                                  onToggle={() =>
+                                    setExpandedEvent((current) =>
+                                      current === key ? null : key,
+                                    )
+                                  }
+                                />
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="px-1.5 pb-1 text-tiny text-muted-foreground">
+                            当前过滤条件下该阶段没有事件。
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
           </ScrollArea>
 
-          {selected ? (
-            <div className="mt-2 rounded-lg border border-border bg-surface-2 p-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <MicroLabel>事件详情</MicroLabel>
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="text-caption text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  关闭
-                </button>
-              </div>
-              <dl className="mt-1">
-                <DetailRow label="动作" mono>
-                  {actionLabel(selected.action)}
-                </DetailRow>
-                <DetailRow label="步骤 / 角色" mono>
-                  {selected.step || "—"} · {roleMeta(selected.role).label}
-                </DetailRow>
-                <DetailRow label="工具" mono>
-                  {selected.tool || "—"}
-                </DetailRow>
-                <DetailRow label="args_hash" mono>
-                  {selected.args_hash || "—"}
-                </DetailRow>
-                <DetailRow label="result_hash" mono>
-                  {selected.result_hash || "—"}
-                </DetailRow>
-                <DetailRow label="耗时 / tokens" mono>
-                  {selected.latency_ms ?? 0} ms · {selected.tokens ?? 0}
-                </DetailRow>
-              </dl>
-              {selected.detail && Object.keys(selected.detail).length ? (
-                <pre className="scrollbar-thin terminal mt-1.5 max-h-48 overflow-auto p-2 font-mono text-caption leading-relaxed">
-                  {JSON.stringify(selected.detail, null, 2)}
-                </pre>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-1.5 text-caption text-muted-foreground">
-              点击任一日志行查看 args_hash / result_hash / detail。
-            </p>
-          )}
+          <p className="mt-1.5 text-caption text-muted-foreground">
+            点击阶段展开事件；点击事件查看完整原始 JSON（args_hash / result_hash / detail）。
+          </p>
         </>
       )}
     </div>

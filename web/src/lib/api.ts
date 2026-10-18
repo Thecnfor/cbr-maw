@@ -180,6 +180,15 @@ export async function getTrace(runId: string, signal?: AbortSignal): Promise<Tra
 const traceCache = new Map<string, TraceEvent[]>();
 const traceInflight = new Map<string, Promise<TraceEvent[]>>();
 
+/**
+ * 把流式运行期间收到的 trace 事件直接写入缓存：
+ * 决策完成后「核验与协同过程」可立即渲染，无需再等一次 GET /api/trace/{run_id}。
+ */
+export function primeTraceCache(runId: string, events: TraceEvent[]): void {
+  if (!runId || !events.length) return;
+  traceCache.set(runId, events);
+}
+
 export function loadTrace(runId: string, force = false): Promise<TraceEvent[]> {
   if (!runId) return Promise.resolve([]);
   if (!force) {

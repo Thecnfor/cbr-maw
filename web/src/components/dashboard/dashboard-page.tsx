@@ -1,11 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { AnalysisProgress } from "@/components/common/analysis-progress";
 import { Callout } from "@/components/common/callout";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { RiskBadge } from "@/components/common/risk-badge";
+import { TopProgress } from "@/components/common/top-progress";
 import { AgentCards } from "@/components/dashboard/agent-cards";
 import { DriversPanel, ModalityPanel } from "@/components/dashboard/attribution";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
@@ -16,19 +16,23 @@ import {
   RightPanel,
   type DashboardTab,
 } from "@/components/dashboard/right-panel";
+import { RunProgress } from "@/components/dashboard/run-progress";
 import { RunControls } from "@/components/layout/run-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { queuePrompt } from "@/lib/ai-actions";
 import { errorMessage } from "@/lib/api";
 import { collectMissingEvidenceIds } from "@/lib/decision-utils";
 import { useDecision } from "@/lib/decision";
 import { fmtClock, fmtDateTime, truncateMiddle } from "@/lib/format";
 import { modeMeta } from "@/lib/labels";
+import { fmtElapsed } from "@/lib/motion";
 import { subscribeRefreshRequest } from "@/lib/refresh-bus";
 import { useDataCardsResource, useTraceResource } from "@/lib/resources";
 import { navigate, paramsToRecord, useRoute } from "@/lib/router";
 import { useRun } from "@/lib/run-context";
+import { useToast } from "@/lib/toast";
 
 /** recharts 体积较大：按需加载图表区块，首屏壳与决策数据不被图表阻塞。 */
 const SignalPanel = lazy(() =>
@@ -59,6 +63,48 @@ export function DashboardPage() {
   const decision = decisionState.decision;
   const trace = useTraceResource(decision?.run_id ?? null);
   const dataCards = useDataCardsResource(Boolean(decision));
+  const { toast } = useToast();
+
+  const handleAskAI = useCallback(
+    (prompt: string) => {
+      queuePrompt(prompt, "dashboard");
+      const params = paramsToRecord(route.params);
+      params.as_of = run.asOf;
+      if (run.scenarioId) params.scenario = run.scenarioId;
+      params.mode = run.mode;
+      delete params.tab;
+      navigate("/chat", params);
+    },
+    [route.params, run.asOf, run.mode, run.scenarioId],
+  );
+
+  const completionRef = useRef(0);
+  useEffect(() => {
+    const completion = decisionState.lastCompleted;
+    if (!completion || completion.at <= completionRef.current) return;
+    completionRef.current = completion.at;
+    // 后端 30 分钟缓存命中时前端几乎瞬时完成，不弹「0s 完成」噪音 toast。
+    if (completion.elapsedMs < 600) return;
+    toast({
+      title: "协同分析完成",
+      description: `${completion.runId} · ${fmtElapsed(completion.elapsedMs / 1000)} · ${
+        completion.usedFallback ? "同步回退" : "SSE 流式"
+      }`,
+      tone: "success",
+    });
+  }, [decisionState.lastCompleted, toast]);
+
+  const failureRef = useRef(0);
+  useEffect(() => {
+    const failure = decisionState.lastFailed;
+    if (!failure || failure.at <= failureRef.current) return;
+    failureRef.current = failure.at;
+    toast({
+      title: "生成预警失败",
+      description: failure.message,
+      tone: "error",
+    });
+  }, [decisionState.lastFailed, toast]);
 
   const refreshRef = useRef(decisionState.refresh);
   useEffect(() => {
@@ -80,14 +126,20 @@ export function DashboardPage() {
   );
 
   const error = decisionState.error;
-  const showSkeleton = !decision && !error;
+  const showSkeleton = !decision && !error && !decisionState.cancelled;
   const retry = () => {
     decisionState.refresh();
     run.reload();
   };
+  const cancel = () => {
+    decisionState.cancel();
+    toast({ title: "已取消本次生成", description: "保留上一次结果与缓存。", tone: "default" });
+  };
 
   return (
-    <div className="page-container animate-rise">
+    <>
+      <TopProgress active={decisionState.loading} label="协同分析进行中" />
+      <div className="page-container animate-rise">
       <PageHeader
         title="跨境风险协同预警驾驶台"
         description="时点回放：共享多模态信号 → 监管 / 投资 / 融资协同推理 → 证据共享与冲突协调 → 数值 / 引文 / 时点核验 → 可复核简报。系统仅使用 as_of 当日可得信息。"
@@ -147,12 +199,16 @@ export function DashboardPage() {
         </Callout>
       ) : null}
 
-      {decisionState.refreshing ? (
+      {decisionState.loading ? (
         <div className="mt-4">
-          <AnalysisProgress
-            active
-            compact
+          <RunProgress
             startedAt={decisionState.startedAt}
+            active={decisionState.run.active}
+            runId={decisionState.run.runId}
+            stageEvents={decisionState.run.stageEvents}
+            activities={decisionState.run.activities}
+            usedFallback={decisionState.run.usedFallback}
+            onCancel={cancel}
           />
         </div>
       ) : null}
@@ -168,9 +224,7 @@ export function DashboardPage() {
       ) : null}
 
       {showSkeleton ? (
-        <DashboardSkeleton
-          startedAt={run.scenariosLoading ? null : decisionState.startedAt}
-        />
+        <DashboardSkeleton />
       ) : !decision ? (
         <div className="mt-4 space-y-3">
           {error ? (
@@ -179,8 +233,18 @@ export function DashboardPage() {
               message={errorMessage(error)}
               onRetry={retry}
               retrying={decisionState.loading}
-              hint="若返回 503，说明核心模块尚未装配完成。可先访问 /api/health 查看待就绪模块，或启动 FastAPI 后重试。"
+              hint="已尝试流式接口 /api/decision/stream，并自动回退同步 /api/decision。若返回 503，说明核心模块尚未装配完成。可先访问 /api/health 查看待就绪模块，或启动 FastAPI 后重试。"
               details={run.health?.service_error ?? null}
+            />
+          ) : decisionState.cancelled ? (
+            <EmptyState
+              title="已取消本次生成"
+              description="本次流式请求已中止，令牌与算力不会继续消耗；上一次结果或本地缓存仍可继续使用。"
+              action={
+                <Button size="sm" onClick={() => decisionState.refresh()}>
+                  重新生成
+                </Button>
+              }
             />
           ) : (
             <EmptyState
@@ -195,7 +259,7 @@ export function DashboardPage() {
           )}
         </div>
       ) : (
-        <div className="mt-4 space-y-4">
+        <div key={decision.run_id} className="mt-4 space-y-4 animate-rise">
           <KpiRow decision={decision} />
 
           <div className="grid gap-4 min-[1180px]:grid-cols-[3fr_2fr]">
@@ -207,7 +271,11 @@ export function DashboardPage() {
                 <DriversPanel signal={decision.signal} />
                 <ModalityPanel signal={decision.signal} />
               </div>
-              <AgentCards decision={decision} onOpenEvidence={setEvidenceId} />
+              <AgentCards
+                decision={decision}
+                onOpenEvidence={setEvidenceId}
+                onAskAI={handleAskAI}
+              />
             </div>
 
             <div className="min-w-0">
@@ -220,6 +288,7 @@ export function DashboardPage() {
                 trace={trace}
                 dataCards={dataCards}
                 scenarioName={run.scenario?.name ?? decision.scenario ?? "—"}
+                onAskAI={handleAskAI}
               />
             </div>
           </div>
@@ -238,7 +307,9 @@ export function DashboardPage() {
         onOpenChange={(open) => {
           if (!open) setEvidenceId(null);
         }}
+        onAskAI={handleAskAI}
       />
-    </div>
+      </div>
+    </>
   );
 }

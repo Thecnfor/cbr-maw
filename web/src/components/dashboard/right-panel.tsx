@@ -41,9 +41,10 @@ interface RightPanelProps {
   trace: TraceResource;
   dataCards: DataCardsResource;
   scenarioName: string;
+  onAskAI?: (prompt: string) => void;
 }
 
-/** 右栏：证据板 / 分歧 / 核验与审计 / 数据卡 / 导出，Radix Tabs 组织。 */
+/** 右栏：证据板 / 分歧 / 核验与协同过程 / 数据卡 / 导出，Radix Tabs 组织。 */
 export function RightPanel({
   decision,
   tab,
@@ -53,6 +54,7 @@ export function RightPanel({
   trace,
   dataCards,
   scenarioName,
+  onAskAI,
 }: RightPanelProps) {
   const titleId = useId();
   const evidence = decision.evidence ?? [];
@@ -132,7 +134,7 @@ export function RightPanel({
           <TabsContent
             value="evidence"
             forceMount
-            className="min-h-0 flex-1 overflow-hidden p-4"
+            className="min-h-0 flex-1 overflow-hidden p-4 data-[state=active]:animate-tab-in"
           >
             <EvidenceBoard
               evidences={evidence}
@@ -143,28 +145,28 @@ export function RightPanel({
 
           <TabsContent
             value="conflicts"
-            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4"
+            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 data-[state=active]:animate-tab-in"
           >
-            <ConflictsPanel conflicts={conflicts} />
+            <ConflictsPanel conflicts={conflicts} onAskAI={onAskAI} />
           </TabsContent>
 
           <TabsContent
             value="verification"
-            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4"
+            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 data-[state=active]:animate-tab-in"
           >
             <VerificationPanel decision={decision} trace={trace} />
           </TabsContent>
 
           <TabsContent
             value="data"
-            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4"
+            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 data-[state=active]:animate-tab-in"
           >
             <DataCardsPanel resource={dataCards} />
           </TabsContent>
 
           <TabsContent
             value="export"
-            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4"
+            className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 data-[state=active]:animate-tab-in"
           >
             <ExportPanel
               decision={decision}

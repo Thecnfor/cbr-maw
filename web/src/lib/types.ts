@@ -260,6 +260,33 @@ export interface TraceEvent {
   tokens?: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* SSE 流式契约（docs/design/ai-native-interaction-spec.md §1）                  */
+/* -------------------------------------------------------------------------- */
+
+export type StageStatus = "started" | "finished" | string;
+
+/** `stage` 事件：由后端把 TraceEvent 映射为 R0–R5 阶段推进。 */
+export interface StageEvent {
+  stage: string;
+  label?: string | null;
+  role?: string | null;
+  status?: StageStatus;
+  action?: string | null;
+  ts?: string | null;
+}
+
+/** `run` 事件：发现 trace 文件后尽早下发。 */
+export interface RunEvent {
+  run_id: string;
+}
+
+/** `error` 事件：流式失败时下发并终止。 */
+export interface StreamErrorPayload {
+  status?: number;
+  message?: string;
+}
+
 export interface ChatRequest {
   message: string;
   as_of?: string | null;

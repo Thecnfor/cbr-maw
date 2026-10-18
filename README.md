@@ -14,6 +14,7 @@
 - **两套入口**：React 驾驶台（时间轴回放 / 三智能体卡片 / 证据板 / 分歧面板 / 核验审计 / 导出）+ 对话入口（自然语言问风险，带证据回答）；Streamlit 保留为回退 UI；
 - **可消融实验**：单智能体 / 三个独立智能体 / 完整协同系统，同一代码路径、可比资源预算；
 - **设计规范**：React 前端按 `Thecnfor/design-stack` 的 shadcn-conventions + Linear 级规范实现（token 派生自 XRAK `packages/ui`，参考 cross-dashboard `DESIGN.md`），light/dark 双主题、可访问焦点环、reduced-motion 降级；详见 [web/DESIGN-NOTES.md](web/DESIGN-NOTES.md)。
+- **AI-native 交互**：SSE 流式运行（R0–R5 阶段 + 三主体状态 + 实时活动流 + 取消）、`⌘K` 命令面板、对话流式阶段与打字机、上下文 AI 追问（智能体卡/证据/冲突一键跳转提问）、协同过程时间线；SSE 不可用时自动回退同步端点并明示。
 
 ## 2. 快速开始（Windows / Python 3.12）
 
@@ -40,8 +41,8 @@ cd ..
 .venv\Scripts\python.exe -m uvicorn cbr.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-- 驾驶台（推荐）：<http://127.0.0.1:8000/ui/>（light/dark 双主题，页面右上角切换）
-- API 文档：<http://127.0.0.1:8000/docs>
+- 驾驶台（推荐）：<http://127.0.0.1:8000/ui/>（light/dark 双主题，页面右上角切换；`?theme=dark` 强制深色、`?cmd=1` 自动打开命令面板）
+- API 文档：<http://127.0.0.1:8000/docs>；流式接口：`GET /api/decision/stream`、`POST /api/chat/stream`（SSE，见 [streaming-api-notes.md](docs/design/streaming-api-notes.md)）
 - 回退 UI（Streamlit）：`.venv\Scripts\python.exe -m streamlit run app\dashboard.py --server.port 8501`
 - 前端开发模式：`cd web && bun run dev`（http://127.0.0.1:5173，/api 代理到 8000）
 
@@ -97,6 +98,7 @@ docs/
 - 技术文档第四章（Markdown）：[docs/techdoc/chapter4_method.md](docs/techdoc/chapter4_method.md)
 - 技术文档第四章（Word）：[docs/techdoc/第四章_多模态多智能体协同预警方法.docx](docs/techdoc/第四章_多模态多智能体协同预警方法.docx)
 - 前端设计与规范：[web/DESIGN-NOTES.md](web/DESIGN-NOTES.md)、[web/README.md](web/README.md)
+- AI-native 交互契约：[docs/design/ai-native-interaction-spec.md](docs/design/ai-native-interaction-spec.md)；流式接口说明：[docs/design/streaming-api-notes.md](docs/design/streaming-api-notes.md)
 - 待办与集成核对清单：[docs/techdoc/open_issues.md](docs/techdoc/open_issues.md)
 - 试点实验：[pilot_results_synthetic.md](docs/techdoc/pilot_results_synthetic.md)（Mock/规则后端）、[pilot_results_real_llm.md](docs/techdoc/pilot_results_real_llm.md)（真实 DeepSeek P2/P3）
 - 调研报告：[docs/research/multi_agent_frameworks.md](docs/research/multi_agent_frameworks.md)、[docs/research/data_sources.md](docs/research/data_sources.md)
@@ -112,8 +114,9 @@ docs/
 
 ## 7. 当前实现状态（2026-10-18，本机实测）
 
-- 全量 pytest：**206 项全部通过**（含 DeepSeek 真实调用测试、6 项端到端集成、1 项自建数据接入测试）。
-- React 驾驶台（`web/`）：light/dark 双主题、证据 Dialog、对话页、导出；`bun run build` 产物由 FastAPI `/ui` 托管，截图见 `artifacts/ui/`（`dashboard_light.png` / `dashboard_dark.png` / `chat_light.png` / `chat_dark.png`）。
+- 全量 pytest：**249 项全部通过**（206 基线 + 43 项 SSE streaming 测试；含 DeepSeek 真实调用、端到端集成、自建数据接入测试）。
+- React 驾驶台（`web/`）：AI-native 交互——SSE RunProgress、⌘K 命令面板、上下文 AI 追问、协同过程时间线、对话流式/打字机；light/dark 双主题；`bun run build` 通过（dist ~1.01MB / 7 文件，首屏 gzip 168.65kB），由 FastAPI `/ui` 托管；截图见 `artifacts/ui-ai/`（`final_dashboard_light/dark.png`、`sse_run_progress_light.png`、`final_palette_light/dark.png`、`sse_chat_done_light.png`）。
+- SSE 流式（真实 DeepSeek）：`/api/decision/stream` 事件 `run=1 / trace=97 / stage=35 / decision=1`（14.5s）；`/api/chat/stream` 以 `chat` 收尾；缓存命中 0.01s 仅返回 `decision`；心跳 10s；`web` 不可用自动回退同步端点。
 - 数据快照：27 个序列 / 41,367 条观测 / 2,207 篇文档；`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`（`data/pit_manifest.json`）。
 - `/api/decision` 真实 DeepSeek 端到端：3 张风险卡、20 条证据、冲突全部解决、核验通过（数值错误率 0、证据准确率 100%、越权/泄漏/schema 错误 0），首次约 15s、缓存后 <50ms（30 分钟 TTL）。
 - 真实 LLM 复跑：P2（3 日 × 2 变体）+ P3（4 日 × 3 模式）= 18 次运行 / 54 次调用全部成功，0 错误/超时/Schema 失败；实际 tokens 323,431、费用约 ¥0.70；详见 [pilot_results_real_llm.md](docs/techdoc/pilot_results_real_llm.md)。

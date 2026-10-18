@@ -1,5 +1,6 @@
 import { Activity, Coins, Gauge, Percent } from "lucide-react";
 
+import { AnimatedNumber } from "@/components/common/animated-number";
 import { MicroLabel } from "@/components/common/detail-row";
 import { LevelText, RiskBadge } from "@/components/common/risk-badge";
 import { Meter } from "@/components/common/meter";
@@ -29,7 +30,7 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
 
   return (
     <div className="grid gap-3 min-[1180px]:grid-cols-[2fr_1fr_1fr] min-[1180px]:grid-rows-[auto_auto]">
-      <Card className="flex flex-col p-4 min-[1180px]:row-span-2">
+      <Card className="flex flex-col p-4 transition-colors duration-150 hover:border-foreground/15 min-[1180px]:row-span-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
@@ -38,7 +39,7 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
             </div>
             <div className="mt-1.5 flex flex-wrap items-end gap-2">
               <span className="metric-value text-metric font-semibold text-foreground">
-                {fmtPct(fiveDay)}
+                <AnimatedNumber value={fiveDay} format={(value) => fmtPct(value)} />
               </span>
               <RiskBadge level={signal.level} className="mb-1" />
             </div>
@@ -64,7 +65,7 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
               <div key={point.horizon} className="min-w-0">
                 <div className="text-tiny text-muted-foreground">{point.horizon} 日</div>
                 <div className="metric-value truncate text-caption font-medium text-foreground">
-                  {fmtPct(point.value)}
+                  <AnimatedNumber value={point.value} format={(value) => fmtPct(value)} />
                 </div>
               </div>
             ))}
@@ -79,7 +80,7 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
         </div>
       </Card>
 
-      <Card className="p-4">
+      <Card className="p-4 transition-colors duration-150 hover:border-foreground/15">
         <div className="flex items-center justify-between gap-2">
           <MicroLabel>风险等级</MicroLabel>
           <Gauge className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -93,14 +94,17 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
         </p>
       </Card>
 
-      <Card className="p-4">
+      <Card className="p-4 transition-colors duration-150 hover:border-foreground/15">
         <div className="flex items-center justify-between gap-2">
           <MicroLabel>历史分位</MicroLabel>
           <Percent className="size-4 text-muted-foreground" aria-hidden="true" />
         </div>
         <div className="mt-1.5 flex items-baseline gap-2">
           <span className="metric-value text-h1 font-semibold leading-none text-foreground">
-            {fmtPct(signal.percentile)}
+            <AnimatedNumber
+              value={signal.percentile ?? null}
+              format={(value) => fmtPct(value)}
+            />
           </span>
           <span className="text-caption text-muted-foreground">阈值 90%</span>
         </div>
@@ -119,30 +123,44 @@ export function KpiRow({ decision }: { decision: DecisionCard }) {
         </p>
       </Card>
 
-      <Card className="p-4 min-[1180px]:col-span-2">
+      <Card className="p-4 transition-colors duration-150 hover:border-foreground/15 min-[1180px]:col-span-2">
         <div className="flex items-center justify-between gap-2">
           <MicroLabel>协同成本 C</MicroLabel>
           <Coins className="size-4 text-muted-foreground" aria-hidden="true" />
         </div>
         <div className="mt-1.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <span className="metric-value text-h1 font-semibold leading-none text-foreground">
-            {fmtCostUnits(coordination.cost_usd)}
+            <AnimatedNumber
+              value={coordination.cost_usd ?? null}
+              format={(value) => fmtCostUnits(value)}
+            />
           </span>
           <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-caption">
             <div>
               <div className="text-muted-foreground">工具调用</div>
-              <div className="metric-value text-foreground">{coordination.tool_calls ?? 0}</div>
+              <div className="metric-value text-foreground">
+                <AnimatedNumber
+                  value={coordination.tool_calls ?? 0}
+                  format={(value) => String(Math.round(value))}
+                />
+              </div>
             </div>
             <div>
               <div className="text-muted-foreground">tokens</div>
               <div className="metric-value text-foreground">
-                {fmtTokens(coordination.tokens)}
+                <AnimatedNumber
+                  value={coordination.tokens ?? null}
+                  format={(value) => fmtTokens(value)}
+                />
               </div>
             </div>
             <div>
               <div className="text-muted-foreground">端到端</div>
               <div className="metric-value text-foreground">
-                {fmtDuration(coordination.latency_ms ?? 0)}
+                <AnimatedNumber
+                  value={coordination.latency_ms ?? 0}
+                  format={(value) => fmtDuration(value)}
+                />
               </div>
             </div>
           </div>
