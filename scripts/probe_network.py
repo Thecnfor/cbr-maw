@@ -142,22 +142,22 @@ def probe_yahoo():
 # ---------------------------------------------------------------- FRED
 def probe_fred():
     print("\n## FRED")
+    # Host is network-blocked from this machine (12-25s read timeout); fail fast.
     series = ["VIXCLS", "DGS10", "BAMLH0A0HYM2", "BAMLC0A0CM", "DEXCHUS", "T10Y2Y"]
-    cands = [
-        lambda s: f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}",
-        lambda s: f"https://fredgraph.stlouisfed.org/graph/fredgraph.csv?id={s}",
-    ]
     for s in series:
-        for i, mk in enumerate(cands):
-            r = fetch(mk(s), timeout=25)
-            if r["ok"] and "DATE" in r["text"][:200]:
-                lines = [x for x in r["text"].strip().splitlines() if x]
-                print(f"RESULT|fred_{s}|OK|via=cand{i}|n={len(lines)-1}|"
-                      f"head={lines[1] if len(lines) > 1 else ''}|"
-                      f"tail={lines[-1] if len(lines) > 1 else ''}")
-                break
-            print(f"RESULT|fred_{s}|FAIL|via=cand{i}|status={r.get('status')}|"
+        r = fetch(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}", timeout=8)
+        if r["ok"] and "DATE" in r["text"][:200]:
+            lines = [x for x in r["text"].strip().splitlines() if x]
+            print(f"RESULT|fred_{s}|OK|n={len(lines)-1}|"
+                  f"head={lines[1] if len(lines) > 1 else ''}|"
+                  f"tail={lines[-1] if len(lines) > 1 else ''}")
+        else:
+            print(f"RESULT|fred_{s}|FAIL|status={r.get('status')}|"
                   f"ms={r['ms']}|err={r.get('err')}")
+    # API host is reachable but needs a free api_key.
+    r = fetch("https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&file_type=json", timeout=8)
+    print(f"RESULT|fred_api|{'OK' if r['ok'] else 'FAIL'}|status={r.get('status')}|"
+          f"ms={r['ms']}|body={r['text'][:160]!r}")
     # GDELT
     print("\n## GDELT")
     q = urllib.parse.quote('("People\'s Bank of China" OR "PBOC") (rate OR policy)')

@@ -46,7 +46,7 @@ try:
                     f"https://fredgraph.stlouisfed.org/graph/fredgraph.csv?id={sid}"]:
             t0 = time.time()
             try:
-                r = requests.get(url, headers=h, timeout=30)
+                r = requests.get(url, headers=h, timeout=10)
                 ms = int((time.time() - t0) * 1000)
                 ok = r.status_code == 200 and r.text.startswith("DATE")
                 lines = [x for x in r.text.strip().splitlines() if x] if ok else []

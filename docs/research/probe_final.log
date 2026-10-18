@@ -14,3 +14,20 @@ RESULT|yahoo_extra|^HSI|OK|http=200|ms=571|last=24186.830078125
 ## 2. GDELT (retry 3x)
 RESULT|gdelt|RETRY|attempt=1|http=429|ms=10046|body='Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic us'
 RESULT|gdelt|RETRY|attempt=2|http=429|ms=11633|body='Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic us'
+RESULT|gdelt|RETRY|attempt=3|http=429|ms=13348|body='Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic us'
+
+## 3. policy list pages: article extraction test
+RESULT|page|PBOC_news|OK|http=200|len=38200|ms=252|titled_links=16|dates=16|sample=[["/rmyh/105226/105442/index.html#ä¸­å¤®çºªå§é©»ä¸­å½äººæ°é¶è¡çºªæ£ç»", "é©»ä¸­å½äººæ°é¶è¡çºªæ£çå¯ç»"], ["/rmyh/105226/105442/index.html#åè®¾é¨é¨", "åè®¾é¨é¨"]]
+RESULT|page|PBOC_MP|OK|http=200|len=117911|ms=161|titled_links=114|dates=106|sample=[["/rmyh/105226/105442/index.html#ä¸­å¤®çºªå§é©»ä¸­å½äººæ°é¶è¡çºªæ£ç»", "é©»ä¸­å½äººæ°é¶è¡çºªæ£çå¯ç»"], ["/rmyh/105226/105442/index.html#åè®¾é¨é¨", "åè®¾é¨é¨"]]
+RESULT|page|SAFE_news|OK|http=200|len=22711|ms=246|titled_links=15|dates=20|sample=[["/safe/2026/1006/27959.html", "å½å®¶å¤æ±ç®¡çå±å¬å¸2026å¹´9ææ«å¤æ±å¨å¤è§æ¨¡æ°æ®"], ["/safe/2026/0929/27948.html", "å½å®¶å¤æ±ç®¡çå±å¬å¸2026å¹´8ææå½å½éæ¶æ¯è´§ç©åæå¡è´¸ææ°æ®"]]
+RESULT|page|CSRC_xwfb|OK|http=200|len=18196|ms=281|titled_links=0|dates=1|sample=[]
+RESULT|page|CSRC_yw|OK|http=200|len=10605|ms=225|titled_links=0|dates=1|sample=[]
+
+## 4. 国务院政策文件库 JSON API
+RESULT|govlib|OK|http=200|ms=258|n=3|sample=[{"title": "国务院办公厅关于做好<em>金融</em>“五篇大文章”的指导意见", "pubtimeStr": "2025.03.05", "pcode": "国办发〔2025〕8号", "id": "23664652"}, {"title": "国务院办公厅转发<em>金融</em>监管总局《关于加强监管防范风险推动信托业高质量发展的若干意见》的通知", "pubtimeStr": "2025.01.27", "pcode": "国办函〔2025〕14号", "id": "23455196"}]
+
+## 5. eastmoney: HSGT kamt + USDCNH kline + 中债10Y?
+RESULT|em_kamt|OK|http=200|ms=256|body={"rc":0,"rt":13,"svr":175647376,"lt":1,"full":1,"dlmkts":"","dsc":"0","data":{"hk2sh":{"status":3,"dayNetAmtIn":0.0,"dayAmtRemain":0.0,"dayAmtThreshold":5200000.0,"date":"10-16","date2":"2026-10-16"},"sh2hk":{"status":3,"dayNetAmtIn":4200000.0,"dayAmtRemain":0.0,"dayAmtThreshold":4200000.0,"date":"10-16","date2":"2026-10-16"},"hk2sz":{"status":3,"dayNetAmtIn":0.0,"dayAmtRemain":0.0,"dayAmtThreshol
+RESULT|em_usdcnh_kline|OK|http=200|ms=439|n=4109|first=2011-01-03,6.5825,6.5625,6.6065,6.5595,0|last=2026-10-16,6.6897,6.6860,6.6918,6.6832,0
+
+# done

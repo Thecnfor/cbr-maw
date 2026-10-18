@@ -365,6 +365,7 @@ class DecisionCard(BaseModel):
     mode: ExperimentMode = ExperimentMode.COLLABORATIVE
     signal: RiskSignal
     cards: dict[str, RiskCard] = Field(default_factory=dict)  # role -> card
+    evidence: list[Evidence] = Field(default_factory=list)  # 黑板证据快照（供 UI/API/导出）
     conflicts: list[Conflict] = Field(default_factory=list)
     verification: VerificationReport = Field(default_factory=VerificationReport)
     coordination: CoordinationStats = Field(default_factory=CoordinationStats)

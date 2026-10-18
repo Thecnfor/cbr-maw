@@ -91,7 +91,7 @@
 | AutoGen / MAF | ✅ OTel（MAF 内置）；AutoGen 事件驱动 | ◐ AutoGen `UserProxyAgent`/移交；MAF 图工作流 checkpoint + HITL + time travel | ◐ OTel/事件中 usage；无预算强制 | ◐ checkpoint 重放；迁移期不确定性高 | 中高 | AutoGen 已进维护模式；MAF 企业向、依赖 Azure 生态 |
 | AG2 1.1.2 | ◐ 对话事件 + 治理回执（receipts）；OTel 需自建 | ◐ 群聊人工输入模式；ACP server 可恢复会话 | ✅ TealTiger 成本预算硬约束（`BUDGET_EXCEEDED`） | ◐ 会话可恢复；无确定性 | 中 | 治理/权限需求可直接借鉴；无图编排 |
 | MetaGPT 0.8.2 | ○ 日志与消息池，无标准 trace | ○ 基本无 HITL | ◐ 自带 token 成本统计（简单） | ○ 弱 | 中高 | 研究参考（SOP 思想），不宜作为工程底座 |
-| 自研轻量编排器（建议） | ✅ 领域事件 + OTel `gen_ai.*` 映射 + JSONL/SQLite 双写，可哈希链防篡改 | ✅ 三类中断点（冲突未决/高影响/预算超限）+ 状态持久化 + 恢复 API | ✅ 前置硬预算 + 逐调用对账（prompt/completion/reasoning/cached token × 价格表） | ✅ 全量 manifest（代码/依赖/模型/提示词/数据 as_of 哈希）+ 响应缓存 | 中（自写约 1.5–2k 行核心） | **推荐：与论文"可审计、可消融、预算可比"诉求最匹配** |
+| 自研轻量编排器（建议） | ✅ 领域事件 + OTel `gen_ai.*` 映射（P1）+ JSONL/SQLite 双写，可哈希链防篡改 | ✅ 三类中断点（冲突未决/高影响/预算超限）+ 状态持久化 + 恢复 API | ✅ 前置硬预算 + 逐调用对账（prompt/completion/reasoning/cached token × 价格表） | ✅ 全量 manifest（代码/依赖/模型/提示词/数据 as_of 哈希）+ 响应缓存 | 中（自写约 1.5–2k 行核心） | **推荐：与论文"可审计、可消融、预算可比"诉求最匹配** |
 
 ### 2.3 逐框架要点（只列影响选型的证据）
 
@@ -272,7 +272,7 @@ LangSmith/Logfire/OTel 能回答"第几步调了哪个模型、用了多少 toke
 | **AutoGen**（2023/2024） | 通用多 agent | 可对话 agent + GroupChat/manager/selector | 群聊轮次、manager 选择发言者 | 群聊适合开放探索；金融预警需**结构化黑板 + 显式阶段**，避免 LLM 决定流程 |
 | **NLSOM / Mindstorms**（2023–2025） | 多任务推理 | 自然语言社会心智，多专家协作、黑板式共享 | 语言接口 + 多角色互评 | "分工 + 共享黑板 + 多轮反思"可作为协同机制设计依据；需加角色权限与证据溯源 |
 | **TradingAgents**（2024/2025，arXiv 2412.20138） | 股票交易 | 分析师团队（基本面/情绪/技术）+ 多空研究员辩论 + 交易员 + 风险管理团队 + 反思记忆 | 多空辩论、风险团队审议、历史反思 | **与本项目三角色最接近的金融多智能体架构**；但其数值/证据核验与可审计性弱 → 本项目补强"工具重算 + 引用溯源 + 越权阻断 + trace" |
-| **FinCon**（NeurIPS 2024） | 单股/组合决策 | Manager–Analyst 层级 + 风险控制组件 + 概念化语言强化（CVaR 信念更新） | 层级汇报 +  episodic 自批评 | 风险目标要**显式建模**（CVaR/损失口径），不能只靠提示词；跨 episode 的"经验信念"可作为 P3 协同机制的可选增强 |
+| **FinCon**（NeurIPS 2024） | 单股/组合决策 | Manager–Analyst 层级 + 风险控制组件 + 概念化语言强化（CVaR 信念更新） | 层级汇报 + episodic 自批评 | 风险目标要**显式建模**（CVaR/损失口径），不能只靠提示词；跨 episode 的"经验信念"可作为 P3 协同机制的可选增强 |
 | **FinAgent**（KDD 2024） | 多模态交易 | 工具增强的基础智能体 + 多模态输入 | 工具调用 + 市场状态识别 | 工具接口设计（输入/输出/版本）比 agent 角色数量更重要 |
 | **Cassandra**（IJF 2026） | 银行困境预警 | 新闻情绪 + AI 预警 | 单模型/规则 | 金融预警的"新闻→困境"链路可作外部效度参考 |
 | **RAG-Enhanced LLM+RL 期货异常监控**（2026） | 期货监管 | 多 agent 监控 + RAG + RL 调度 | 分工 + 强化学习调度 | 监管类多 agent 与 RAG 结合的直接先例；注意其"监管"目标与本文监管主体对齐 |
@@ -465,7 +465,7 @@ class RunConfig(BaseModel):
     tools_enabled: set[str] = ALL_TOOLS
     budget: BudgetSpec = BudgetSpec(total_tokens=90_000, total_cost_usd=3.0, total_tool_calls=30)
     max_rounds: int = 2
-    models: dict[Role, str] = {"*": "gpt-5.x"}     # 三角色与协调者同模型，保证可比
+    models: dict[Role, str] = {"*": "<model-id>"}   # 三角色与协调者同模型，保证可比
     prompt_version: str = "p1.0"
     schema_version: str = "s1.0"
 ```
