@@ -100,7 +100,7 @@ docs/
 
 ## 7. 当前实现状态（2026-10-18，本机实测）
 
-- 全量 pytest：**204 项（203 passed + 1 skipped）**，含 6 项真实装配端到端集成；无 DeepSeek key 时 Mock LLM 全链路可跑。
+- 全量 pytest：**205 项（204 passed + 1 skipped）**，含 6 项真实装配端到端集成与 1 项自建数据接入测试；无 DeepSeek key 时 Mock LLM 全链路可跑。
 - 数据快照：27 个序列 / 41,367 条观测 / 2,207 篇文档；`dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`（`data/pit_manifest.json`）。
 - `/api/decision` 真实端到端：3 张风险卡、20 条证据、4 个冲突全部解决、核验通过（数值错误率 0、证据准确率 100%、越权/泄漏/schema 错误 0）；PIT 快路径约 1.4s。
 - `/api/chat` 返回带引用（10 条）的回答 + 决策卡；Streamlit 驾驶台 6 页签 + 对话页（AppTest 无异常）。

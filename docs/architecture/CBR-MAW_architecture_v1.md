@@ -161,7 +161,8 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 
 | 验证项 | 结果 |
 |---|---|
-| 全量单元/集成测试 | **204 项（203 passed + 1 skipped[DeepSeek 真调用无 key]）**，含 tests/test_integration.py 6 项：build_service、三模式、chat、get_evidence/get_trace、trace 落盘 |
+| 全量单元/集成测试 | **205 项（204 passed + 1 skipped[DeepSeek 真调用无 key]）**，含 tests/test_integration.py 6 项端到端集成与 tests/test_custom_data.py 自建数据接入测试 |
+| 自建数据接入 | `data.dataset=custom` 时 provider 自动并入 `data/custom`（CSV/Parquet），缺失序列回退 SYNTHETIC；实测数据卡标记 `user-provided`、风险信号与历史序列接口可用（`tests/test_custom_data.py`） |
 | 数据快照 | `dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`；PIT 41,367 观测 / 2,207 文档 / 27 序列元数据；provider 走 `PitStoreDataProvider` |
 | API 端到端 | `/api/decision` 200（3 卡/20 证据/4 冲突全解决/核验通过/成本 0.0424，PIT 快路径约 1.4s）、`/api/chat` 200（10 引用）、health/scenarios/evidence/data-cards/trace 均 200 |
 | Streamlit | AppTest 无异常（5.8s）；6 页签 + 对话页；真实数据渲染 5 个 Plotly 图 |
