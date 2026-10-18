@@ -1,0 +1,16 @@
+# probe_final 2026-10-18 15:16:36
+
+## 1. yahoo extras (global risk factors)
+RESULT|yahoo_extra|^VIX9D|OK|http=200|ms=496|last=20.1200008392334
+RESULT|yahoo_extra|^VIX3M|OK|http=200|ms=526|last=20.5
+RESULT|yahoo_extra|^SKEW|OK|http=200|ms=498|last=168.58999633789062
+RESULT|yahoo_extra|HG=F|OK|http=200|ms=509|last=6.573500156402588
+RESULT|yahoo_extra|GC=F|OK|http=200|ms=521|last=4181.10009765625
+RESULT|yahoo_extra|CL=F|OK|http=200|ms=322|last=99.0199966430664
+RESULT|yahoo_extra|DX-Y.NYB|OK|http=200|ms=534|last=101.83999633789062
+RESULT|yahoo_extra|^N225|OK|http=200|ms=542|last=65324.2890625
+RESULT|yahoo_extra|^HSI|OK|http=200|ms=571|last=24186.830078125
+
+## 2. GDELT (retry 3x)
+RESULT|gdelt|RETRY|attempt=1|http=429|ms=10046|body='Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic us'
+RESULT|gdelt|RETRY|attempt=2|http=429|ms=11633|body='Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic us'

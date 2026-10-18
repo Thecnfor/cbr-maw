@@ -1,0 +1,30 @@
+# 示例实验配置：P1 多模态信息增益（数值 vs 数值+文本）
+# 使用：python scripts/run_experiment.py --config configs/experiments/p1_modality.yaml
+run_id: p1_modality_v1
+data:
+  sample_start: "2018-01-01"
+  sample_end: "2025-09-30"
+  pit_snapshot: auto
+target:
+  label_version: stress_pca_q90
+  horizons: [5, 10, 20]
+  eval_start: "2021-01-01"
+modality:
+  numeric: true
+  text: true          # 对照：false 时等价于 numeric-only
+augment:
+  rag: false
+  tools: false
+agents:
+  mode: offline       # 本实验只评估融合预测器，不启用 LLM 智能体
+coordination:
+  evidence_share: false
+  cross_validation: false
+  conflict_resolution: false
+budget:
+  equal_across_configs: true
+llm:
+  provider: none
+eval:
+  bootstrap: 1000
+  metrics: [pr_auc, recall_at_top_decile, brier, ece, lead_time_days]

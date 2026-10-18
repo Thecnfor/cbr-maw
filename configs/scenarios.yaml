@@ -1,0 +1,26 @@
+# 历史压力情景（演示用 as_of 日期；系统会按数据覆盖范围自动筛选可用情景）
+- scenario_id: trade_friction_2018
+  name: 2018 中美贸易摩擦升级
+  as_of: 2018-10-11
+  description: 中美贸易摩擦升级、全球风险资产回调、人民币贬值压力上升
+  tags: [外部冲击, 汇率, 权益]
+- scenario_id: rmb_break_7_2019
+  name: 2019 人民币汇率破 7
+  as_of: 2019-08-05
+  description: 离岸人民币破 7、跨境资金流出压力与市场避险情绪
+  tags: [汇率, 跨境资金]
+- scenario_id: covid_2020
+  name: 2020 疫情全球冲击
+  as_of: 2020-03-16
+  description: 全球流动性危机、美股熔断、美元流动性紧张
+  tags: [全球冲击, 流动性]
+- scenario_id: fed_hike_2022
+  name: 2022 美联储加息与地缘冲突
+  as_of: 2022-04-25
+  description: 美联储快速加息、中美利差倒挂、人民币贬值与资本流出压力
+  tags: [利差, 汇率, 跨境资金]
+- scenario_id: yen_carry_2024
+  name: 2024 日元套息交易逆转
+  as_of: 2024-08-05
+  description: 日元套息交易平仓引发全球风险资产波动与流动性冲击
+  tags: [全球冲击, 波动率]

@@ -1,0 +1,54 @@
+app_name: CBR-MAW
+timezone: Asia/Shanghai
+
+llm:
+  provider: deepseek
+  model: deepseek-chat
+  base_url: https://api.deepseek.com
+  temperature: 0.0
+  max_tokens: 2000
+  # 未提供 API key 时自动使用 mock 模式；提供 secrets/deepseek.key 或环境变量后自动切真实模型
+  mock: true
+  api_key_env: DEEPSEEK_API_KEY
+  api_key_file: secrets/deepseek.key
+  timeout_seconds: 60
+  max_retries: 2
+
+data:
+  dataset: auto          # auto | custom | public | synthetic
+  custom_data_dir: data/custom
+  pit_db: data/pit.duckdb
+  sample_dir: data/samples
+  snapshot_dir: data/processed
+  sample_start: "2018-01-01"
+  sample_end: "2025-09-30"
+  label_version: stress_pca_q90
+  high_stress_quantile: 0.90
+  horizons: [5, 10, 20]
+
+signal:
+  model_version: fusion-xgb-v1
+  baseline: xgboost
+  text_enabled: true
+  roll_window: 500
+  retrain_every: 20
+
+orchestration:
+  rounds: 2
+  max_tool_calls_per_agent: 6
+  max_tokens_per_agent: 4000
+  numeric_tolerance_abs: 1.0e-6
+  numeric_tolerance_rel: 1.0e-3
+  modes: [single, independent, collaborative]
+  human_in_the_loop: true
+  trace_dir: artifacts/traces
+
+server:
+  api_host: 127.0.0.1
+  api_port: 8000
+  ui_port: 8501
+
+paths:
+  artifacts: artifacts
+  docs: docs
+  knowledge: data/knowledge
