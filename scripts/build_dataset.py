@@ -62,13 +62,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42, help="模型随机种子")
     parser.add_argument("--fusion", default="early", choices=["early", "late"], help="多模态融合方式")
     parser.add_argument("--with-custom", action="store_true", help="并入 data/custom 用户自建数据")
+    parser.add_argument(
+        "--custom-only",
+        action="store_true",
+        help="仅使用 data/custom 真实数据（不回退样例/仿真数据，用于真实数据实验）",
+    )
     parser.add_argument("--skip-pit", action="store_true", help="跳过 PIT 数据库构建")
     parser.add_argument("--skip-signal", action="store_true", help="跳过信号模型训练与产物保存")
     return parser.parse_args(argv)
 
 
 def _load_dataset(args: argparse.Namespace) -> MarketDataset:
-    """加载样例数据（文件缺失时内存生成），可选并入用户自建数据。"""
+    """加载样例数据（文件缺失时内存生成），可选并入/仅使用用户自建数据。"""
+    if getattr(args, "custom_only", False):
+        adapter = CustomDatasetAdapter(custom_data_dir=resolve_path("data/custom"))
+        if not adapter.has_custom:
+            raise SystemExit("[ERROR] --custom-only 指定但 data/custom 无可用数据")
+        dataset, _ = adapter.load()
+        print(f"[OK] 仅使用用户自建真实数据: {len(dataset.obs)} 条观测，{len(dataset.documents)} 篇文档")
+        return dataset
     sample_dir = resolve_path(args.sample_dir)
     try:
         dataset = load_sample_dataset(sample_dir)
@@ -132,7 +144,10 @@ def _write_pit_manifest(dataset: MarketDataset, pit_path: Path, fingerprint: dic
         "end": str(dataset.end.date()) if dataset.end is not None else None,
         "pit_db": pit_path.name,
         "built_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "note": "PIT 库由 scripts/build_dataset.py 从样例/自建数据构建；SYNTHETIC 数据仅用于演示/测试",
+        "note": (
+            "PIT 库由 scripts/build_dataset.py 从样例/自建数据构建；"
+            + ("SYNTHETIC 数据仅用于演示/测试" if str(dataset.source) == "synthetic-simulation" else f"真实数据（source={dataset.source}）")
+        ),
     }
     manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest_path
@@ -143,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     started = time.time()
     print("=" * 78)
-    print("CBR-MAW 数据集与风险信号构建（SYNTHETIC 仿真数据，非真实市场数据）")
+    print("CBR-MAW 数据集与风险信号构建")
     print(f"sample={args.sample_dir}  pit={args.pit_db}  artifacts={args.artifacts}")
     print("=" * 78)
     settings = load_settings()
@@ -218,8 +233,9 @@ def main(argv: list[str] | None = None) -> int:
         entry = engine.save_artifacts(
             metrics=metrics,
             notes=(
-                f"SYNTHETIC 仿真数据训练的演示模型；retrain_every={signal_settings.retrain_every}，"
-                f"fusion={args.fusion}，仅用于演示/测试"
+                f"数据来源={dataset.source}；retrain_every={signal_settings.retrain_every}，"
+                f"fusion={args.fusion}"
+                + ("，SYNTHETIC 仅用于演示/测试" if str(dataset.source) == "synthetic-simulation" else "（真实数据）")
             ),
             data_snapshot={
                 **fingerprint,
@@ -239,7 +255,7 @@ def main(argv: list[str] | None = None) -> int:
         # ---- 3) 样例 as_of 的 RiskSignal（验收要求） -------------------- #
         demo_signal = engine.predict(args.demo_date)
         print("-" * 78)
-        print(f"[DEMO] as_of={args.demo_date} 的 RiskSignal（JSON，SYNTHETIC 仿真数据模型输出）:")
+        print(f"[DEMO] as_of={args.demo_date} 的 RiskSignal（JSON，source={dataset.source}）:")
         print(json.dumps(demo_signal.model_dump(mode="json"), ensure_ascii=False, indent=2))
     else:
         print("[SKIP] 信号模型训练与产物保存")
@@ -247,7 +263,10 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.time() - started
     print("-" * 78)
     print(f"[DONE] 构建完成，用时 {elapsed:.1f}s")
-    print("[NOTE] 全部数据/模型均为 SYNTHETIC 仿真产物，禁止用于真实投资或监管决策")
+    if str(dataset.source) == "synthetic-simulation":
+        print("[NOTE] 全部数据/模型均为 SYNTHETIC 仿真产物，禁止用于真实投资或监管决策")
+    else:
+        print(f"[NOTE] 数据来源={dataset.source}；模型与信号仅供研究/演示，不构成投资或监管建议")
     return 0
 
 

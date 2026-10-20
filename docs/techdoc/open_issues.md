@@ -1,7 +1,8 @@
 # 第四章 open issues / TODO 清单（待实验、待实现、待同步）
 
-> 维护：doc-writer（task-6）｜版本：v0.4（2026-10-18）｜代码快照：React 前端重构 + 真实 DeepSeek 复跑 + 指标 v2
-> 对应正文：[chapter4_method.md](chapter4_method.md) v0.6（11,9xx 汉字；5 图 / 13 表 / 21 公式；4.5.1 已补 React 前端与 `/ui` 托管）
+> 维护：doc-writer（task-6）｜版本：v0.8（2026-10-20）｜代码快照：真实数据接入 + 真实数据 P1/P2/P3 + AI-native 交互 + SSE 流式 + 249 项测试
+> 对应正文：[chapter4_method.md](chapter4_method.md) v0.8（5 图 / 13 表 / 21 公式；4.1.1 真实数据快照、附录 A.3；4.5.1 React 前端与 `/ui`、SSE 端点）
+> 增量：§10 记录真实数据接入（27 序列 / 9,758 文本 / PIT `ds_94c8b84b60cd1248dd57`）与真实数据 P1/P2/P3 结果；历史 §0–§9 保留 synthetic 口径。
 > 用途：把正文中所有"待实验/待验证/待实现/待同步"点收敛为可逐条关闭的清单；每关闭一项在文末"关闭记录"追加日期与说明。
 > 状态取值：`open` / `in-progress` / `closed` / `accepted`（已知限制，不计划关闭但需在论文中报告）。
 
@@ -177,3 +178,35 @@
 | 日期 | ID | 变更说明 | commit/产物 |
 |------|----|----------|-------------|
 | 2026-10-18 | INT-15/INT-16/DOC-10、LIM-11 | AI-native 交互 + SSE 流式；正文 v0.7；249 项测试；web dist 与截图 | `src/cbr/api/streaming.py`、`web/`、`docs/design/*`、`artifacts/ui-ai/` |
+
+---
+
+## 10. v0.8 增量（真实数据接入与真实数据实验）
+
+### 10.1 集成事实（2026-10-20）
+
+- **真实数据快照**：2015-01-05 ~ 2025-09-30、2,615 交易日、27 条规范序列、57,421 条观测、9,758 篇文本；`dataset_snapshot_id=ds_94c8b84b60cd1248dd57`、`corpus_hash=corpus_a7e87cba9e85e67525ae`；PIT 数据库 `data/pit_real.duckdb`，模型产物 `artifacts_real/`。
+- **数据来源**：用户 `docs/金融数据.zip`（B1/B2/B3/B4/B6）+ 飞书 Base「07 沪深港通资金流」（14,459 行）+ 飞书「文本数据8.2」（9,758 篇）+ 公开接口补齐 14 条序列；脚本 `scripts/build_real_custom_data.py`、`fetch_public_gaps.py`、`fetch_public_extra.py`、`build_text_corpus.py`。
+- **配置**：`configs/app.real.yaml`（`dataset: custom`、`synthetic_fallback: false`、`paths.artifacts: artifacts_real`）；默认 `configs/app.yaml` 保持 synthetic/auto，测试与离线复现不受影响。
+- **真实数据 P1**（2021-01~2025-09，1,152 交易日）：数值-only PR-AUC 0.695/0.632/0.612；融合 0.684/0.639/0.617；Δ=-0.011/+0.007/+0.005，p=0.172/0.342/0.214 → **文本增益不显著**。
+- **真实数据 P2**（4 个评估日，真实 DeepSeek）：full 18 claims / 17.25 工具调用 / 4.75 冲突全解决 / task_completion_tool_evidence_gated=1；no_tools_no_kb 7.5 claims / 0 工具 / 17 次越权尝试被阻断 / tool_evidence_gated=0 / claim_rejected=7.5；decision_loss 1.325 vs 1.360。
+- **真实数据 P3**：见 pilot_results_real_data.md（4 个评估日 × 三模式，真实 DeepSeek）。
+- 文档：`docs/data/real_data_integration.md`、`text_corpus.md`、`public_gap_fill.md`；第四章 v0.8、架构 v1 §7、README、pilot 报告同步。
+
+### 10.2 新增 issue 行
+
+| ID | 位置（正文） | 内容 | 关闭判定 | 状态 |
+|----|--------------|------|----------|------|
+| INT-17 | 4.1.1、附录 A.3 | 用户真实数据接入（27 序列 / 9,758 文本 / PIT / 真实数据 profile） | 快照构建 + provider 真实数据端到端 + 文档 | **closed** |
+| EXP-15 | 4.1.5、4.5.2 | 真实数据 P1（数值 vs 融合） | 1,152 个评估日 + 配对自助法 | **closed**（文本增益不显著） |
+| EXP-16 | 4.2.4、4.5.2 | 真实数据 P2（工具/知识消融，真实 DeepSeek） | 4 个评估日 × 2 变体 | **closed** |
+| EXP-17 | 4.4.5、4.5.2 | 真实数据 P3（三模式协同，真实 DeepSeek） | 4 个评估日 × 3 模式 | closed（随 P3 完成） |
+| LIM-12 | 4.1.1、4.5.4 | 真实数据代理口径（SHIBOR 1W→7 天回购、AAA→AA 利差、累计净流入→北向持仓、滚动增量→社融存量同比）；北向 2024-08-16 停披露；CPI 2015–2020 缺失 | 在数据卡/偏差表/正文标注，不伪装原口径 | accepted |
+| LIM-13 | 4.1.5 | 真实数据文本模态增益不显著（h5 略负），语料时段不均衡（2017–2020 偏少） | 在 P1 报告与限制中如实披露；后续补语料/表征再检验 | accepted |
+| DOC-11 | 4.1.1、附录 A.3、README | 真实数据章节、数据文档与 DOCX 同步 | 正文 v0.8 + 文档 + DOCX | **closed** |
+
+### 10.3 关闭记录追加
+
+| 日期 | ID | 变更说明 | commit/产物 |
+|------|----|----------|-------------|
+| 2026-10-20 | INT-17/EXP-15/16/17/DOC-11、LIM-12/13 | 真实数据接入、PIT 与真实数据 P1/P2/P3；正文 v0.8 | `data/custom`（不入库）、`scripts/build_real_custom_data.py`、`configs/app.real.yaml`、`docs/data/*`、`pilot_results_real_data.md` |

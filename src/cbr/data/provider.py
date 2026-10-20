@@ -341,6 +341,13 @@ def build_data_provider(settings: AppSettings | None = None) -> MarketDataProvid
         custom = _load_custom(settings)
         if custom is not None:
             custom_dataset, custom_cards = custom
+            if not settings.data.synthetic_fallback:
+                logger.info(
+                    "使用用户自建数据（仅真实数据，不回退 synthetic）：%s ~ %s",
+                    custom_dataset.start,
+                    custom_dataset.end,
+                )
+                return MarketDataProvider(custom_dataset, settings, source_label="custom")
             fallback = _load_synthetic(settings)
             merged = _merge_datasets(custom_dataset, fallback)
             provider = MarketDataProvider(merged, settings, source_label="custom+synthetic")

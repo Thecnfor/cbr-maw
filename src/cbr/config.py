@@ -51,6 +51,8 @@ class LLMSettings(BaseModel):
 class DataSettings(BaseModel):
     dataset: str = "auto"  # auto | custom | public | synthetic
     custom_data_dir: str = "data/custom"
+    #: 自建数据缺失序列是否回退 synthetic（真实数据实验应设为 False，避免仿真值混入）
+    synthetic_fallback: bool = True
     pit_db: str = "data/pit.duckdb"
     sample_dir: str = "data/samples"
     snapshot_dir: str = "data/processed"

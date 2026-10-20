@@ -17,8 +17,8 @@
     "index": 3,
     "source_sha": "273cd01feeda",
     "path": "docs\\techdoc\\figures\\fig_03.png",
-    "ok": true,
-    "bytes": 2740661
+    "ok": false,
+    "error": "HTTPSConnectionPool(host='mermaid.ink', port=443): Read timed out. (read timeout=60)"
   },
   {
     "index": 4,

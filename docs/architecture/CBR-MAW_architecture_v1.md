@@ -20,7 +20,7 @@
 | 项 | 状态 |
 |---|---|
 | 代码规模 | `src/cbr` 约 55 个 Python 模块（数据/特征/模型/工具/知识库/LLM/智能体/编排/核验/评估/API） |
-| 数据 | 27 个序列数据卡（2018–2025 日频）、29 篇知识库语料 / 32 chunks、确定性仿真数据（`data/samples`）+ DuckDB PIT 存储 |
+| 数据 | 27 个规范序列数据卡；**真实数据快照已接入**（2015-01-05~2025-09-30，2,615 交易日 / 57,421 观测 / 9,758 篇文本，`ds_94c8b84b60cd1248dd57`）；29 篇知识库语料 / 32 chunks；默认 `data/samples` 仿真数据用于离线测试，真实数据走 `data/custom` + DuckDB PIT |
 | 工具 | 7 个确定性工具（risk_measure / systemic_risk / capital_flow / funding_cost / scenario / forecast / knowledge_search），权限矩阵 `default_deny` |
 | 智能体 | 监管 / 投资 / 融资三角色 + 单智能体基线 + 协调者/核验器逻辑 |
 | 协同 | R0 独立分析 → R1 证据共享 → R2 交叉验证 → R3 分歧识别 → R4 冲突协调 → R5 决策卡；三模式（single / independent / collaborative）同一代码路径 |
@@ -70,7 +70,7 @@
 
 | 架构层 | 关键实现 | 说明 |
 |---|---|---|
-| L1 数据与时点 | `cbr.data.build_data_provider(settings)`；`MarketDataProvider` / `PitStoreDataProvider` | 装配优先级：用户自建数据（`data/custom` + `configs/data_mapping.yaml`）→ `data/pit.duckdb` → 样例仿真数据 → 内存仿真兜底。所有读取按 `as_of` 过滤（`release_time <= as_of`），数据卡 27 条含时点评级 |
+| L1 数据与时点 | `cbr.data.build_data_provider(settings)`；`MarketDataProvider` / `PitStoreDataProvider` | 装配优先级：用户自建数据（`data/custom` + `configs/data_mapping.yaml`；真实数据 profile 下 `synthetic_fallback: false`，缺失序列以 NaN 进入特征层而非回退仿真）→ `data/pit.duckdb` → 样例仿真数据 → 内存仿真兜底。所有读取按 `as_of` 过滤（`release_time <= as_of`），数据卡 27 条含时点评级 |
 | L1 标签 | `cbr.data.labels.build_stress_labels` | CFSI-CN 压力指数（股/债/汇/跨境/全球/文本六维，PCA/分位复合）；高压力=训练期 q90 冻结阈值（`threshold_mode=frozen`，滚动分位仅稳健性）；标签 `y_{t,h}` 主分析 B1（未来 h 日内 max），支持 B0(point)/B2(persistence)；h∈{5,10,20} |
 | L2 多模态融合 | `cbr.features.build_feature_bundle`；`cbr.models.signal.SignalEngine` | 48 个数值特征 + 11 个文本特征；滚动样本外快照训练（`roll_window=500`、`retrain_every=20`、严格 `t+h<=R` 样本截断）；输出 `RiskSignal{horizons, percentile, level, drivers, modality_contrib, model_version}`；`predict(as_of, text_enabled=False)` 即 P1 数值-only 消融 |
 | L3 工具 | `cbr.tools.build_tool_registry(settings, provider, kb)`；`registry.run(role, tool, as_of, **kwargs)` | 7 工具全部纯计算；`Evidence` 含 `evidence_id / tool_version / inputs_hash / as_of / elapsed_ms / citations`；角色权限来自 `configs/roles.yaml`，越权 `ok=False + data.disallowed` 并记审计；工具默认参数/序列映射在 `configs/tools.yaml` |
@@ -163,25 +163,29 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 
 ---
 
-## 7. 验证结果（本机实测，2026-10-18）
+## 7. 验证结果（本机实测，2026-10-20）
 
 | 验证项 | 结果 |
 |---|---|
-| 全量单元/集成测试 | **206 项全部通过（含 DeepSeek 真实调用测试）**，覆盖 tests/test_integration.py 6 项端到端集成与 tests/test_custom_data.py 自建数据接入测试；`pytest -q` 退出码 0 |
+| 全量单元/集成测试 | **249 项全部通过（含 DeepSeek 真实调用测试）**，覆盖 tests/test_integration.py 端到端集成与 tests/test_custom_data.py 自建数据接入测试；`pytest -q` 退出码 0 |
 | 真实 DeepSeek 复跑 | P2（3 日 × full/no_tools）+ P3（4 日 × 三模式）= 18 次运行 / 54 次 LLM 调用全部成功；0 错误/超时/Schema 失败；实际 API tokens 323,431、费用约 ¥0.70；详见 [pilot_results_real_llm.md](../techdoc/pilot_results_real_llm.md) |
-| 自建数据接入 | `data.dataset=custom` 时 provider 自动并入 `data/custom`（CSV/Parquet），缺失序列回退 SYNTHETIC；实测数据卡标记 `user-provided`、风险信号与历史序列接口可用（`tests/test_custom_data.py`） |
-| 数据快照 | `dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`；PIT 41,367 观测 / 2,207 文档 / 27 序列元数据；provider 走 `PitStoreDataProvider` |
+| 自建数据接入 | 真实数据 profile（`configs/app.real.yaml`：`dataset=custom`、`synthetic_fallback=false`）下 provider 只使用 `data/custom`，缺失序列以 NaN 进入特征层、不回退仿真；数据卡标记 `user-provided`；`tests/test_custom_data.py` 覆盖接入路径 |
+| 真实数据快照 | `dataset_snapshot_id=ds_94c8b84b60cd1248dd57`、`corpus_hash=corpus_a7e87cba9e85e67525ae`；2015-01-05~2025-09-30、2,615 交易日、27 序列、57,421 观测、9,758 篇文档；PIT `data/pit_real.duckdb`；真实模型产物在 `artifacts_real/` |
+| 真实数据 P1（2021–2025，1,152 日） | 数值-only PR-AUC 0.695/0.632/0.612（h=5/10/20）；融合 0.684/0.639/0.617；Δ=-0.011/+0.007/+0.005，p=0.172/0.342/0.214（**文本模态增益不显著**，h5 略负）；详见 [pilot_results_real_data.md](../techdoc/pilot_results_real_data.md) |
+| 真实数据 P2（4 日，真实 DeepSeek） | full：18 claims / 17.25 工具调用 / 4.75 冲突全解决 / tool_evidence_gated=1；no_tools：7.5 claims / 0 工具 / 17 次越权阻断 / tool_evidence_gated=0 / claim_rejected=7.5；decision_loss 1.325 vs 1.360；实际 tokens 18,783/12,771 |
+| 真实数据 P3（4 日 × 三模式，真实 DeepSeek） | 三模式 task_completion=1、核验通过；collaborative 4.25 冲突全解决、trace 94.5 条；**decision_loss 三模式均为 1.325，协同决策收益未显现**；tokens 19.6k/18.8k/18.8k |
+| 数据快照（SYNTHETIC） | `dataset_snapshot_id=ds_1beab3f3ffd9e31a4c5b`、`corpus_hash=corpus_7ac20be6ce7d622c8308`；PIT 41,367 观测 / 2,207 文档 / 27 序列元数据；provider 走 `PitStoreDataProvider` |
 | API 端到端 | `/api/decision` 200（3 卡/20 证据/冲突全解决/核验通过）、`/api/chat` 200（10 引用）、health/scenarios/evidence/data-cards/trace 均 200 |
 | Streamlit（回退） | AppTest 无异常（5.8s）；6 页签 + 对话页；真实数据渲染 5 个 Plotly 图 |
 | React 驾驶台（主 UI） | Vite 构建产物由 FastAPI `/ui` 托管（`/` 307 → `/ui/`）；light/dark 双主题、证据 Dialog、对话页、导出；AI-native 交互升级（SSE RunProgress/⌘K 命令面板/上下文追问/协同过程/打字机）；截图见 `artifacts/ui-ai/` |
-| SSE 流式（真实 DeepSeek） | `/api/decision/stream`：HTTP 200 `text/event-stream`；`run=1 / trace=97 / stage=35 / decision=1`，首个 trace 与最终决策均在真实运行中即时推送（本次 14.5s）；`/api/chat/stream` 以 `chat` 收尾；缓存命中 0.01s 仅 `decision`；`: ping` 心跳 10s；254 项 pytest 全绿（含 43 项 streaming 测试） |
+| SSE 流式（真实 DeepSeek） | `/api/decision/stream`：HTTP 200 `text/event-stream`；`run=1 / trace=97 / stage=35 / decision=1`，首个 trace 与最终决策均在真实运行中即时推送（本次 14.5s）；`/api/chat/stream` 以 `chat` 收尾；缓存命中 0.01s 仅 `decision`；`: ping` 心跳 10s；249 项 pytest 全绿（含 43 项 streaming 测试） |
 | 三模式预算 | single 12,000 / independent 11,799 / collaborative 11,801 tokens（6 个评估日均值），接近对齐 |
 | 协同机制 | collaborative 平均 4.0 个冲突、全部解决；single/independent 无共享冲突（机制对照成立） |
 | P1 试点（240 个交易日） | PR-AUC：数值-only 0.478/0.428/0.351，融合 0.504/0.451/0.354（h=5/10/20）；Δ = +0.026/+0.023/+0.003，p=0.112/0.088/0.653（**方向为正但不显著**）；Recall@10% 0.429/0.333/0.143；详见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md) |
 | P2 试点（4 个评估日） | full：15 条主张/17 次工具调用/核验通过/任务完成率 1.0；no_tools_no_kb：3 条主张/0 次工具/核验不通过/任务完成率 0（能力消融方向符合预期；Mock 模式下数值错误率恒为 0，真实 LLM 下才具备幻觉风险） |
 | P3 试点（6 个评估日） | 三模式任务完成率 1.0、证据覆盖率 1.0、核验通过；collaborative 平均 4.0 个冲突且全部解决，single/independent 为 0；tokens 12,000/11,799/11,801 对齐 |
 
-> 说明：以上为 **SYNTHETIC 仿真数据**下的流程验证结果（Mock LLM 与真实 DeepSeek 两种后端均已实测），不代表真实市场结论。论文正式实验需接入用户真实数据，按 `configs/experiments/` 与 `ablation_matrix.yaml` 重新执行；P1（按规则模型）与 P2/P3（按 LLM 后端）试点的指标表与解读分别见 [pilot_results_synthetic.md](../techdoc/pilot_results_synthetic.md) 与 [pilot_results_real_llm.md](../techdoc/pilot_results_real_llm.md)。
+> 说明：以上同时包含 **SYNTHETIC 仿真数据**（离线测试/流程验证）与**真实数据快照**（v0.8 接入，用户数据 + 飞书 + 公开补齐）两类结果，二者严格分开；真实数据上的 P1 文本增益不显著（见上表与 [pilot_results_real_data.md](../techdoc/pilot_results_real_data.md)），不能据此宣称真实市场预测有效。P2/P3 的 LLM 协同结果同时受数据与 LLM 后端影响，正式实验需按 `configs/experiments/` 重跑。
 
 ---
 
@@ -198,10 +202,10 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 
 ## 9. 已知限制与下一步
 
-**限制**：仿真数据仅用于流程验证；BM25 检索无 embedding/reranker；ΔCoVaR/DY 为简化近似（参数已在 Evidence 中披露）；真实 LLM 下终卡数值错误率/无依据断言率是"自检回填 + 证据过滤后"的饱和值，不能直接解释为模型事实性（草稿级指标见真实 LLM 试验报告）；R2 交叉验证为工具重算而非 LLM 同行评议；P1 试点在仿真 DGP 上判别力存在但不显著，需真实数据与全窗口实验；真实 LLM 单次运行的 prompt 约 5.2–5.7k tokens/角色，会撞 12k 统计预算上限，正式实验需校准预算或外置 JSON Schema；P3 的决策损失暂由共享信号主导，协同增益尚未在决策损失维度体现。
+**限制**：真实数据快照已接入（2015–2025，27 序列 / 9,758 文本），但部分序列为明示代理口径（SHIBOR 1W→7 天回购、AAA 中票→AA 利差、累计净流入→北向持仓、滚动增量→社融存量同比），北向 2024-08-16 后停披露、CPI 2015–2020 缺失；真实数据 P1 中数值-only 判别力较强（h5 PR-AUC 0.695）而**文本模态增益不显著**，需更均衡的语料或更强文本表征再验证。BM25 检索无 embedding/reranker；ΔCoVaR/DY 为简化近似（参数已在 Evidence 中披露）；真实 LLM 下终卡数值错误率/无依据断言率是"自检回填 + 证据过滤后"的饱和值，不能直接解释为模型事实性（草稿级指标见真实 LLM 试验报告）；R2 交叉验证为工具重算而非 LLM 同行评议；真实 LLM 单次运行的 prompt 约 5.2–5.7k tokens/角色，会撞 12k 统计预算上限，正式实验需校准预算或外置 JSON Schema；P3 的决策损失暂由共享信号主导，协同增益尚未在决策损失维度体现。
 
 **下一步（按优先级）**：
-1. 接入用户自建数据集（`data/custom` + `configs/data_mapping.yaml`）并重建 PIT 快照；
-2. 按真实 LLM 试验报告建议增加**草稿级幻觉指标**（回填前数值差异、被拒 claim 比例）与**证据门槛版任务完成率**，并校准 token 预算（`max_tokens_per_agent` 或外置 Schema）；
-3. 跑全窗口 P1（2021–2025）与 E0–E12 消融矩阵，产出论文 5.x/6.x 结果表；
-4. HITL 交互式审批面板（approve/reject/override 写 trace）与流式并发上限/成本护栏；如需录屏材料，使用 `web/README.md` 的验收路径与 `artifacts/ui-ai/` 截图。
+1. 用真实数据快照跑全窗口 P1（2015–2025 预热 + 2021–2025 评估已首跑；需扩展到 2018–2020 评估段、稳健性标签 B0/B2 与 E0–E12 消融矩阵，产出论文 5.x/6.x 结果表）；
+2. 改进文本模态：更均衡的长时段语料（补齐 2017–2020 政策文本）或更强文本表征（embedding/LLM 摘要特征），重新检验 P1 文本增益；
+3. 按真实 LLM 试验报告建议增加**草稿级幻觉指标**（回填前数值差异、被拒 claim 比例）与**证据门槛版任务完成率**，并校准 token 预算（`max_tokens_per_agent` 或外置 Schema）；
+4. HITL 交互式审批面板（approve/reject/override 写 trace）与流式并发上限/成本护栏；演示材料使用 `web/README.md` 的验收路径与 `artifacts/ui-ai/` 截图。

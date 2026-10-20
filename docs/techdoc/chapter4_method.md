@@ -2,7 +2,7 @@
 
 > 本章为 CBR-MAW 技术文档的方法章。文中类名、字段名、工具名与配置项以 `src/cbr/` 实现与 `configs/` 配置为准；凡涉及实证结论之处，仅陈述可检验含义与评价口径，实测结果见第五章实验设计与第六章结果分析。
 >
-> 版本：v0.7（2026-10-18）。v0.7 变更：L6 交互升级为 **AI-native 协同工作台**——新增 SSE 流式端点（`/api/decision/stream`、`/api/chat/stream`，实时推送 `run/stage/trace/decision|chat`），前端实现流式运行进度（R0–R5 阶段与活动流）、⌘K 命令面板、对话流式阶段与上下文 AI 追问（智能体卡/证据/冲突一键跳转提问）、协同过程时间线与克制动效；4.5.1 与附录 A.2 同步。v0.6：L6 前端重构为 React 19 + Vite + Tailwind v4（shadcn/ui + Linear 规范，light/dark 双主题，FastAPI `/ui` 托管，Streamlit 回退）。v0.5：数据卡 27 条、PIT 快照 `ds_1beab3f3ffd9e31a4c5b`（41,367 观测 / 2,207 文档 / 27 序列）、`label_mode`/`threshold_mode` 与 R2/HITL 触发口径按实现修订。真实模型复跑记录见 `pilot_results_real_llm.md`，不写入方法章结果。
+> 版本：v0.8（2026-10-20）。v0.8 变更：接入用户提供的真实金融数据与飞书文本语料，新增真实数据快照（27 条序列 / 9,758 篇文档 / 2,615 个交易日，`dataset_snapshot_id=ds_94c8b84b60cd1248dd57`）；4.1.1 与附录 A.3 补充真实数据覆盖、时点（PIT）口径与代理序列说明；真实数据试点结果单独记录于 `pilot_results_real_data.md`，不改变方法章主分析口径。v0.7：L6 交互升级为 AI-native 协同工作台（SSE 流式、⌘K 命令面板、上下文追问、协同过程时间线）；4.5.1 与附录 A.2 同步。v0.6：L6 前端重构为 React 19 + Vite + Tailwind v4（shadcn/ui + Linear 规范，light/dark 双主题，FastAPI `/ui` 托管，Streamlit 回退）。v0.5：数据卡 27 条、PIT 快照 `ds_1beab3f3ffd9e31a4c5b`（41,367 观测 / 2,207 文档 / 27 序列）、`label_mode`/`threshold_mode` 与 R2/HITL 触发口径按实现修订。
 
 本章提出面向跨境金融风险预警的多模态多智能体协同方法，把预警理解为三个相互衔接的层次：由数值—文本多模态信息融合形成三类主体共享的风险基础信号；由金融知识检索与确定性金融工具提供可溯源、可重算的证据支撑；由监管、投资与融资三类专业化智能体的分工、共享与协调，把公共风险信号转化为主体差异化的预警与决策支持信息。方法设计对应三个研究命题：多模态信息是否带来增量预警能力（P1）、知识与工具能否降低数值错误与无依据断言（P2）、专业化分工与协同能否在可比资源预算下降低预警与决策损失（P3）。
 
@@ -131,6 +131,8 @@ flowchart TB
 | 全球因子 | 标普500、VIX、MOVE、美元指数、USDCNY/CNH、中美利差 | 日 | strict | 外部冲击与溢出、汇率敞口 | 监管、投资、融资 |
 | 宏观 | PMI、社融、外储、政策利率 | 月/日 | approximate | 背景变量、融资环境 | 监管、融资 |
 | 文本 | 央行、证监会、外管局、国务院政策文本，财经新闻标题，事件流 | 日/事件 | strict（按发布时间） | 文本模态：政策不确定性、资本管制、外部冲击 | 全部 |
+
+**真实数据接入（v0.8）**：实现层面已接入用户提供的真实数据快照：用户 zip（B1 人民币汇率中间价、B2 SHIBOR/CNH HIBOR/CIP 基差/USDCNY 即期与远期、B3 沪深300/上证指数/上证50/中证2000、B4 DXY/GPR/EPU、B6 CPI/存款/进出口）、飞书多维表格「07 沪深港通资金流」（北向/南向每日净买入，2014-11 ~ 2025-12）、飞书文本语料（人民日报/光明日报/中国政府网/证券时报等，9,758 篇）与公开接口补齐序列（2Y/10Y 国债、信用利差、PMI、标普500、AH 溢价、中证500、成交额、VIX、US10Y、CNH、社融、外储、LPR）。真实快照覆盖 2015-01-05 ~ 2025-09-30、2,615 个交易日、27 条规范序列、57,421 条观测、9,758 篇文档（`dataset_snapshot_id=ds_94c8b84b60cd1248dd57`，`corpus_hash=corpus_a7e87cba9e85e67525ae`）。时点规则：中国日频按当日 18:00 +08:00 可得，全球因子按 t-1 海外收盘对齐，月频按保守发布日入样；北向资金 2024-08-16 后停披露即置缺失，不回填。若某序列不可得，使用**明示的代理口径**（SHIBOR 1W 代理 7 天回购、AAA 中票利差代理 AA 利差、累计净流入代理北向持仓、12 个月滚动增量同比代理社融存量同比），并在数据卡与偏差表中标注；真实数据上的模型结果单独报告，不混入仿真主分析。
 
 在此基础上构造跨境金融压力指数。对第 $k$ 个标准化子指标，采用滚动窗口构造 $z$ 分数并加权合成：
 
@@ -813,6 +815,27 @@ $$
 | GET | `/api/data-cards` | — | `DataCard` 列表 | 数据说明与时点评级 |
 | GET | `/api/scenarios` | — | `Scenario` 列表 | 历史压力情景 |
 | GET | `/api/health` | — | 健康状态 | LLM/数据源/模块就绪检查 |
+
+### 附录 A.3 真实数据快照与覆盖（v0.8）
+
+表 A-3 真实数据快照的序列覆盖、来源与时点口径
+
+| 序列（规范 ID） | 来源 | 覆盖 | 时点/口径说明 |
+|---------------|------|------|--------------|
+| `market.cn_equity.csi300` / `csi500` / `turnover` | 用户 B3；公开补齐（中证500、两市成交额） | 2015-01 ~ 2025-09 | 日频，当日 18:00 可得 |
+| `market.cn_bond.cgb_2y` / `cgb_10y` / `term_spread` / `cgb_index` | 公开补齐；派生 | 2015-01 ~ 2025-09 | 国债收益率为中国货币网/中债口径；派生序列按 4.1 公式 |
+| `market.cn_bond.repo_7d` / `rates.credit.aa_spread` | 用户 B2 SHIBOR 1W（代理）；中债 AAA 中票 5Y−国债 5Y（代理） | 2015-01 ~ 2025-09 | 明示代理，不代表原口径 |
+| `market.fx.usdcny` / `usdcnh` / `cnh_cny_gap` | 用户 B2 即期；公开补齐（东财/新浪）；派生 | 2015-01 ~ 2025-09 | 日频，汇差 = (CNH−CNY)×10⁴ pips |
+| `market.global.dxy` / `vix` / `sp500` / `us10y` / `cn_us_spread` | 用户 B4；公开补齐（CBOE、东财、Treasury）；派生 | 2015-01 ~ 2025-09 | 按 t-1 海外收盘对齐，次日 09:00 +08:00 可得 |
+| `crossborder.flows.northbound_net` / `southbound_net` | 飞书 Base「07 沪深港通资金流」 | 2015-01 ~ 2024-08（北向）/ 2025-09（南向） | 北向 2024-08-16 停披露即缺失，不回填 |
+| `crossborder.holdings.*` / `ah_premium` | 累计净流入（流量法代理）；公开补齐（恒生 AH 溢价） | 同上 | 持仓为明示代理口径 |
+| `macro.pmi` / `cpi` / `social_financing` / `fx_reserves` / `lpr` | 公开补齐（统计局/央行/SAFE/交易中心）；用户 B6 | 2015-01 ~ 2025-09（CPI 2021+） | 按保守发布日入样（次月首日/10 日/12 日/7 日等） |
+| 文本（`policy_news.csv`） | 飞书「文本数据 8.2」：人民日报、光明日报、中国政府网、证券时报、跨境/黄金公告、BIS/IMF | 2017-01 ~ 2025-09，9,758 篇 | 仅日期；按发布日入样；来源偏差见 `docs/data/text_corpus.md` |
+
+复现：`scripts/build_real_custom_data.py` 生成 `data/custom/` 与 `configs/data_mapping.yaml`；
+`scripts/build_dataset.py --custom-only` 生成 PIT 与真实数据模型产物（独立 `artifacts_real`）。
+真实数据实验通过 `CBR_CONFIG=configs/app.real.yaml` 启用；真实数据预测性能与 P1/P2/P3 结果
+见 `pilot_results_real_data.md`。
 
 ## 附录 B 配置示例
 

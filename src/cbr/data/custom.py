@@ -387,6 +387,10 @@ class CustomDatasetAdapter:
             source_col = item.source_column or _find_column(list(frame.columns), DOC_SOURCE_COLUMNS)
             url_col = item.url_column or _find_column(list(frame.columns), DOC_URL_COLUMNS)
             id_col = item.doc_id_column or _find_column(list(frame.columns), DOC_DOCID_COLUMNS)
+            body_col = body_col if body_col in frame.columns else None
+            source_col = source_col if source_col in frame.columns else None
+            url_col = url_col if url_col in frame.columns else None
+            id_col = id_col if id_col in frame.columns else None
             docs = pd.DataFrame(
                 {
                     "doc_id": (

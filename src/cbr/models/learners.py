@@ -86,20 +86,32 @@ class Learner:
         target = target[valid]
         if target.size < 10:
             self._constant = float(np.clip(np.nanmean(target) if target.size else 0.5, 0.05, 0.95))
-            self._mean = np.nanmean(frame.to_numpy(dtype=float), axis=0)
-            self._std = np.nanstd(frame.to_numpy(dtype=float), axis=0)
+            self._mean, self._std = self._nan_scaler(frame)
             return self
         if np.unique(target).size < 2:
             self._constant = float(np.clip(np.mean(target), 0.02, 0.98))
-            self._mean = np.nanmean(frame.to_numpy(dtype=float), axis=0)
-            self._std = np.nanstd(frame.to_numpy(dtype=float), axis=0)
+            self._mean, self._std = self._nan_scaler(frame)
             return self
-        self._mean = np.nanmean(frame.to_numpy(dtype=float), axis=0)
-        self._std = np.nanstd(frame.to_numpy(dtype=float), axis=0)
-        self._std = np.where((self._std == 0) | ~np.isfinite(self._std), 1.0, self._std)
+        self._mean, self._std = self._nan_scaler(frame)
         self._estimator = self._build_estimator(target)
         self._estimator.fit(frame, target)
         return self
+
+    @staticmethod
+    def _nan_scaler(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """训练期标准化参数：全 NaN 列以 mean=0/std=1 占位，并抑制 numpy 空切片告警。"""
+        import warnings
+
+        array = frame.to_numpy(dtype=float)
+        if array.size == 0:
+            return np.zeros(array.shape[1]), np.ones(array.shape[1])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            mean = np.nanmean(array, axis=0)
+            std = np.nanstd(array, axis=0)
+        mean = np.where(np.isfinite(mean), mean, 0.0)
+        std = np.where((std == 0) | ~np.isfinite(std), 1.0, std)
+        return mean, std
 
     def _build_estimator(self, y: np.ndarray) -> Any:
         """按学习器类型构造 sklearn 兼容估计器。"""

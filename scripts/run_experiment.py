@@ -37,6 +37,14 @@ logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(mes
 logger = logging.getLogger("cbr.experiment")
 
 
+def _data_label(provider: Any) -> tuple[bool, str]:
+    """返回 (是否 synthetic, 展示用数据来源标签)。"""
+    source = getattr(getattr(provider, "dataset", None), "source", "") or "unknown"
+    synthetic = source == "synthetic-simulation"
+    label = "SYNTHETIC 仿真数据（流程验证用途）" if synthetic else f"真实数据（source={source}）"
+    return synthetic, label
+
+
 # --------------------------------------------------------------------------- #
 # 工具
 # --------------------------------------------------------------------------- #
@@ -96,9 +104,11 @@ def run_p1(provider, config, out: Path, max_days: int | None = None) -> dict[str
     for horizon in horizons:
         comparisons[f"h{horizon}"] = compare_ablation(result_fusion, result_numeric, horizon, n_boot=n_boot)
 
+    synthetic, data_label = _data_label(provider)
     payload = {
         "kind": "p1_modality",
-        "synthetic": True,
+        "synthetic": synthetic,
+        "data_source": data_label,
         "n_dates": len(dates),
         "numeric": result_numeric.to_dict() | {"table": result_numeric.table_markdown()},
         "fusion": result_fusion.to_dict() | {"table": result_fusion.table_markdown()},
@@ -110,7 +120,7 @@ def run_p1(provider, config, out: Path, max_days: int | None = None) -> dict[str
         "# P1 多模态信息增益（数值 vs 数值+文本）",
         "",
         f"- 评估区间：{start} ~ {end}，交易日 {len(dates)} 个",
-        "- 数据来源：SYNTHETIC 仿真数据（流程验证，不代表真实市场结论）",
+        f"- 数据来源：{data_label}",
         "",
         "## 数值-only 基线",
         "",
@@ -350,9 +360,11 @@ def run_p2(service, config, out: Path, n_dates: int = 4, llm_label: str = "unkno
         rows = [_run_one(orchestrator, service, d, "collaborative") for d in dates]
         results[name] = rows
 
+    synthetic, data_label = _data_label(service.provider)
     payload = {
         "kind": "p2_augment",
-        "synthetic": True,
+        "synthetic": synthetic,
+        "data_source": data_label,
         "llm": llm_label,
         "dates": [str(d) for d in dates],
         "variants": {name: {"rows": rows, "aggregate": _aggregate(rows)} for name, rows in results.items()},
@@ -364,7 +376,7 @@ def run_p2(service, config, out: Path, n_dates: int = 4, llm_label: str = "unkno
         "",
         f"- 评估日（{len(dates)} 个）：{', '.join(str(d) for d in dates)}",
         "- 对照：full（7 工具 + 29 篇知识库） vs no_tools_no_kb（禁用工具与知识库）",
-        "- 数据来源：SYNTHETIC 仿真数据（流程验证用途）",
+        f"- 数据来源：{data_label}",
         f"- LLM：{llm_label}",
         "",
         "| 指标 | full | no_tools_no_kb |",
@@ -398,9 +410,11 @@ def run_p3(service, config, out: Path, n_dates: int = 8, llm_label: str = "unkno
         rows = [_run_one(service.orchestrator, service, d, mode) for d in dates]
         results[mode] = rows
 
+    synthetic, data_label = _data_label(service.provider)
     payload = {
         "kind": "p3_collaboration",
-        "synthetic": True,
+        "synthetic": synthetic,
+        "data_source": data_label,
         "llm": llm_label,
         "dates": [str(d) for d in dates],
         "variants": {mode: {"rows": rows, "aggregate": _aggregate(rows)} for mode, rows in results.items()},
@@ -411,7 +425,7 @@ def run_p3(service, config, out: Path, n_dates: int = 8, llm_label: str = "unkno
         "# P3 多智能体协同对照（单智能体 / 三独立智能体 / 完整协同）",
         "",
         f"- 评估日（{len(dates)} 个）：{', '.join(str(d) for d in dates)}",
-        "- 数据来源：SYNTHETIC 仿真数据（流程验证用途）",
+        f"- 数据来源：{data_label}",
         f"- LLM：{llm_label}",
         "",
         "| 指标 | single | independent | collaborative |",
@@ -443,18 +457,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     config = load_experiment_config(args.config)
     run_id = args.run_id or f"{config.run_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     out = _result_dir(run_id)
+    data_label = "未知数据源"
     summary: dict[str, Any] = {"run_id": run_id, "config": args.config, "synthetic": True, "kinds": {}}
 
     if args.kind in ("p1", "all"):
         from cbr.data import build_data_provider
 
         provider = build_data_provider(load_settings())
+        synthetic, data_label = _data_label(provider)
+        summary["synthetic"] = synthetic
+        summary["data_source"] = data_label
         summary["kinds"]["p1"] = run_p1(provider, config, out, args.p1_max_days)
 
     if args.kind in ("p2", "p3", "all"):
         from cbr.service import build_service
 
         service = build_service()
+        synthetic, data_label = _data_label(service.provider)
+        summary["synthetic"] = synthetic
+        summary["data_source"] = data_label
         llm = getattr(service, "llm", None)
         llm_label = type(llm).__name__ if llm is not None else "unknown"
         if llm is not None:
@@ -477,7 +498,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"- run_id: `{run_id}`\n"
         f"- 配置: `{args.config}`\n"
         f"- 类别: {', '.join(summary['kinds'])}\n"
-        "- 数据: SYNTHETIC 仿真数据（流程验证，不代表真实市场结论）\n"
+        f"- 数据: {data_label}\n"
         f"- 产物目录: `{out}`\n",
         encoding="utf-8",
     )
