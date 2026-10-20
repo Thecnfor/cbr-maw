@@ -1,7 +1,7 @@
 # CHANGELOG
 
 本文件记录 CBR-MAW 的重要变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
-版本号约定：仓库目前**没有 git tag**，版本号按技术文档第四章的版本头（v0.1–v0.7）与提交顺序回溯整理；v0.5 / v0.6 属于同一提交批次、按变更主题拆分记录。日期为提交日期（2026-10-18），文档体系完善为 2026-10-20。
+版本号约定：仓库目前**没有 git tag**，版本号按技术文档第四章的版本头（v0.1–v0.8）与提交顺序回溯整理；v0.5 / v0.6 属于同一提交批次、按变更主题拆分记录。日期为提交日期（2026-10-18），文档体系完善与公开发布为 2026-10-20。
 
 ---
 
@@ -20,13 +20,19 @@
 - 新增 [CONTRIBUTING.md](CONTRIBUTING.md)、[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)、[SECURITY.md](SECURITY.md)、[AGENTS.md](AGENTS.md)、[CHANGELOG.md](CHANGELOG.md)。
 - 新增 `docs/guides/team-collaboration.md`（多 agent/多人并行：任务看板、写入范围、依赖、验证命令）。
 - 新增 `docs/assets/screenshots/`：5 张关键 UI 截图（light/dark、流式运行、命令面板、对话），README 引用。
-- 修正 [docs/techdoc/open_issues.md](docs/techdoc/open_issues.md) 版本头（v0.4 → v0.7，与实际内容一致）。
+- 修正 [docs/techdoc/open_issues.md](docs/techdoc/open_issues.md) 版本头（v0.4 → v0.8，与实际内容一致）。
 - 全仓 Markdown 相对链接检查：断链 0 处。
 
 ### 工程化（与仓库工程化/CI 任务并行合入，按仓库实际文件为准）
 - 新增 [LICENSE](LICENSE)（MIT，Copyright © 2026 Thecnfor）、`requirements-dev.txt`（ruff / pytest-cov / pre-commit）。
 - `pyproject.toml`：项目元数据、MIT 许可证声明、`[project.optional-dependencies] dev`、ruff 规则。
 - 其余（`.github/` CI 与 Issue/PR 模板、`.gitignore`/`.gitattributes`、pre-commit、仓库校验脚本）随该任务合入后在此补充。
+
+### 发布（2026-10-20，v0.8 首发）
+- **公开发布**：仓库推送到 GitHub 公开仓库 <https://github.com/Thecnfor/cbr-maw>，默认分支 `main`。
+- `README.md` / `docs/INDEX.md`：方法章版本号统一 v0.7 → **v0.8**；快速开始补 `git clone`；[AGENTS.md](AGENTS.md) / [CONTRIBUTING.md](CONTRIBUTING.md) 分支与发布地址同步为 `main`。
+- `web/src/styles/index.css`：显式 `@source not "../../dist"`，修复 Tailwind v4 自动扫描已入库 `web/dist` 导致的构建不幂等；重跑 `bun run build`，`web/dist` 产物逐字节不变。
+- `pyproject.toml` 启用 `[project.urls]`；Issue 模板 `config.yml` 启用 quickstart / troubleshooting 快捷入口。
 
 ---
 

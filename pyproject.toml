@@ -47,12 +47,11 @@ dev = [
     "pre-commit>=4.0",
 ]
 
-# 发布地址：仓库当前无 remote，待 Lead 确定公开地址后取消注释并填写。
-# [project.urls]
-# Homepage = "https://github.com/Thecnfor/cbr-maw"
-# Repository = "https://github.com/Thecnfor/cbr-maw"
-# Issues = "https://github.com/Thecnfor/cbr-maw/issues"
-# Documentation = "https://github.com/Thecnfor/cbr-maw/tree/master/docs"
+[project.urls]
+Homepage = "https://github.com/Thecnfor/cbr-maw"
+Repository = "https://github.com/Thecnfor/cbr-maw"
+Issues = "https://github.com/Thecnfor/cbr-maw/issues"
+Documentation = "https://github.com/Thecnfor/cbr-maw/tree/main/docs"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

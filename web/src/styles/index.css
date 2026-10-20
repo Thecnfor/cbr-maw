@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* 生成物 web/dist 已被 git 跟踪且由 FastAPI /ui 直接托管；
+   显式排除，避免 Tailwind v4 自动扫描 dist 里的旧 className 导致构建不幂等。 */
+@source not "../../dist";
 @import "./tokens.css";
 
 /* ============================================================================

@@ -33,10 +33,10 @@
 
 | 文档 | 说明 |
 |---|---|
-| [技术文档第四章（Markdown）](techdoc/chapter4_method.md) | 方法章 v0.7：融合信号、知识与工具、三类智能体、协同与核验、实现组织 |
+| [技术文档第四章（Markdown）](techdoc/chapter4_method.md) | 方法章 v0.8：融合信号、知识与工具、三类智能体、协同与核验、实现组织 |
 | [技术文档第四章（Word）](techdoc/第四章_多模态多智能体协同预警方法.docx) | 排版稿（由 `scripts/md_to_docx.py` 生成） |
 | [章节大纲与写作计划](techdoc/chapter4_outline.md) | 第四章结构与边界 |
-| [open issues 清单](techdoc/open_issues.md) | EXP/INT/DOC/LIM 待办与关闭记录（版本头 v0.7） |
+| [open issues 清单](techdoc/open_issues.md) | EXP/INT/DOC/LIM 待办与关闭记录（版本头 v0.8） |
 | [SYNTHETIC 试点结果](techdoc/pilot_results_synthetic.md) | Mock LLM 下的 P1/P2/P3 流程验证 |
 | [真实 LLM 试点报告](techdoc/pilot_results_real_llm.md) | 真实 DeepSeek 的 P2/P3 复跑、token/成本/延迟 |
 | [多智能体框架调研](research/multi_agent_frameworks.md) | 框架选型与可信工程模式 |
@@ -64,7 +64,7 @@
 |---|---|---|
 | [architecture/CBR-MAW_architecture_v1.md](architecture/CBR-MAW_architecture_v1.md) | v1.0 | 实现定稿：六层架构、模块映射、R0–R5、核验、API/UI、实验 harness |
 | [architecture/CBR-MAW_architecture_v0.md](architecture/CBR-MAW_architecture_v0.md) | v0（草案） | 设计草案与 v1 差异背景 |
-| [techdoc/chapter4_method.md](techdoc/chapter4_method.md) | v0.7 | 方法章正文：5 图 / 13 表 / 21 公式 |
+| [techdoc/chapter4_method.md](techdoc/chapter4_method.md) | v0.8 | 方法章正文：5 图 / 13 表 / 21 公式 |
 | [techdoc/chapter4_outline.md](techdoc/chapter4_outline.md) | v0.5 | 写作计划与边界 |
 
 ### 2.2 实现与设计契约

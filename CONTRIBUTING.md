@@ -33,7 +33,7 @@ bun run build
 
 ## 2. 分支与提交
 
-- 主分支为 `master`；仓库当前无 remote，发布前由维护者统一推送。
+- 主分支为 `main`；仓库已发布（公开）：<https://github.com/Thecnfor/cbr-maw>。
 - 分支命名：`feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`。
 - 提交信息采用 Conventional Commits，**一次提交只做一件事**：
 
@@ -106,7 +106,7 @@ chore(ci): 增加 pre-commit 与断链检查
 
 ## 6. PR 流程
 
-1. 从 `master` 切分支，完成改动与测试。
+1. 从 `main` 切分支，完成改动与测试。
 2. 提交前自检（见 §7）。
 3. 发起 PR：说明动机、改动点、验证命令与结果、影响范围（API/配置/数据口径）、截图（UI 变更）。
 4. Review 关注：数据契约是否破坏、是否引入未来信息、数值是否来自工具、测试是否覆盖、文档是否同步。

@@ -5,7 +5,7 @@
 
 **一句话定位**：以「跨境金融市场压力高位状态」为唯一共同预警目标，让监管 / 投资 / 融资三类主体智能体在共享证据黑板上分工、互验、协调；所有数值由版本化工具计算、所有结论可溯源、所有协同过程可审计、所有模块可开关消融。
 
-- 状态：可运行原型 ｜ 方法章 v0.7 ｜ 测试基线 **249 项**（2026-10-18 记录，以本机 `pytest -q` 为准）
+- 状态：可运行原型 ｜ 方法章 v0.8 ｜ 测试基线 **249 项**（2026-10-18 记录，以本机 `pytest -q` 为准）
 - 默认数据：**SYNTHETIC 仿真数据**（确定性 DGP，仅用于演示与流程验证，不代表真实市场）
 
 ![CBR-MAW 协同驾驶台（Light）](docs/assets/screenshots/dashboard-light.png)
@@ -60,6 +60,9 @@ flowchart LR
 ### Windows（PowerShell）
 
 ```powershell
+git clone https://github.com/Thecnfor/cbr-maw.git
+cd cbr-maw
+
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 .venv\Scripts\python.exe -m pip install -e . --no-deps
@@ -84,6 +87,9 @@ cd ..
 ### Linux / macOS
 
 ```bash
+git clone https://github.com/Thecnfor/cbr-maw.git
+cd cbr-maw
+
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

@@ -110,9 +110,9 @@ cd web; bunx tsc --noEmit; bun run build; cd ..
 
 ## 7. 分支、提交与版本
 
-- 主分支 `master`；个人/agent 工作在 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>` 分支（仓库当前无 remote，发布前由维护者统一推送）。
+- 主分支 `main`；仓库已发布（公开）：<https://github.com/Thecnfor/cbr-maw>。个人/agent 工作在 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>` 分支。
 - 由 Lead 统一 `git add/commit`；提交信息用 Conventional Commits（`feat:`/`fix:`/`docs:`/`test:`/`chore:`），一次提交聚焦一件事。
-- 不直接 push 到 `master`、不改写历史、不使用 `git add -A` 夹带无关文件。
+- 不直接 push 到 `main`、不改写历史、不使用 `git add -A` 夹带无关文件。
 - 行为/命令/配置变更 → 同步 README 与 `docs/guides/*`；用户可见变更 → [CHANGELOG.md](CHANGELOG.md)。
 - 实验结论：默认 SYNTHETIC；pilot 与正式结果分开；不显著不得写成显著。
 
