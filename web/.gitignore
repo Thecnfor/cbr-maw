@@ -1,4 +1,10 @@
+# web/ 下的本地依赖与缓存
 node_modules/
-dist/
+.vite/
 *.local
 .tmp-*
+
+# 注意：dist/ **不忽略**（有意入库）。
+# FastAPI 通过 /ui 直接托管 web/dist，保证“克隆仓库 → 装依赖 → 启动即见驾驶台”。
+# 修改前端后请 `bun run build` 并连同 dist 变更一起提交；CI 的 web.yml 会验证可构建。
+# 若维护者决定改为“dist 不入库”，在此加回 `dist/`，并在 CI 中用构建产物发布。

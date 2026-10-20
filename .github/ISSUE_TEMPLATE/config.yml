@@ -1,0 +1,9 @@
+# CBR-MAW · Issue 模板配置
+# 允许创建空白 issue（临时讨论/提问）；结构化反馈请使用 bug_report / feature_request / task 模板。
+blank_issues_enabled: true
+# 说明：仓库尚未确定公开发布地址，暂不配置 contact_links（避免出现 404 链接）。
+# 发布后如需在“新建 Issue”页加入快捷入口，可补：
+# contact_links:
+#   - name: 快速开始 / 环境问题
+#     url: <发布后的仓库地址>/blob/master/docs/guides/quickstart.md
+#     about: 安装、构建样例数据、启动 API/UI 的常见问题先看这里

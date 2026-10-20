@@ -1,0 +1,65 @@
+name: 功能建议
+description: 提出新功能、增强或架构改进建议
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请说明“要解决什么问题”，而不是只给方案。涉及 API/schema/配置/数据口径的变更
+        需评估与现有实现的兼容性。
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景与问题
+      description: 当前哪里不足？对谁有影响（研究/演示/真实数据接入/协作）？
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 期望的行为/接口/交互；可附伪代码、schema 草案、UI 草图
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案与取舍
+      description: 还有哪些做法？为什么选这个？
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影响范围
+      options:
+        - 仅新增（不改现有行为）
+        - 新增 + 可选配置开关
+        - 修改现有接口 / 数据结构（需迁移说明）
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 怎样算完成？建议给可执行命令或测试断言。
+      placeholder: |
+        - scripts/run_experiment.py --kind p3 可跑通并输出新增指标
+        - 新增 tests/test_xxx.py 覆盖 …
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索既有 issue/文档，未发现重复建议
+          required: true

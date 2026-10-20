@@ -1,0 +1,43 @@
+# =============================================================================
+# CBR-MAW · Git 属性
+# 作用：统一跨平台换行、声明二进制、避免构建产物污染语言统计。
+# =============================================================================
+
+# 默认：交由 Git 自动识别文本，检出统一 LF（Windows 上配合 .editorconfig）
+* text=auto eol=lf
+
+# Windows 脚本必须保持 CRLF，否则 PowerShell/cmd 解析可能出问题
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# ---- 二进制文件：禁止换行转换与文本 diff ------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.zip binary
+*.7z binary
+*.parquet binary
+*.duckdb binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# ---- 语言统计：生成物不计入手写代码 -----------------------------------------
+web/dist/** linguist-generated=true
+data/knowledge/index/** linguist-generated=true
+data/samples/*.csv linguist-generated=true
+data/samples/*.parquet linguist-generated=true
+data/pit_manifest.json linguist-generated=true
+
+# ---- 文档图片与数据：展示时不做文本 diff ------------------------------------
+docs/techdoc/figures/*.png -diff
+docs/**/*.png -diff

@@ -1,0 +1,70 @@
+# =============================================================================
+# CBR-MAW · Web CI（React 19 + Vite + Tailwind v4 驾驶台）
+#
+# - 只在 web/ 或本 workflow 变更时触发，避免文档/后端改动浪费构建；
+# - bun 版本与本地验证环境一致（1.3.13，bun.lock 为文本格式，需 bun >= 1.1.39）；
+# - `bun install --frozen-lockfile` 保证依赖与 bun.lock 完全一致；
+# - `bun run build` = `tsc --noEmit && vite build`，产物 web/dist 由 FastAPI /ui 托管。
+# =============================================================================
+name: Web
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "web/**"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 构建驾驶台（bun）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.13"
+
+      - name: 安装依赖（严格按 bun.lock）
+        run: bun install --frozen-lockfile
+
+      - name: 类型检查 + 生产构建
+        run: bun run build
+
+      - name: 校验构建产物
+        run: |
+          test -f dist/index.html
+          du -sh dist
+
+      - name: 上传 dist 产物（排查/预览用，不参与发布）
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 7
+
+      # web/dist 当前**有意入库**（FastAPI /ui 免构建演示，见 README 与 AGENTS.md）。
+      # 若后续改为“dist 不入库”，删除 .gitignore 中 web/dist 的说明并把本 job 产物
+      # 作为发布物；若希望强制“提交的 dist 与源码一致”，可启用下面两步：
+      #
+      # - name: 校验 dist 与源码一致
+      #   run: git diff --exit-code -- dist

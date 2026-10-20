@@ -1,28 +1,85 @@
-# 环境与密钥
+# =============================================================================
+# CBR-MAW · Git 忽略规则
+# 原则：源码 / 配置 / 文档 / 可复现样例数据入库；
+#       原始数据、运行产物、密钥、缓存、临时文件不入库。
+# 注意：data/samples（SYNTHETIC 仿真数据）与 data/knowledge（自有语料与索引）
+#       是仓库自带、可离线复现的数据，必须入库，不要在这里忽略。
+# =============================================================================
+
+# ---- 环境与密钥（严禁入库）-------------------------------------------------
 .env
+.env.*
+!.env.example
 secrets/
-# Python
-.venv/
-.venv-probe/
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-# 数据与产物（原始数据不入库，样例数据除外）
+*.pem
+*.key
+*.p12
+
+# ---- 用户原始数据与运行产物（不入库，由用户本地接入/生成）-------------------
 data/raw/
 data/custom/
 data/processed/
 data/pit.duckdb
+data/**/*.duckdb
+data/**/*.duckdb.wal
 artifacts/
-# 系统
+# 真实数据实验产物（与 artifacts/ 同级；只保留本地，不入库）
+artifacts_real/
+
+# ---- 用户数据压缩包 / 临时压缩包（含 docs/金融数据.zip 等原始数据包）---------
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.bz2
+
+# ---- Python ------------------------------------------------------------------
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+/dist/
+pyrightconfig.json
+
+# ---- 测试 / 静态检查缓存 -----------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---- 前端（React 19 + Vite + Tailwind v4）------------------------------------
+web/node_modules/
+web/.vite/
+web/.tmp-*/
+# 说明：web/dist 是**有意入库**的构建产物（FastAPI /ui 免构建静态托管；
+#       见 README「快速开始」与 .github/workflows/web.yml）。不要忽略它；
+#       重构前端后请在 web/ 下重新 `bun run build` 并提交 dist 变更。
+web/dist/.vite/
+web/*.local
+
+# ---- 临时文件 / 日志 ---------------------------------------------------------
+tmp_*.py
+tmp-*/
+.tmp-*/
+*.tmp
+*.log
+logs/
+# 历史调研日志已入库（docs/research/*.log），保留跟踪，不要因上面的 *.log 规则被忽略
+!docs/research/*.log
+
+# ---- 系统 / 编辑器 -----------------------------------------------------------
 .DS_Store
 Thumbs.db
-
-*.egg-info/
-.venv-probe/
-
-# React 前端
-web/node_modules/
+desktop.ini
+.idea/
+.vscode/
 .references/
-
-web/.tmp-*/

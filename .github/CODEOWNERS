@@ -1,0 +1,38 @@
+# =============================================================================
+# CBR-MAW · CODEOWNERS
+#
+# 作用：PR 自动请求指定 owner 评审。
+# 注意：owner 必须是**真实存在的 GitHub 账号或组织 Team**（如 @Thecnfor 或 @org/team）。
+#       仓库当前无 remote，发布前请把下方 @Thecnfor 替换为实际账号/Team，否则规则不生效。
+# 语法：pattern  owner...
+# =============================================================================
+
+# 默认 owner：未匹配到的文件
+*                           @Thecnfor
+
+# ---- 工程化 / 发布相关 -------------------------------------------------------
+/.github/                   @Thecnfor
+/.gitignore                 @Thecnfor
+/.gitattributes             @Thecnfor
+/.editorconfig              @Thecnfor
+/.pre-commit-config.yaml    @Thecnfor
+/pyproject.toml             @Thecnfor
+/requirements*.txt          @Thecnfor
+/LICENSE                    @Thecnfor
+/scripts/repo/              @Thecnfor
+
+# ---- 产品代码 -----------------------------------------------------------------
+/src/                       @Thecnfor
+/tests/                     @Thecnfor
+/app/                       @Thecnfor
+/configs/                   @Thecnfor
+/scripts/                   @Thecnfor
+
+# ---- 前端 ---------------------------------------------------------------------
+/web/                       @Thecnfor
+
+# ---- 文档 ---------------------------------------------------------------------
+/docs/                      @Thecnfor
+/README.md                  @Thecnfor
+/CONTRIBUTING.md            @Thecnfor
+/AGENTS.md                  @Thecnfor

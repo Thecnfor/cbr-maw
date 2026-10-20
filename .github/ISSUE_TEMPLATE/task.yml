@@ -1,0 +1,85 @@
+name: 任务卡
+description: 用于团队任务看板同步的工程任务（可对应 team_task 的 task-N）
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        本模板与团队任务卡（`team_task_list` 的 task-N）一一对应：目标、写入范围、验收标准
+        必须明确，避免多人并行时文件冲突。
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 一句话说明完成后仓库会变成什么样（可交付的结果）
+    validations:
+      required: true
+
+  - type: textarea
+    id: items
+    attributes:
+      label: 必做项
+      description: 可验收的条目清单
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: scopes
+    attributes:
+      label: 写入范围
+      description: 本任务允许修改的目录/文件；越界需先经 Lead 同意
+      placeholder: |
+        可写：.github/、pyproject.toml、scripts/repo/
+        只读：src/、tests/、docs/、web/
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准 / 验证命令
+      description: 给出可复制执行的命令与判定标准
+      placeholder: |
+        - .venv\Scripts\python.exe -m pytest -q 全绿
+        - python scripts/repo/check_repo.py 通过
+        - .github/workflows/ci.yml 可被 PyYAML 解析
+    validations:
+      required: true
+
+  - type: input
+    id: dependencies
+    attributes:
+      label: 依赖 / 阻塞
+      description: 需要先完成的任务或外部条件（如 Lead 决定 dist 是否入库）
+      placeholder: 无
+    validations:
+      required: false
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: 负责角色
+      options:
+        - 产品/算法
+        - 前端
+        - 文档
+        - 工程化/CI
+        - Lead / 集成
+        - 待定
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 完成定义
+      options:
+        - label: 已按写入范围完成并通过验证命令
+          required: false
+        - label: 已更新任务卡状态（claim → complete）并给 Lead 发摘要
+          required: false

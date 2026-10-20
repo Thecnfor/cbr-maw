@@ -1,0 +1,114 @@
+# =============================================================================
+# CBR-MAW · CI（Python 侧）
+#
+# 设计目标：离线可复现、快速失败、门禁只拦“真错误”。
+#   - lint  : ruff 门禁（仅语法/未定义名称等真错误）+ 仓库卫生（大文件/疑似密钥）
+#   - test  : Python 3.12 上构建样例数据与知识库索引（均离线）后跑全量 pytest
+#
+# 说明：
+#   - 未配置 DEEPSEEK_API_KEY 时，真实 DeepSeek 用例自动 skip，其余用 Mock LLM；
+#   - data/samples 与 data/knowledge/index 是仓库自带的 SYNTHETIC/自有语料数据，
+#     CI 中重建一遍用于验证“脚本可离线复现”；
+#   - 大文件阈值 50MB（GitHub 单文件硬限制）；>50MB 需改用 Git LFS 或移出仓库。
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+# 最小权限：CI 只读仓库（发布/推送由维护者本地执行）
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    name: Lint / 仓库卫生
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: 安装 ruff
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "ruff>=0.9"
+
+      # 门禁：只含 E9/F63/F7/F82（语法错误、未定义名称等真正的错误），
+      # 规则集定义在 pyproject.toml 的 [tool.ruff.lint].select
+      - name: Ruff 门禁
+        run: python -m ruff check src tests scripts app
+
+      # 提示性：风格债（未使用导入、import 排序、bugbear 等）先只看不拦，
+      # 待历史代码清理后把 --select 合并进 pyproject 并去掉 continue-on-error。
+      - name: Ruff 提示性报告（不阻断）
+        continue-on-error: true
+        run: python -m ruff check --select E4,E7,E9,F,I,B --output-format concise src tests scripts app
+
+      - name: 仓库卫生（大文件 / 疑似密钥）
+        run: python scripts/repo/check_repo.py --check-large --check-secrets --max-mb 50
+
+      # 文档链接检查：文档稳定后可去掉 continue-on-error 转为门禁。
+      # 注意：check_repo.py 的链接检查只扫描已跟踪的 *.md。
+      - name: Markdown 相对链接（提示性）
+        continue-on-error: true
+        run: python scripts/repo/check_repo.py --check-links
+
+  test:
+    name: Test（Python ${{ matrix.python-version }}）
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # 兼容性矩阵：当前只有 3.12 作为门禁；需要验证 3.11 时加入 "3.11"
+        python-version: ["3.12"]
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            pyproject.toml
+
+      - name: 安装依赖（运行时 + editable 安装）
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e . --no-deps
+
+      # 以下两步均离线可跑（SYNTHETIC 生成 + 本地语料 BM25 索引），
+      # 用于验证新环境“从零可复现”，并让测试拿到 data/samples、data/knowledge/index。
+      - name: 构建样例数据（SYNTHETIC，离线可复现）
+        run: python scripts/build_sample_data.py
+
+      - name: 构建知识库索引（离线）
+        run: python scripts/build_knowledge.py
+
+      - name: 全量 pytest
+        env:
+          # 未配置 secret 时为空：真实 DeepSeek 用例自动 skip
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python -m pytest -q

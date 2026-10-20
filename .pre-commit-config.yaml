@@ -1,0 +1,60 @@
+# =============================================================================
+# CBR-MAW · pre-commit 钩子
+#
+# 安装（一次性）：
+#   .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+#   .venv\Scripts\python.exe -m pre_commit install
+# 手动全量运行：
+#   .venv\Scripts\python.exe -m pre_commit run --all-files
+#
+# 说明：
+#   - ruff 规则与 pyproject.toml 的 [tool.ruff.lint] 保持一致（仅真错误）；
+#   - 基础钩子只做低风险检查（大文件/合并冲突/私钥/行尾空白），不做全仓格式化；
+#   - 数据与前端构建产物排除，避免每次运行产生无意义改动。
+# =============================================================================
+minimum_pre_commit_version: "3.7.0"
+default_install_hook_types: [pre-commit]
+
+repos:
+  # ---- 通用卫生检查 ----------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        # 与 scripts/repo/check_repo.py 的 50MB 兜底互补：这里 5MB 更早拦截；
+        # 已入库的 docs/techdoc/figures/*.png 最大约 2.7MB，不会误伤。
+        args: ["--maxkb=5000"]
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: ^(data/|web/dist/|docs/techdoc/figures/)
+      - id: trailing-whitespace
+        exclude: ^(data/|web/dist/|docs/techdoc/figures/|.*\.md$)
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: ^(data/|web/dist/)|\.[pP][sS]1$|\.bat$|\.cmd$
+
+  # ---- Python lint（规则见 pyproject.toml）-----------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      # 只做门禁（E9/F63/F7/F82），不在提交时自动改代码；
+      # ruff-pre-commit 的 entry 已含 `check --force-exclude`，此处只追加参数。
+      - id: ruff
+        name: ruff（语法/未定义名称等真错误）
+        args: []
+        types_or: [python, pyi]
+
+  # ---- 仓库卫生（大文件/密钥/Markdown 链接；需要 git 与 Python）--------------
+  - repo: local
+    hooks:
+      - id: repo-check
+        name: 仓库卫生检查（scripts/repo/check_repo.py）
+        entry: python scripts/repo/check_repo.py --check-large --check-secrets
+        language: system
+        pass_filenames: false
+        # 只在本机手动/pre-commit 时运行；CI 中由 ci.yml 直接调用
+        stages: [pre-commit]

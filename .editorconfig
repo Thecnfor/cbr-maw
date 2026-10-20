@@ -1,0 +1,33 @@
+# =============================================================================
+# CBR-MAW · EditorConfig
+# 编辑器需安装 EditorConfig 插件才会生效；与 .gitattributes 的 LF 约定保持一致。
+# =============================================================================
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# 前端 / 配置：2 空格缩进
+[*.{js,jsx,ts,tsx,json,jsonc,yml,yaml,css,scss,html}]
+indent_size = 2
+
+# Markdown：保留行尾空格（Markdown 中两个空格表示硬换行）
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows 脚本保持 CRLF（与 .gitattributes 一致）
+[*.{ps1,bat,cmd}]
+end_of_line = crlf
+
+# 制表符场景
+[Makefile]
+indent_style = tab
+
+# 数据文件：不要自动加/删末尾换行，避免产生无意义 diff
+[*.{csv,jsonl,parquet}]
+insert_final_newline = false
