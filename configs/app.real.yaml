@@ -18,7 +18,7 @@ data:
   dataset: custom        # 真实数据：仅用户自建数据（data/custom）
   custom_data_dir: data/custom
   synthetic_fallback: false  # 真实数据实验：缺失序列不回退仿真数据
-  pit_db: data/pit.duckdb
+  pit_db: data/pit_real.duckdb
   sample_dir: data/samples
   snapshot_dir: data/processed
   sample_start: "2018-01-01"
