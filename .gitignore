@@ -70,6 +70,8 @@ web/*.local
 # pytest / 本地验证临时目录
 pytest-of-*/
 .tmp-fresh/
+pip-build-*/
+pip-build-tracker-*/
 tmp_*.py
 tmp-*/
 .tmp-*/
