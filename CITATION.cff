@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "CBR-MAW: 跨境金融风险多智能体协同预警系统"
+message: "If you use this software, please cite it as below."
+type: software
+version: 1.0.0
+date-released: 2026-10-20
+license: MIT
+repository-code: "https://github.com/Thecnfor/cbr-maw"
+url: "https://github.com/Thecnfor/cbr-maw"
+abstract: >-
+  以「跨境金融市场压力高位状态」为共同预警目标的工程原型：确定性金融工具算数 +
+  监管/投资/融资三类 LLM 智能体编排 + 共享证据黑板与冲突协调 + 证据链核验 + 可配置消融实验；
+  包含真实数据接入、AI-native React 驾驶台与 SSE 流式接口。
+authors:
+  - name: "Thecnfor"
+keywords:
+  - multi-agent
+  - cross-border
+  - financial-risk
+  - early-warning
+  - point-in-time
+  - evidence-chain
+  - llm
+  - deepseek

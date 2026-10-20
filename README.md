@@ -5,12 +5,12 @@
 
 **一句话定位**：以「跨境金融市场压力高位状态」为唯一共同预警目标，让监管 / 投资 / 融资三类主体智能体在共享证据黑板上分工、互验、协调；所有数值由版本化工具计算、所有结论可溯源、所有协同过程可审计、所有模块可开关消融。
 
-- 状态：可运行原型 ｜ 方法章 v0.8 ｜ 测试基线 **249 项**（2026-10-18 记录，以本机 `pytest -q` 为准）
+- 状态：**v1.0.0 正式发布**（研究性原型）｜ 方法章 v1.0 ｜ 测试基线 **249 项**（2026-10-20 全量 `pytest -q` 通过）｜ 发布说明：[v1.0.0](docs/releases/v1.0.0.md)
 - 默认数据：**SYNTHETIC 仿真数据**（确定性 DGP，仅用于演示与流程验证，不代表真实市场）
 
 ![CBR-MAW 协同驾驶台（Light）](docs/assets/screenshots/dashboard-light.png)
 
-更多截图：[流式运行进度](docs/assets/screenshots/run-progress-light.png) · [命令面板 ⌘K](docs/assets/screenshots/command-palette-light.png) · [对话与引用](docs/assets/screenshots/chat-light.png) · [Dark 主题](docs/assets/screenshots/dashboard-dark.png)
+更多截图：[流式运行进度](docs/assets/screenshots/run-progress-light.png) · [命令面板 ⌘K](docs/assets/screenshots/command-palette-light.png) · [对话与引用](docs/assets/screenshots/chat-light.png) · [Dark 主题](docs/assets/screenshots/dashboard-dark.png) · **真实数据模式**：[驾驶台](docs/assets/screenshots/real-dashboard-light.png) · [命令面板](docs/assets/screenshots/real-command-palette-light.png)
 
 ---
 
@@ -117,7 +117,7 @@ python -m uvicorn cbr.api.main:app --host 127.0.0.1 --port 8000
 .venv\Scripts\python.exe scripts\build_dataset.py
 ```
 
-### 真实数据模式（v0.8）
+### 真实数据模式（v1.0）
 
 用户提供的真实数据已接入为 `data/custom/`（**数据文件不入库**，由脚本从原始 zip / 飞书 / 公开接口重建）：
 
@@ -210,7 +210,7 @@ artifacts/              模型、trace、实验运行与导出（运行时生成
 
 **DeepSeek 接入**：`$env:DEEPSEEK_API_KEY = "sk-..."`（或 `.env`、`secrets/deepseek.key`）后同一代码路径自动切真实模型；无 key 时 Mock 模式全流程离线可跑。
 
-**真实数据（v0.8 已接入）**：快照覆盖 **2015-01-05 ~ 2025-09-30、2,615 个交易日、27 条规范序列、57,421 条观测、9,758 篇文本**；`dataset_snapshot_id=ds_94c8b84b60cd1248dd57`、`corpus_hash=corpus_a7e87cba9e85e67525ae`。数据来源与代理口径（北向资金流来自飞书 Base 07；北向 2024-08-16 后停披露即缺失；SHIBOR 1W 代理 7 天回购、AAA 中票代理 AA 信用利差等）见 [真实数据接入](docs/data/real_data_integration.md)。
+**真实数据（v1.0 已接入）**：快照覆盖 **2015-01-05 ~ 2025-09-30、2,615 个交易日、27 条规范序列、57,421 条观测、9,758 篇文本**；`dataset_snapshot_id=ds_94c8b84b60cd1248dd57`、`corpus_hash=corpus_a7e87cba9e85e67525ae`。数据来源与代理口径（北向资金流来自飞书 Base 07；北向 2024-08-16 后停披露即缺失；SHIBOR 1W 代理 7 天回购、AAA 中票代理 AA 信用利差等）见 [真实数据接入](docs/data/real_data_integration.md)。
 
 **自建数据接入**：数据放入 `data/custom/`（CSV/Parquet），在 [configs/data_mapping.yaml](configs/data_mapping.yaml) 配置日期列、发布时点列、序列映射、频率与单位；真实数据实验使用 [configs/app.real.yaml](configs/app.real.yaml)（`dataset: custom`、`synthetic_fallback: false`、独立 `artifacts_real`），系统统一走 point-in-time 读取。扩展接入步骤见 [真实数据接入指南](docs/guides/real-data.md)。
 
@@ -254,9 +254,10 @@ $env:CBR_CONFIG="configs/app.real.yaml"
 | 开发者 / 贡献者 | [CONTRIBUTING.md](CONTRIBUTING.md) · [AGENTS.md](AGENTS.md) |
 | 研究者 / 论文读者 | [技术文档第四章](docs/techdoc/chapter4_method.md) · [架构设计 v1](docs/architecture/CBR-MAW_architecture_v1.md) |
 | 部署 / 运维 | [部署指南](docs/guides/deployment.md) · [故障排查](docs/guides/troubleshooting.md) |
-| 数据接入 | [真实数据接入（v0.8 快照）](docs/data/real_data_integration.md) · [文本语料](docs/data/text_corpus.md) · [公开数据补齐](docs/data/public_gap_fill.md) · [接入指南](docs/guides/real-data.md) |
+| 数据接入 | [真实数据接入（v1.0 快照）](docs/data/real_data_integration.md) · [文本语料](docs/data/text_corpus.md) · [公开数据补齐](docs/data/public_gap_fill.md) · [接入指南](docs/guides/real-data.md) |
 | 前端 / 设计 | [web/README.md](web/README.md) · [web/DESIGN-NOTES.md](web/DESIGN-NOTES.md) |
 | 团队协作 | [团队协作指南](docs/guides/team-collaboration.md) · [任务清单](docs/techdoc/open_issues.md) |
+| 版本发布 | [v1.0.0 发布说明](docs/releases/v1.0.0.md) · [CHANGELOG](CHANGELOG.md) · [CITATION](CITATION.cff) |
 
 完整导航（按角色分类）见 [docs/INDEX.md](docs/INDEX.md)。
 

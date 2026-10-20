@@ -33,12 +33,14 @@
 
 | 文档 | 说明 |
 |---|---|
-| [技术文档第四章（Markdown）](techdoc/chapter4_method.md) | 方法章 v0.8：融合信号、知识与工具、三类智能体、协同与核验、实现组织 |
+| [技术文档第四章（Markdown）](techdoc/chapter4_method.md) | 方法章 v1.0：融合信号、知识与工具、三类智能体、协同与核验、实现组织 |
 | [技术文档第四章（Word）](techdoc/第四章_多模态多智能体协同预警方法.docx) | 排版稿（由 `scripts/md_to_docx.py` 生成） |
 | [章节大纲与写作计划](techdoc/chapter4_outline.md) | 第四章结构与边界 |
-| [open issues 清单](techdoc/open_issues.md) | EXP/INT/DOC/LIM 待办与关闭记录（版本头 v0.8） |
+| [open issues 清单](techdoc/open_issues.md) | EXP/INT/DOC/LIM 待办与关闭记录（版本头 v1.0） |
 | [SYNTHETIC 试点结果](techdoc/pilot_results_synthetic.md) | Mock LLM 下的 P1/P2/P3 流程验证 |
+| [真实数据试点结果](techdoc/pilot_results_real_data.md) | 真实数据 + 真实 DeepSeek 的 P1/P2/P3（含诚实边界） |
 | [真实 LLM 试点报告](techdoc/pilot_results_real_llm.md) | 真实 DeepSeek 的 P2/P3 复跑、token/成本/延迟 |
+| [v1.0.0 发布说明](releases/v1.0.0.md) | 正式发布内容、验证清单、已知限制与升级方式 |
 | [多智能体框架调研](research/multi_agent_frameworks.md) | 框架选型与可信工程模式 |
 | [数据源实测报告](research/data_sources.md) | 公开数据源可得性、PIT 口径与标签方案 |
 
@@ -51,6 +53,7 @@
 | [docs/guides/real-data.md](guides/real-data.md) | 真实数据接入：目录、`data_mapping.yaml`、PIT 口径、校验 |
 | [docs/guides/experiments.md](guides/experiments.md) | P1/P2/P3 与 E0–E12 消融矩阵怎么跑、结果在哪 |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) · [CHANGELOG.md](../CHANGELOG.md) | 贡献流程与版本演进 |
+| [v1.0.0 发布说明](releases/v1.0.0.md) · [CITATION.cff](../CITATION.cff) | 正式发布内容、验证清单、引用信息 |
 | [LICENSE](../LICENSE) | MIT 许可证全文（Copyright © 2026 Thecnfor） |
 | [SECURITY.md](../SECURITY.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | 安全报告与行为准则 |
 
@@ -64,7 +67,7 @@
 |---|---|---|
 | [architecture/CBR-MAW_architecture_v1.md](architecture/CBR-MAW_architecture_v1.md) | v1.0 | 实现定稿：六层架构、模块映射、R0–R5、核验、API/UI、实验 harness |
 | [architecture/CBR-MAW_architecture_v0.md](architecture/CBR-MAW_architecture_v0.md) | v0（草案） | 设计草案与 v1 差异背景 |
-| [techdoc/chapter4_method.md](techdoc/chapter4_method.md) | v0.8 | 方法章正文：5 图 / 13 表 / 21 公式 |
+| [techdoc/chapter4_method.md](techdoc/chapter4_method.md) | v1.0 | 方法章正文：5 图 / 13 表 / 21 公式 |
 | [techdoc/chapter4_outline.md](techdoc/chapter4_outline.md) | v0.5 | 写作计划与边界 |
 
 ### 2.2 实现与设计契约

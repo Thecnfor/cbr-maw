@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cbr-maw"
-version = "0.1.0"
+version = "1.0.0"
 description = "CBR-MAW：跨境金融风险多智能体协同预警系统（确定性金融工具 + LLM 智能体编排 + 证据链核验 + 配置化消融实验）"
 readme = "README.md"
 requires-python = ">=3.11"

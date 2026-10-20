@@ -1,7 +1,7 @@
 # 第四章 open issues / TODO 清单（待实验、待实现、待同步）
 
-> 维护：doc-writer（task-6）｜版本：v0.8（2026-10-20）｜代码快照：真实数据接入 + 真实数据 P1/P2/P3 + AI-native 交互 + SSE 流式 + 249 项测试
-> 对应正文：[chapter4_method.md](chapter4_method.md) v0.8（5 图 / 13 表 / 21 公式；4.1.1 真实数据快照、附录 A.3；4.5.1 React 前端与 `/ui`、SSE 端点）
+> 维护：doc-writer（task-6）｜版本：v1.0（2026-10-20 正式发布）｜代码快照：真实数据接入 + 真实数据 P1/P2/P3 + AI-native 交互 + SSE 流式 + 249 项测试
+> 对应正文：[chapter4_method.md](chapter4_method.md) v1.0（5 图 / 14 表 / 21 公式；4.1.1 真实数据快照、附录 A.3；4.5.1 React 前端与 `/ui`、SSE 端点）
 > 增量：§10 记录真实数据接入（27 序列 / 9,758 文本 / PIT `ds_94c8b84b60cd1248dd57`）与真实数据 P1/P2/P3 结果；历史 §0–§9 保留 synthetic 口径。
 > 用途：把正文中所有"待实验/待验证/待实现/待同步"点收敛为可逐条关闭的清单；每关闭一项在文末"关闭记录"追加日期与说明。
 > 状态取值：`open` / `in-progress` / `closed` / `accepted`（已知限制，不计划关闭但需在论文中报告）。

@@ -185,7 +185,7 @@ DeepSeek 接入：`$env:DEEPSEEK_API_KEY="sk-..."`（或 `.env` / `secrets/deeps
 | P2 试点（4 个评估日） | full：15 条主张/17 次工具调用/核验通过/任务完成率 1.0；no_tools_no_kb：3 条主张/0 次工具/核验不通过/任务完成率 0（能力消融方向符合预期；Mock 模式下数值错误率恒为 0，真实 LLM 下才具备幻觉风险） |
 | P3 试点（6 个评估日） | 三模式任务完成率 1.0、证据覆盖率 1.0、核验通过；collaborative 平均 4.0 个冲突且全部解决，single/independent 为 0；tokens 12,000/11,799/11,801 对齐 |
 
-> 说明：以上同时包含 **SYNTHETIC 仿真数据**（离线测试/流程验证）与**真实数据快照**（v0.8 接入，用户数据 + 飞书 + 公开补齐）两类结果，二者严格分开；真实数据上的 P1 文本增益不显著（见上表与 [pilot_results_real_data.md](../techdoc/pilot_results_real_data.md)），不能据此宣称真实市场预测有效。P2/P3 的 LLM 协同结果同时受数据与 LLM 后端影响，正式实验需按 `configs/experiments/` 重跑。
+> 说明：以上同时包含 **SYNTHETIC 仿真数据**（离线测试/流程验证）与**真实数据快照**（v1.0 接入，用户数据 + 飞书 + 公开补齐）两类结果，二者严格分开；真实数据上的 P1 文本增益不显著（见上表与 [pilot_results_real_data.md](../techdoc/pilot_results_real_data.md)），不能据此宣称真实市场预测有效。P2/P3 的 LLM 协同结果同时受数据与 LLM 后端影响，正式实验需按 `configs/experiments/` 重跑。
 
 ---
 

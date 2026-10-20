@@ -48,7 +48,7 @@ from cbr.schemas import (
     TraceEvent,
 )
 
-API_VERSION = "0.1.0"
+API_VERSION = "1.0.0"
 MODE_LITERAL = Literal["collaborative", "independent", "single"]
 
 # React 前端（web/dist）静态托管路径；不存在时 API 仍可用，根路径回退为 JSON 说明。

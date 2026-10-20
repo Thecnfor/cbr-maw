@@ -1,7 +1,7 @@
 {
   "name": "cbr-maw-web",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "CBR-MAW 跨境金融风险协同预警 · React 驾驶台与对话前端",
   "scripts": {

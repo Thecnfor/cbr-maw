@@ -154,7 +154,7 @@ Vite 把 `/api` 代理到 `127.0.0.1:8000`，前提是后端已启动；端口�
 
 **处理**：
 
-1. 确认后端包含 `src/cbr/api/streaming.py`（v0.7+）；
+1. 确认后端包含 `src/cbr/api/streaming.py`（v1.0+）；
 2. 反向代理关闭缓冲并放宽超时（见 [deployment.md §5](deployment.md#5-反向代理nginx-参考示例未在-ci-验证)）；
 3. 验收脚本：
 
