@@ -83,5 +83,26 @@ def get_service() -> Service:
     return build_service()
 
 
+def refresh_data_provider(service: Service | None = None) -> bool:
+    """热刷新数据提供者（实时抓取写回后调用，使决策立即用上新数据）。
+
+    优先调用 provider 的 ``reload()``（原地刷新、不重建整个服务）；失败时返回
+    ``False``，由调用方决定是否退化为重启服务。
+    """
+    try:
+        service = service or get_service()
+    except Exception:  # noqa: BLE001 - 服务未就绪时静默跳过
+        return False
+    provider = getattr(service, "provider", None)
+    reload_fn = getattr(provider, "reload", None)
+    if not callable(reload_fn):
+        return False
+    try:
+        reload_fn()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def reset_service() -> None:
     get_service.cache_clear()

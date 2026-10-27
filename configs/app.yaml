@@ -26,6 +26,20 @@ data:
   high_stress_quantile: 0.90
   horizons: [5, 10, 20]
 
+# 实时智能抓取（L1.5 数据接入层）：来源见 configs/sources.yaml
+ingest:
+  enabled: false          # true 时随 API 启动后台定时抓取
+  run_on_start: false     # 启动时立即抓一次
+  interval_seconds: 3600  # 后台抓取间隔（秒）
+  sources_config: configs/sources.yaml
+  stale_threshold_days: 3        # 日频序列超过该天数未更新即视为陈旧
+  monthly_stale_threshold_days: 40
+  write_to_pit: true
+  refresh_provider_after_run: true   # 抓取写回后热刷新 DataProvider
+  http_timeout_seconds: 20
+  http_retries: 2
+  log_dir: artifacts/ingest
+
 signal:
   model_version: fusion-xgb-v1
   baseline: xgboost

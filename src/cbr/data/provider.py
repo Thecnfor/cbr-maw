@@ -198,6 +198,23 @@ class MarketDataProvider:
         return list(self._cards)
 
     # ------------------------------------------------------------------ #
+    # 热刷新（实时抓取写回后调用）
+    # ------------------------------------------------------------------ #
+    def reload(self) -> None:
+        """重新加载数据并清空惰性缓存（供实时抓取写回后热刷新）。
+
+        基类实现按当前配置重建 provider 并复制数据集/数据卡；``PitStoreDataProvider``
+        会覆盖为「直接从 PIT 库重读」，避免重复装配整个数据栈。
+        """
+        fresh = build_data_provider(self.settings)
+        self.dataset = fresh.dataset
+        self.source_label = fresh.source_label
+        self._cards = fresh.data_cards()
+        self._labels = None
+        self._bundle = None
+        self._engine = None
+
+    # ------------------------------------------------------------------ #
     # 附加信息（健康检查 / UI）
     # ------------------------------------------------------------------ #
     def _data_snapshot_info(self) -> dict[str, Any]:
@@ -280,6 +297,26 @@ class PitStoreDataProvider(MarketDataProvider):
             self._cards = self.store.data_cards()
         return list(self._cards)
 
+    def detach(self) -> None:
+        """释放 PIT 只读连接（数据集仍在内存中可读）。
+
+        实时抓取需要写入同一 DuckDB 文件时先调用本方法释放只读连接，避免同进程
+        读写连接冲突；写入完成后由 :meth:`reload` 重新打开只读连接。
+        """
+        try:
+            self.store.close()
+        except Exception:  # noqa: BLE001 - 释放失败不影响后续重连
+            pass
+
+    def reload(self) -> None:
+        """从 PIT 存储重读数据集并清空惰性缓存（实时抓取写回后热刷新）。"""
+        self.store.close()
+        self.dataset = self.store.load_market_dataset()
+        self._cards = None
+        self._labels = None
+        self._bundle = None
+        self._engine = None
+
 
 # --------------------------------------------------------------------------- #
 # 工厂
@@ -355,8 +392,8 @@ def build_data_provider(settings: AppSettings | None = None) -> MarketDataProvid
             provider._cards = _build_merged_cards(merged, fallback_cards)
             return provider
 
-    # 2) PIT 存储（auto / public；样本数据更新时自动回退到样例数据）
-    if mode in ("auto", "public"):
+    # 2) PIT 存储（auto / public / pit；pit 显式强制 PIT，用于实时抓取场景）
+    if mode in ("auto", "public", "pit"):
         pit_path = resolve_path(settings.data.pit_db)
         if pit_path.exists() and _pit_is_fresh(pit_path, settings):
             try:
