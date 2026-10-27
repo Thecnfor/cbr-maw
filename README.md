@@ -25,6 +25,7 @@
 | 三模式对照 | `single` / `independent` / `collaborative` 走同一代码路径，资源预算对齐，可直接消融 |
 | AI-native 交互 | React 驾驶台（SSE 流式运行、⌘K 命令面板、上下文追问、协同过程时间线、light/dark）；对话入口；Streamlit 回退 UI |
 | 可复现实验 | `scripts/run_experiment.py` 跑 P1 模态消融、P2 工具/知识增强、P3 协同对照，产物落 `artifacts/runs/<run_id>/` |
+| 实时智能抓取 | 声明式数据源（`configs/sources.yaml`）+ 确定性缺口分析 + 多源回退 + 增量写 PIT + 派生序列实时重算 + provider 热刷新；把「手动找数据」升级为「系统自动实时抓取」（`/api/ingest/*`，见 [指南](docs/guides/realtime-ingestion.md)） |
 
 ---
 
@@ -189,6 +190,11 @@ artifacts/              模型、trace、实验运行与导出（运行时生成
 | GET | `/api/evidence/{evidence_id}` | 证据详情 |
 | GET | `/api/data-cards` | 数据卡（序列口径 / 时点可得性） |
 | GET | `/api/trace/{run_id}` | 审计轨迹事件列表 |
+| GET | `/api/ingest/status` | 实时抓取子系统状态（调度器 / 来源健康 / 陈旧序列 / 最近报告） |
+| GET | `/api/ingest/sources` | 抓取来源健康快照 |
+| GET | `/api/ingest/freshness` | 各规范序列新鲜度（时点陈旧程度 / 是否可抓取） |
+| GET | `/api/ingest/plan` | 当前待抓取计划（确定性缺口分析，按优先级排序） |
+| POST | `/api/ingest/refresh` | 按需触发一次实时抓取（写回 PIT 并热刷新 DataProvider） |
 
 参数约定：`as_of=YYYY-MM-DD`、`scenario=<scenario_id>`、`mode=collaborative|independent|single`。核心未就绪时业务端点统一返回 **503 + 中文说明**。SSE 契约见 [流式接口备注](docs/design/streaming-api-notes.md)。
 
@@ -257,6 +263,8 @@ $env:CBR_CONFIG="configs/app.real.yaml"
 | 数据接入 | [真实数据接入（v1.0 快照）](docs/data/real_data_integration.md) · [文本语料](docs/data/text_corpus.md) · [公开数据补齐](docs/data/public_gap_fill.md) · [接入指南](docs/guides/real-data.md) |
 | 前端 / 设计 | [web/README.md](web/README.md) · [web/DESIGN-NOTES.md](web/DESIGN-NOTES.md) |
 | 团队协作 | [团队协作指南](docs/guides/team-collaboration.md) · [任务清单](docs/techdoc/open_issues.md) |
+| 实时抓取 / 接入 | [实时智能抓取指南](docs/guides/realtime-ingestion.md) · [来源配置](configs/sources.yaml) |
+| 架构决策（ADR） | [执行 Harness 选型](docs/architecture/adr-2026-10-27-agent-harness.md) · [可选基础设施与 RAG](docs/architecture/adr-2026-10-27-infra-and-rag.md) |
 | 版本发布 | [v1.0.0 发布说明](docs/releases/v1.0.0.md) · [CHANGELOG](CHANGELOG.md) · [CITATION](CITATION.cff) |
 
 完整导航（按角色分类）见 [docs/INDEX.md](docs/INDEX.md)。

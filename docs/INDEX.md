@@ -28,6 +28,10 @@
 | [web/README.md](../web/README.md) | 前端技术栈、目录、端口、路由、验证结果 |
 | [web/DESIGN-NOTES.md](../web/DESIGN-NOTES.md) | 设计系统、token 映射、规范偏离与验收记录 |
 | [docs/guides/troubleshooting.md](guides/troubleshooting.md) | 常见问题（Mock LLM、无 key、端口、bun、数据缺失） |
+| [docs/guides/realtime-ingestion.md](guides/realtime-ingestion.md) | 实时智能抓取（L1.5）：来源配置、缺口分析、多源回退、增量写库、`/api/ingest/*` |
+| [执行 Harness 选型（ADR）](architecture/adr-2026-10-27-agent-harness.md) | OpenHands / Python+TS 二开的 harness 契约与选型 |
+| [可选基础设施与 RAG（ADR）](architecture/adr-2026-10-27-infra-and-rag.md) | PG/Redis/Mongo/向量库的可降级接入、混合检索设计 |
+| [docker-compose.yml](../docker-compose.yml) · [configs/infra.yaml](../configs/infra.yaml) | 可选基础设施一键起停与配置 |
 
 ### 1.3 研究者 / 论文读者
 

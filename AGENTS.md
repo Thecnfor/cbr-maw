@@ -27,6 +27,12 @@
 | `src/cbr/llm/ agents/` | L4 DeepSeek/Mock、三角色智能体 | prompt、角色规范 |
 | `src/cbr/orchestration/ verification/` | L5 协同编排、核验与 trace | R0–R5、冲突、HITL |
 | `src/cbr/api/` | FastAPI 同步 + SSE 端点 | API 契约、缓存、流式 |
+| `src/cbr/ingest/` | 实时智能抓取（L1.5）：来源规格 / 抓取器 / 缺口分析 / 增量写库 / 调度 | 新来源、抓取策略、多源回退 |
+| `src/cbr/infra/` | 可选基础设施（PG/Redis/Mongo/向量库）探测与降级 | 新增可选服务接入 |
+| `src/cbr/harness/` | 执行 harness（进程内 / 远程外部执行器契约） | 契约、后端适配 |
+| `src/cbr/knowledge/vector.py` | RAG 向量检索（混合检索，默认离线） | 向量化 / 向量库后端 |
+| `configs/sources.yaml` · `configs/infra.yaml` · `configs/harness.yaml` | 抓取来源 / 基础设施 / harness 配置 | 改行为优先改配置 |
+| `docker-compose.yml` | 可选基础设施一键起停 | 新增服务、端口 |
 | `web/` | React 驾驶台/对话（主 UI） | 前端组件、token、构建 |
 | `app/` | Streamlit 回退 UI | 兼容性修复 |
 | `configs/` | 应用/角色/情景/工具/实验配置 | 改行为优先改配置 |
@@ -97,6 +103,9 @@ Invoke-RestMethod "http://127.0.0.1:8000/api/decision?as_of=2024-08-05&mode=coll
 
 # SSE 流式验收
 .venv\Scripts\python.exe scripts\verify_stream.py --base http://127.0.0.1:8000
+
+# 实时抓取（离线，注入假抓取器）
+.venv\Scripts\python.exe -m pytest tests\test_ingest.py tests\test_infra.py tests\test_rag_vector.py tests\test_harness.py -q
 
 # 前端
 cd web; bunx tsc --noEmit; bun run build; cd ..
