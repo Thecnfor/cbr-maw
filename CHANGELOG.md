@@ -5,6 +5,33 @@
 
 ---
 
+## [Unreleased]
+
+### 实时智能抓取（L1.5 数据接入层）
+- 新增 `src/cbr/ingest/`：声明式数据源（`configs/sources.yaml`）+ 确定性缺口/陈旧度分析（`gaps.py`）
+  + 抓取器（`http_csv` / `http_json` / `akshare` / `rss`）+ **多源回退**（同序列主源失败自动切备源）
+  + 增量写 PIT（`PitStore.upsert_observations` / `upsert_documents` / `touch_coverage`）
+  + 派生序列实时重算（`derive.py`）+ 进程内调度器与运行时（`scheduler.py` / `runtime.py`）。
+- 新增 API `/api/ingest/{status,sources,freshness,plan,refresh}`；`/api/health` 增补 `ingest` 状态块。
+- 新增 `data.dataset: pit` 模式（显式使用 PIT 存储的 provider，供实时抓取热刷新）；
+  `PitStoreDataProvider` 增补 `detach()/reload()`：写入前释放只读连接、写入后热刷新数据集。
+- 新增指南 [docs/guides/realtime-ingestion.md](docs/guides/realtime-ingestion.md)（用法/加源/边界/验证）。
+
+### 可选基础设施与 RAG
+- 新增 `docker-compose.yml`（postgres+pgvector / redis / mongo / qdrant）与 `configs/infra.yaml`。
+- 新增 `src/cbr/infra/`：健康探测（标准库 socket）+ 可选客户端（缺驱动/不可达一律 `None` 降级）。
+- 新增 `src/cbr/knowledge/vector.py`：可插拔向量化（默认离线 `HashingEmbedding`）+ 向量库
+  （默认 `NumpyVectorStore`，可选 Qdrant / pgvector）+ BM25·向量加权 RRF 混合检索。
+
+### 执行 Harness
+- 新增 `src/cbr/harness/`：稳定契约（`AgentHarness`/`TaskSpec`/`RunResult`）+ 进程内实现
+  + 远程适配器（OpenHands / Python+TS 二开）与 `configs/harness.yaml`；选型见 ADR。
+
+### 工程
+- 测试新增 `tests/test_ingest.py`、`tests/test_infra.py`、`tests/test_rag_vector.py`、`tests/test_harness.py`。
+
+---
+
 ## [1.0.0] - 2026-10-20
 
 **首个正式发布版本（研究性原型 v1.0.0）。** 聚合 v0.1–v0.8 全部能力，完成真实数据接入、真实数据试点与发布工程化；默认数据仍为 SYNTHETIC，真实数据需本地重建。
