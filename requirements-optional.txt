@@ -1,0 +1,16 @@
+# CBR-MAW 可选依赖（基础设施 / RAG / 实时抓取）
+#
+# 说明：以下依赖全部**可选**。不安装时对应能力自动降级：
+#   - src/cbr/infra 客户端返回 None（探测仅用标准库 socket）
+#   - src/cbr/knowledge/vector.py 回退本地 NumpyVectorStore
+#   - akshare 来源状态为 skipped，其它来源不受影响
+# 安装：pip install -r requirements-optional.txt
+
+# --- 向量库 / 基础设施客户端 ---
+redis>=5.0
+pymongo>=4.6
+psycopg[binary]>=3.1        # pgvector 后端
+qdrant-client>=1.9
+
+# --- 实时抓取（国债收益率等公开接口）---
+akshare>=1.14

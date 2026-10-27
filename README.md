@@ -5,7 +5,7 @@
 
 **一句话定位**：以「跨境金融市场压力高位状态」为唯一共同预警目标，让监管 / 投资 / 融资三类主体智能体在共享证据黑板上分工、互验、协调；所有数值由版本化工具计算、所有结论可溯源、所有协同过程可审计、所有模块可开关消融。
 
-- 状态：**v1.0.0 正式发布**（研究性原型）｜ 方法章 v1.0 ｜ 测试基线 **249 项**（2026-10-20 全量 `pytest -q` 通过）｜ 发布说明：[v1.0.0](docs/releases/v1.0.0.md)
+- 状态：**v2.0.0 正式发布**（研究性原型）｜ 方法章 v1.0 ｜ 测试基线 **282 passed / 1 skipped**（2026-10-27 全量 `pytest -q` 通过）｜ 发布说明：[v2.0.0](docs/releases/v2.0.0.md)
 - 默认数据：**SYNTHETIC 仿真数据**（确定性 DGP，仅用于演示与流程验证，不代表真实市场）
 
 ![CBR-MAW 协同驾驶台（Light）](docs/assets/screenshots/dashboard-light.png)
@@ -265,7 +265,7 @@ $env:CBR_CONFIG="configs/app.real.yaml"
 | 团队协作 | [团队协作指南](docs/guides/team-collaboration.md) · [任务清单](docs/techdoc/open_issues.md) |
 | 实时抓取 / 接入 | [实时智能抓取指南](docs/guides/realtime-ingestion.md) · [来源配置](configs/sources.yaml) |
 | 架构决策（ADR） | [执行 Harness 选型](docs/architecture/adr-2026-10-27-agent-harness.md) · [可选基础设施与 RAG](docs/architecture/adr-2026-10-27-infra-and-rag.md) |
-| 版本发布 | [v1.0.0 发布说明](docs/releases/v1.0.0.md) · [CHANGELOG](CHANGELOG.md) · [CITATION](CITATION.cff) |
+| 版本发布 | [v2.0.0 发布说明](docs/releases/v2.0.0.md) · [v1.0.0](docs/releases/v1.0.0.md) · [CHANGELOG](CHANGELOG.md) · [CITATION](CITATION.cff) |
 
 完整导航（按角色分类）见 [docs/INDEX.md](docs/INDEX.md)。
 

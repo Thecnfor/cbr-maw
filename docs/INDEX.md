@@ -44,6 +44,7 @@
 | [SYNTHETIC 试点结果](techdoc/pilot_results_synthetic.md) | Mock LLM 下的 P1/P2/P3 流程验证 |
 | [真实数据试点结果](techdoc/pilot_results_real_data.md) | 真实数据 + 真实 DeepSeek 的 P1/P2/P3（含诚实边界） |
 | [真实 LLM 试点报告](techdoc/pilot_results_real_llm.md) | 真实 DeepSeek 的 P2/P3 复跑、token/成本/延迟 |
+| [v2.0.0 发布说明](releases/v2.0.0.md) | 实时抓取(L1.5)/可选基础设施/RAG/执行 Harness；验证清单、已知限制与长时测试 |
 | [v1.0.0 发布说明](releases/v1.0.0.md) | 正式发布内容、验证清单、已知限制与升级方式 |
 | [多智能体框架调研](research/multi_agent_frameworks.md) | 框架选型与可信工程模式 |
 | [数据源实测报告](research/data_sources.md) | 公开数据源可得性、PIT 口径与标签方案 |
@@ -57,7 +58,7 @@
 | [docs/guides/real-data.md](guides/real-data.md) | 真实数据接入：目录、`data_mapping.yaml`、PIT 口径、校验 |
 | [docs/guides/experiments.md](guides/experiments.md) | P1/P2/P3 与 E0–E12 消融矩阵怎么跑、结果在哪 |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) · [CHANGELOG.md](../CHANGELOG.md) | 贡献流程与版本演进 |
-| [v1.0.0 发布说明](releases/v1.0.0.md) · [CITATION.cff](../CITATION.cff) | 正式发布内容、验证清单、引用信息 |
+| [v2.0.0 发布说明](releases/v2.0.0.md) · [CITATION.cff](../CITATION.cff) | 正式发布内容、验证清单、引用信息 |
 | [LICENSE](../LICENSE) | MIT 许可证全文（Copyright © 2026 Thecnfor） |
 | [SECURITY.md](../SECURITY.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | 安全报告与行为准则 |
 
