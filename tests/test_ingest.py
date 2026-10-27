@@ -303,3 +303,18 @@ def test_api_ingest_refresh_coordinates_provider(monkeypatch: pytest.MonkeyPatch
     # 写前 detach、写后 reload 的顺序必须成立
     assert events[0] == "detach"
     assert events[-1] == "reload"
+
+
+def test_dig_supports_key_list_for_dotted_keys() -> None:
+    """键本身含 "." 的端点（如腾讯 us.INX）需用键序列指定 JSON 路径。"""
+    from cbr.ingest.sources import _dig
+
+    rows = [["2026-10-27", "7697.49", "7699.47"]]
+    payload = {"data": {"us.INX": {"day": rows}}}
+    # 点分路径会被拆成 data/us/INX/day，无法命中含点的键
+    assert _dig(payload, "data.us.INX.day") is None
+    # 键序列可命中
+    assert _dig(payload, ["data", "us.INX", "day"]) == rows
+    # 字符串路径与 None 的既有语义不变
+    assert _dig(payload, "data") == payload["data"]
+    assert _dig(payload, None) is payload

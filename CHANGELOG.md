@@ -30,6 +30,12 @@
 ### 工程
 - 测试新增 `tests/test_ingest.py`、`tests/test_infra.py`、`tests/test_rag_vector.py`、`tests/test_harness.py`。
 
+### 修复
+- 腾讯备源 SP500 改用 `us.INX` 代码（`usINX` 仅返回当日 1 行）；JSON 路径新增键序列写法，
+  以寻址键本身含 `.` 的端点（如 `data.us.INX.day`）。
+- 向量库适配新版 `qdrant-client`（`search` → `query_points`，含旧版回退）；
+  pgvector 读写改用 pgvector 向量字面量，修正真实服务下的检索失败。
+
 ---
 
 ## [1.0.0] - 2026-10-20
