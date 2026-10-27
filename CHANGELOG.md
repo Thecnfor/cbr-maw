@@ -30,6 +30,11 @@
 ### 工程
 - 测试新增 `tests/test_ingest.py`、`tests/test_infra.py`、`tests/test_rag_vector.py`、`tests/test_harness.py`。
 
+### 长时测试（soak）
+- 新增 `scripts/soak_test.py`：可配置时长/周期反复触发实时抓取，采集耗时/成功率/写入量/
+  陈旧序列/进程 RSS，实时落盘 `artifacts/soak/`（JSONL + summary），支持调度器路径与成功率门禁。
+- 新增指南 [docs/guides/long-running-tests.md](docs/guides/long-running-tests.md)（用法/字段解读/阈值/生产调度）。
+
 ### 修复
 - 腾讯备源 SP500 改用 `us.INX` 代码（`usINX` 仅返回当日 1 行）；JSON 路径新增键序列写法，
   以寻址键本身含 `.` 的端点（如 `data.us.INX.day`）。

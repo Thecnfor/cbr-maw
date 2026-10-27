@@ -29,6 +29,7 @@
 | [web/DESIGN-NOTES.md](../web/DESIGN-NOTES.md) | 设计系统、token 映射、规范偏离与验收记录 |
 | [docs/guides/troubleshooting.md](guides/troubleshooting.md) | 常见问题（Mock LLM、无 key、端口、bun、数据缺失） |
 | [docs/guides/realtime-ingestion.md](guides/realtime-ingestion.md) | 实时智能抓取（L1.5）：来源配置、缺口分析、多源回退、增量写库、`/api/ingest/*` |
+| [docs/guides/long-running-tests.md](guides/long-running-tests.md) | 长时测试（soak）：反复触发抓取，观察成功率/耗时/内存趋势，结果落 `artifacts/soak/` |
 | [执行 Harness 选型（ADR）](architecture/adr-2026-10-27-agent-harness.md) | OpenHands / Python+TS 二开的 harness 契约与选型 |
 | [可选基础设施与 RAG（ADR）](architecture/adr-2026-10-27-infra-and-rag.md) | PG/Redis/Mongo/向量库的可降级接入、混合检索设计 |
 | [docker-compose.yml](../docker-compose.yml) · [configs/infra.yaml](../configs/infra.yaml) | 可选基础设施一键起停与配置 |
@@ -92,6 +93,7 @@
 | [guides/deployment.md](guides/deployment.md) | 本地/服务器部署、进程与端口、环境变量 |
 | [guides/experiments.md](guides/experiments.md) | 复现 P1–P3 与消融矩阵 |
 | [guides/troubleshooting.md](guides/troubleshooting.md) | 报错与异常排查 |
+| [guides/long-running-tests.md](guides/long-running-tests.md) | 长时压测实时抓取稳定性与资源趋势（soak） |
 
 ### 2.4 实验与数据产物
 
