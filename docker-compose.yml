@@ -1,0 +1,81 @@
+# CBR-MAW 可选基础设施（实时抓取 / RAG / 持久化）
+#
+#   全部服务：docker compose up -d
+#   仅数据库：docker compose up -d postgres redis mongo qdrant
+#   停止：    docker compose down          （加 -v 同时删除数据卷）
+#
+# 这些服务全部为**可选**：src/ 内的代码在服务不可用时自动降级（见 src/cbr/infra
+# 与 src/cbr/knowledge/vector.py），不装 Docker 也能跑通全量测试与 SYNTHETIC 演示。
+#
+# 端口（默认，避免与常用端口冲突）：
+#   postgres 55432 / redis 56379 / mongo 57017 / qdrant 56333(configs/infra.yaml 已对齐)
+
+name: cbr-maw
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cbr-postgres
+    environment:
+      POSTGRES_USER: cbr
+      POSTGRES_PASSWORD: cbr
+      POSTGRES_DB: cbr
+    ports:
+      - "55432:5432"
+    volumes:
+      - cbr_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cbr -d cbr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cbr-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "56379:6379"
+    volumes:
+      - cbr_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: cbr-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cbr
+      MONGO_INITDB_ROOT_PASSWORD: cbr
+    ports:
+      - "57017:27017"
+    volumes:
+      - cbr_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cbr-qdrant
+    ports:
+      - "56333:6333"
+      - "56334:6334"
+    volumes:
+      - cbr_qdrant:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cbr_pg:
+  cbr_redis:
+  cbr_mongo:
+  cbr_qdrant:
