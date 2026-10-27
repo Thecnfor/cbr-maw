@@ -49,7 +49,7 @@ class LLMSettings(BaseModel):
 
 
 class DataSettings(BaseModel):
-    dataset: str = "auto"  # auto | custom | public | synthetic
+    dataset: str = "auto"  # auto | custom | public | pit | synthetic（pit=强制用 PIT 存储，配合实时抓取）
     custom_data_dir: str = "data/custom"
     #: 自建数据缺失序列是否回退 synthetic（真实数据实验应设为 False，避免仿真值混入）
     synthetic_fallback: bool = True
@@ -87,6 +87,30 @@ class OrchestrationSettings(BaseModel):
     coordination_weight_mu: float = 0.1
 
 
+class IngestSettings(BaseModel):
+    """实时智能抓取（L1.5 数据接入层）配置。"""
+
+    enabled: bool = False
+    run_on_start: bool = False
+    interval_seconds: int = 3600
+    sources_config: str = "configs/sources.yaml"
+    #: 日频序列超过该天数未更新即视为陈旧（自然日）
+    stale_threshold_days: int = 3
+    #: 月频序列的陈旧阈值（自然日，覆盖发布时滞）
+    monthly_stale_threshold_days: int = 40
+    #: 单次运行最多抓取的来源数（0 = 不限制）
+    max_sources_per_run: int = 0
+    #: 抓取后是否写回 PIT 存储
+    write_to_pit: bool = True
+    #: 抓取写回后是否刷新在内存中装配的 DataProvider（决策即时用新数据）
+    refresh_provider_after_run: bool = True
+    http_timeout_seconds: int = 20
+    http_retries: int = 2
+    user_agent: str = "cbr-maw-ingest/1.0 (+https://github.com/Thecnfor/cbr-maw)"
+    #: 抓取记录落盘目录（审计 / 复现）
+    log_dir: str = "artifacts/ingest"
+
+
 class ServerSettings(BaseModel):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
@@ -106,6 +130,7 @@ class AppSettings(BaseModel):
     data: DataSettings = Field(default_factory=DataSettings)
     signal: SignalSettings = Field(default_factory=SignalSettings)
     orchestration: OrchestrationSettings = Field(default_factory=OrchestrationSettings)
+    ingest: IngestSettings = Field(default_factory=IngestSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     paths: PathSettings = Field(default_factory=PathSettings)
 

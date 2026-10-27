@@ -24,8 +24,11 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import os
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
@@ -37,6 +40,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from cbr.api import readiness, state
+from cbr.api.ingest import router as ingest_router
 from cbr.api.streaming import router as streaming_router
 from cbr.schemas import (
     ChatRequest,
@@ -84,6 +88,27 @@ def clear_decision_cache() -> None:
     """清空决策缓存（测试/演示时强制重新生成时使用）。"""
     _DECISION_CACHE.clear()
 
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """应用生命周期：按配置启动/停止实时抓取后台调度器（失败不影响主流程）。"""
+    try:
+        from cbr.ingest.runtime import start_if_enabled
+
+        start_if_enabled()
+    except Exception as exc:  # noqa: BLE001 - 调度器失败不阻断 API 启动
+        logging.getLogger(__name__).warning("实时抓取调度器启动失败: %s", exc)
+    try:
+        yield
+    finally:
+        try:
+            from cbr.ingest.runtime import stop_scheduler
+
+            stop_scheduler()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 app = FastAPI(
     title="CBR-MAW API",
     version=API_VERSION,
@@ -94,6 +119,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=_lifespan,
 )
 
 app.add_middleware(
@@ -289,6 +315,27 @@ def health() -> dict[str, Any]:
     }
     llm_status.update(llm_runtime)
 
+    ingest_status: dict[str, Any] = {"enabled": False}
+    try:
+        from cbr.config import load_settings as _load_settings
+
+        _settings = getattr(service, "settings", None) or _load_settings()
+        ingest_status["enabled"] = bool(_settings.ingest.enabled)
+        if _settings.ingest.enabled or service_ready:
+            from cbr.api.ingest import ingest_status as _ingest_status_fn
+
+            snapshot = _ingest_status_fn()
+            ingest_status.update(
+                {
+                    "running": snapshot.running,
+                    "n_sources": snapshot.n_sources,
+                    "n_stale_series": len(snapshot.stale_series),
+                    "last_run_at": snapshot.last_run_at.isoformat() if snapshot.last_run_at else None,
+                }
+            )
+    except Exception as exc:  # noqa: BLE001 - 状态附加失败不影响健康检查
+        ingest_status["error"] = f"{type(exc).__name__}: {exc}"
+
     # 以「服务是否装配成功」判定整体状态；模块明细单独在 modules/pending_modules 中给出
     status = "ok" if service_ready else "degraded"
     return {
@@ -304,6 +351,7 @@ def health() -> dict[str, Any]:
         "llm": llm_status,
         "data_sources": data_status,
         "scenarios": scenario_count,
+        "ingest": ingest_status,
         "server": settings.get("server", {}) if isinstance(settings, dict) else {},
         "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
     }
@@ -439,6 +487,7 @@ def get_trace(run_id: str) -> list[TraceEvent]:
 # 保持现有同步端点不变；此处一次性挂载，避免重写既有路由。
 # --------------------------------------------------------------------------- #
 app.include_router(streaming_router)
+app.include_router(ingest_router)
 
 
 # --------------------------------------------------------------------------- #

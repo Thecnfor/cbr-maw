@@ -441,3 +441,107 @@ class ExperimentRun(BaseModel):
     metrics: list[MetricResult] = Field(default_factory=list)
     artifacts_dir: str | None = None
     notes: str = ""
+
+
+# --------------------------------------------------------------------------- #
+# 实时智能抓取（L1.5 数据接入层）：来源健康 / 缺口任务 / 抓取报告
+# --------------------------------------------------------------------------- #
+class SourceStatus(BaseModel):
+    """单个抓取来源的运行状态（``/api/ingest/status`` 使用）。"""
+
+    source_id: str
+    kind: str
+    enabled: bool = True
+    series_ids: list[str] = Field(default_factory=list)
+    documents: bool = False
+    interval_seconds: int | None = None
+    last_run_at: datetime | None = None
+    last_status: Literal["ok", "empty", "error", "skipped", "never"] = "never"
+    last_error: str | None = None
+    last_records: int = 0
+    latency_ms: int | None = None
+
+
+class IngestTask(BaseModel):
+    """一条待抓取任务：由缺口/陈旧度分析产出。"""
+
+    series_id: str
+    name: str = ""
+    frequency: str = "daily"
+    reason: Literal["missing", "stale", "behind", "derived", "forced"] = "stale"
+    last_obs_date: date | None = None
+    target_date: date | None = None
+    staleness_days: int | None = None
+    priority: float = 0.0
+    source_id: str | None = None
+    fetchable: bool = True
+
+
+class IngestRunResult(BaseModel):
+    """单个来源的一次抓取结果。"""
+
+    source_id: str
+    status: Literal["ok", "empty", "error", "skipped"] = "ok"
+    n_observations: int = 0
+    n_documents: int = 0
+    series_ids: list[str] = Field(default_factory=list)
+    error: str | None = None
+    latency_ms: int = 0
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
+class IngestReport(BaseModel):
+    """一次抓取运行（run）的汇总报告。"""
+
+    run_id: str
+    as_of: date
+    mode: Literal["gap", "full", "forced"] = "gap"
+    started_at: datetime = Field(default_factory=utcnow)
+    finished_at: datetime | None = None
+    n_tasks: int = 0
+    n_observations: int = 0
+    n_documents: int = 0
+    n_errors: int = 0
+    written_series: list[str] = Field(default_factory=list)
+    results: list[IngestRunResult] = Field(default_factory=list)
+    tasks: list[IngestTask] = Field(default_factory=list)
+    notes: str = ""
+
+
+class SeriesFreshness(BaseModel):
+    """序列新鲜度（相对 ``now`` 的陈旧程度）。"""
+
+    series_id: str
+    name: str = ""
+    frequency: str = "daily"
+    last_obs_date: date | None = None
+    staleness_days: int | None = None
+    threshold_days: int = 3
+    is_stale: bool = False
+    fetchable: bool = True
+    source_id: str | None = None
+
+
+class IngestStatus(BaseModel):
+    """实时抓取子系统整体状态（``/api/ingest/status``）。"""
+
+    enabled: bool = False
+    running: bool = False
+    as_of: date
+    interval_seconds: int | None = None
+    last_run_at: datetime | None = None
+    next_run_at: datetime | None = None
+    n_sources: int = 0
+    sources: list[SourceStatus] = Field(default_factory=list)
+    stale_series: list[SeriesFreshness] = Field(default_factory=list)
+    last_report: IngestReport | None = None
+
+
+class IngestRefreshRequest(BaseModel):
+    """``POST /api/ingest/refresh`` 请求体。"""
+
+    as_of: date | None = None
+    series_ids: list[str] | None = None
+    mode: Literal["gap", "full", "forced"] = "gap"
+    wait: bool = True

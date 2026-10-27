@@ -388,6 +388,143 @@ class PitStore:
         return MarketDataset(obs=obs, documents=documents, seed=0, source=source, meta={"from_pit_store": True})
 
     # ------------------------------------------------------------------ #
+    # 增量写入（实时抓取使用；不重建全库）
+    # ------------------------------------------------------------------ #
+    def upsert_observations(self, observations: pd.DataFrame) -> int:
+        """增量写入观测行（幂等：同一 ``(series_id, obs_date)`` 覆盖旧值）。
+
+        供实时抓取使用：只落新数据，不清空全库，避免重建 4 万行历史。
+
+        Args:
+            observations: 至少含 ``series_id, obs_date, value, release_time`` 列；
+                可选 ``source`` / ``unit``（缺失则写 NULL）。
+
+        Returns:
+            实际写入（新增或更新）的行数。
+        """
+        if observations is None or len(observations) == 0:
+            return 0
+        conn = self.connection
+        self.initialize_schema()
+        frame = pd.DataFrame(observations).copy()
+        frame["series_id"] = frame["series_id"].astype(str).map(canonical_series_id)
+        frame["obs_date"] = pd.to_datetime(frame["obs_date"], errors="coerce").dt.date
+        frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+        frame["release_time"] = pd.to_datetime(frame["release_time"], errors="coerce")
+        if "source" not in frame.columns:
+            frame["source"] = None
+        if "unit" not in frame.columns:
+            frame["unit"] = None
+        frame = frame.dropna(subset=["obs_date", "value", "release_time"])
+        frame = frame.loc[:, ["series_id", "obs_date", "value", "release_time", "source", "unit"]]
+        frame = frame.drop_duplicates(subset=["series_id", "obs_date"], keep="last")
+        if frame.empty:
+            return 0
+        conn.register("obs_upsert_df", frame)
+        conn.execute(
+            "DELETE FROM series_obs WHERE (series_id, obs_date) IN "
+            "(SELECT series_id, obs_date FROM obs_upsert_df)"
+        )
+        conn.execute("INSERT INTO series_obs SELECT * FROM obs_upsert_df")
+        conn.unregister("obs_upsert_df")
+        return int(len(frame))
+
+    def upsert_documents(self, documents: pd.DataFrame) -> int:
+        """增量写入文本文档（幂等：``doc_id`` 主键覆盖，``hash`` 去重）。
+
+        Args:
+            documents: 至少含 ``doc_id, publish_time, title``；可选
+                ``source`` / ``body`` / ``url`` / ``hash``。
+
+        Returns:
+            写入的文档行数（不含被 ``hash`` 判重的重复项）。
+        """
+        if documents is None or len(documents) == 0:
+            return 0
+        conn = self.connection
+        self.initialize_schema()
+        frame = pd.DataFrame(documents).copy()
+        if "hash" not in frame.columns:
+            frame["hash"] = None
+        if "body" not in frame.columns:
+            frame["body"] = ""
+        if "url" not in frame.columns:
+            frame["url"] = None
+        if "source" not in frame.columns:
+            frame["source"] = None
+        frame["doc_id"] = frame["doc_id"].astype(str)
+        frame["publish_time"] = pd.to_datetime(frame["publish_time"], errors="coerce")
+        frame = frame.dropna(subset=["doc_id", "publish_time"])
+        frame["title"] = frame["title"].astype(str)
+        frame["body"] = frame["body"].fillna("").astype(str)
+        frame = frame.loc[:, ["doc_id", "publish_time", "source", "title", "body", "url", "hash"]]
+        # 1) 同批内按 doc_id 去重（后者覆盖前者）
+        frame = frame.drop_duplicates(subset=["doc_id"], keep="last")
+        # 2) 同批内按内容哈希去重（只对非空哈希；同一正文重复出现只保留一条）
+        hashed = frame[frame["hash"].notna()].drop_duplicates(subset=["hash"], keep="last")
+        unhashed = frame[frame["hash"].isna()]
+        frame = pd.concat([hashed, unhashed]).drop_duplicates(subset=["doc_id"], keep="last")
+        # 3) 与库内已存在内容去重：doc_id 已存在视为更新（保留），否则按 hash 判重丢弃
+        known_ids = {
+            str(row[0])
+            for row in conn.execute("SELECT doc_id FROM documents").fetchall()
+            if row and row[0] is not None
+        }
+        if hashed.empty:
+            frame = frame[frame["doc_id"].isin(known_ids)]
+        else:
+            known_hashes = {
+                str(row[0])
+                for row in conn.execute(
+                    "SELECT hash FROM documents WHERE hash IS NOT NULL"
+                ).fetchall()
+                if row and row[0] is not None
+            }
+            keep_mask = frame["doc_id"].isin(known_ids) | ~frame["hash"].astype(str).isin(known_hashes)
+            frame = frame[keep_mask]
+        if frame.empty:
+            return 0
+        conn.register("docs_upsert_df", frame)
+        conn.execute("INSERT OR REPLACE INTO documents SELECT * FROM docs_upsert_df")
+        conn.unregister("docs_upsert_df")
+        return int(len(frame))
+
+    def touch_coverage(self, series_ids: Iterable[str] | None = None) -> int:
+        """按实际情况刷新 ``series_meta`` 的覆盖期（增量抓取后调用）。
+
+        Args:
+            series_ids: 需要刷新的序列；``None`` 表示全部。
+
+        Returns:
+            更新的数据卡数量。
+        """
+        coverage = self.coverage()
+        ids = [canonical_series_id(s) for s in series_ids] if series_ids is not None else list(coverage)
+        cards = {card.series_id: card for card in self.data_cards()}
+        updated: list[DataCard] = []
+        for series_id in ids:
+            start, end = coverage.get(series_id, (None, None))
+            if start is None and end is None:
+                continue
+            card = cards.get(series_id)
+            if card is None:
+                spec = SERIES_SPECS.get(series_id)
+                if spec is None:
+                    continue
+                source = str(
+                    self.connection.execute(
+                        "SELECT source FROM series_obs WHERE series_id = ? LIMIT 1", [series_id]
+                    ).fetchone()[0]
+                    or spec.notes
+                )
+                updated.append(spec.to_data_card(coverage_start=start, coverage_end=end, source=source))
+                continue
+            updated.append(card.model_copy(update={"coverage_start": start, "coverage_end": end}))
+        if updated:
+            self.load_data_cards(updated)
+        return len(updated)
+
+    # ------------------------------------------------------------------ #
     # 构造工厂
     # ------------------------------------------------------------------ #
     @classmethod
@@ -402,14 +539,20 @@ class PitStore:
         return store
 
     @classmethod
-    def open(cls, db_path: str | Path = "data/pit.duckdb") -> "PitStore":
-        """以只读模式打开已有数据库；文件不存在时抛 ``FileNotFoundError``。"""
+    def open(cls, db_path: str | Path = "data/pit.duckdb", *, writable: bool = False) -> "PitStore":
+        """打开已有数据库；文件不存在时抛 ``FileNotFoundError``。
+
+        Args:
+            db_path: 数据库路径。
+            writable: 为真时以读写模式打开（实时抓取写入用）。注意 DuckDB 同一进程
+                内不能同时持有同一文件的读写连接与只读连接，故写入前需先释放只读连接。
+        """
         path = Path(db_path)
         if not path.is_absolute():
             path = Path(__file__).resolve().parents[3] / path
         if not path.exists():
             raise FileNotFoundError(f"PIT 数据库不存在: {path}；请先运行 python scripts/build_dataset.py")
-        store = cls(path, read_only=True)
+        store = cls(path, read_only=not writable)
         # 触发连接校验表存在
         try:
             store.connection.execute("SELECT count(*) FROM series_obs").fetchone()
