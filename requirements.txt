@@ -1,5 +1,5 @@
 # CBR-MAW 核心依赖（Python 3.12）
-fastapi>=0.115
+fastapi>=0.143.3
 uvicorn[standard]>=0.30
 streamlit>=1.39
 duckdb>=1.1
