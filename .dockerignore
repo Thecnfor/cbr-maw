@@ -1,0 +1,12 @@
+.git
+.venv
+.venv-linux
+node_modules
+apps/web/.next
+web-next/out
+web/dist
+artifacts
+artifacts_real
+data
+docs
+*.zip
