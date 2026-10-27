@@ -210,12 +210,17 @@ class HttpCsvFetcher(_BaseFetcher):
 # --------------------------------------------------------------------------- #
 # HTTP JSON（列表型端点）
 # --------------------------------------------------------------------------- #
-def _dig(payload: Any, path: str | None) -> Any:
-    """按点分路径取嵌套字段（``a.b.c``）；``None`` 表示取顶层。"""
+def _dig(payload: Any, path: str | list[str] | tuple[str, ...] | None) -> Any:
+    """按路径取嵌套字段；``None`` 表示取顶层。
+
+    ``path`` 为字符串时按 ``.`` 拆分（``a.b.c``）；为列表/元组时直接作为键序列，
+    用于键本身含 ``.`` 的端点（如腾讯行情 ``data.us.INX.day``）。
+    """
     if not path:
         return payload
+    keys = list(path) if isinstance(path, (list, tuple)) else str(path).split(".")
     current = payload
-    for key in path.split("."):
+    for key in keys:
         if isinstance(current, dict):
             current = current.get(key)
         else:

@@ -216,9 +216,13 @@ class QdrantVectorStore:
         return len(points)
 
     def search(self, vector, top_k) -> list[tuple[str, float, dict[str, Any]]]:  # pragma: no cover - 需服务
-        hits = self._client.search(
-            self.collection, query_vector=np.asarray(vector, dtype=np.float32).tolist(), limit=int(top_k)
-        )
+        query = np.asarray(vector, dtype=np.float32).tolist()
+        if hasattr(self._client, "query_points"):
+            # qdrant-client >= 1.10：search 已被 query_points 取代
+            result = self._client.query_points(self.collection, query=query, limit=int(top_k))
+            hits = result.points
+        else:  # 旧版客户端回退
+            hits = self._client.search(self.collection, query_vector=query, limit=int(top_k))
         return [(str(hit.payload.get("key")), float(hit.score), dict(hit.payload)) for hit in hits]
 
 
@@ -240,23 +244,29 @@ class PgVectorStore:
             f"(chunk_id TEXT PRIMARY KEY, embedding vector({self.dimension}), payload JSONB)"
         )
 
+    @staticmethod
+    def _literal(vector) -> str:
+        """把向量格式化为 pgvector 可解析的字面量 ``"[v0,v1,...]"``。"""
+        return "[" + ",".join(f"{float(x):.7g}" for x in np.asarray(vector, dtype=np.float32)) + "]"
+
     def add(self, ids, vectors, payloads) -> int:  # pragma: no cover - 需服务
         with self._conn.cursor() as cur:
             for key, vec, payload in zip(ids, vectors, payloads, strict=False):
                 cur.execute(
-                    f"INSERT INTO {self.table} (chunk_id, embedding, payload) VALUES (%s, %s, %s) "
+                    f"INSERT INTO {self.table} (chunk_id, embedding, payload) VALUES (%s, %s::vector, %s) "
                     f"ON CONFLICT (chunk_id) DO UPDATE SET embedding = EXCLUDED.embedding, "
                     f"payload = EXCLUDED.payload",
-                    (key, np.asarray(vec, dtype=np.float32).tolist(), json.dumps(payload, ensure_ascii=False)),
+                    (key, self._literal(vec), json.dumps(payload, ensure_ascii=False)),
                 )
         return len(ids)
 
     def search(self, vector, top_k) -> list[tuple[str, float, dict[str, Any]]]:  # pragma: no cover - 需服务
+        literal = self._literal(vector)
         with self._conn.cursor() as cur:
             cur.execute(
                 f"SELECT chunk_id, payload, 1 - (embedding <=> %s::vector) AS score FROM {self.table} "
                 f"ORDER BY embedding <=> %s::vector LIMIT %s",
-                (np.asarray(vector, dtype=np.float32).tolist(), np.asarray(vector, dtype=np.float32).tolist(), int(top_k)),
+                (literal, literal, int(top_k)),
             )
             return [(row[0], float(row[2]), row[1]) for row in cur.fetchall()]
 
