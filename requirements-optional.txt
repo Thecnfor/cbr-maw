@@ -13,4 +13,4 @@ psycopg[binary]>=3.1        # pgvector 后端
 qdrant-client>=1.9
 
 # --- 实时抓取（国债收益率等公开接口）---
-akshare>=1.14
+akshare>=1.20.6
