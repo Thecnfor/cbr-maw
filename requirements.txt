@@ -1,7 +1,7 @@
 # CBR-MAW 核心依赖（Python 3.12）
 fastapi>=0.143.3
 uvicorn[standard]>=0.30
-streamlit>=1.39
+streamlit>=1.66.1
 duckdb>=1.5.6
 pandas>=2.2
 numpy>=2.4.6
