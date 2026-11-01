@@ -9,7 +9,7 @@
 # --- 向量库 / 基础设施客户端 ---
 redis>=5.0
 pymongo>=4.6
-psycopg[binary]>=3.1        # pgvector 后端
+psycopg[binary]>=3.3.6        # pgvector 后端
 qdrant-client>=1.9
 
 # --- 实时抓取（国债收益率等公开接口）---
