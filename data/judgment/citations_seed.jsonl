@@ -1,0 +1,12 @@
+{"id": "c001", "claim": "监管上调跨境融资宏观审慎调节参数。", "evidence": "中国人民银行将跨境融资宏观审慎调节参数由 1.25 上调至 1.5，以扩大企业和金融机构跨境融资空间。", "label": "supports"}
+{"id": "c002", "claim": "北向资金连续净流出。", "evidence": "北向资金连续三个交易日净流出，累计净流出约 120 亿元。", "label": "supports"}
+{"id": "c003", "claim": "人民币汇率保持稳定。", "evidence": "离岸人民币对美元单周贬值 1.8%，触及年内低点。", "label": "contradicts"}
+{"id": "c004", "claim": "房地产企业融资成本显著下降。", "evidence": "本期报告主要讨论跨境资本流动监测框架与数据口径。", "label": "unsupported"}
+{"id": "c005", "claim": "监管将外汇存款准备金率下调至 3%。", "evidence": "原文仅提及远期售汇业务风险准备金，未出现外汇存款准备金率相关表述。", "label": "fabricated"}
+{"id": "c006", "claim": "市场波动率处于高位。", "evidence": "年化波动率升至 32%，处于近三年 90% 分位。", "label": "supports"}
+{"id": "c007", "claim": "境外融资利差收窄。", "evidence": "境外融资利差扩大 85 个基点，融资成本上行。", "label": "contradicts"}
+{"id": "c008", "claim": "证券投资项下资金净流入。", "evidence": "经常项目差额由顺差转为逆差，货物贸易顺差收窄。", "label": "unsupported"}
+{"id": "c009", "claim": "跨境资金出现同步撤离。", "evidence": "北向资金与债券通同时净流出，同步撤离指标升至阈值以上。", "label": "supports"}
+{"id": "c010", "claim": "系统性风险指标回落。", "evidence": "ΔCoVaR 与 MES 同步上升，系统性风险指标升至警戒区间。", "label": "contradicts"}
+{"id": "c011", "claim": "政策文件明确提及数字人民币跨境试点扩容。", "evidence": "文件正文仅涉及贸易便利化措施，未提及数字人民币。", "label": "fabricated"}
+{"id": "c012", "claim": "外部冲击情景下组合损失可控。", "evidence": "情景分析覆盖汇率与利差冲击，但未给出组合损失结论。", "label": "unsupported"}

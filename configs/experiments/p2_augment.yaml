@@ -1,0 +1,34 @@
+# 示例实验配置：P2 金融知识与专业工具增强消融（full vs no_tools_no_kb）
+# 使用：python scripts/run_experiment.py --kind p2 --config configs/experiments/p2_augment.yaml
+run_id: p2_augment_v1
+data:
+  sample_start: "2018-01-01"
+  sample_end: "2025-09-30"
+  pit_snapshot: auto
+target:
+  label_version: stress_pca_q90
+  horizons: [5, 10, 20]
+  eval_start: "2021-01-01"
+modality:
+  numeric: true
+  text: true
+augment:
+  rag: true          # 对照：false = 禁用知识库
+  tools: true        # 对照：false = 禁用确定性工具
+agents:
+  enabled: true
+  mode: collaborative
+coordination:
+  evidence_share: true
+  cross_validation: true
+  conflict_resolution: true
+budget:
+  equal_across_configs: true
+  max_tool_calls_per_agent: 6
+  max_tokens_per_agent: 4000
+llm:
+  provider: deepseek
+  mock_when_no_key: true
+eval:
+  bootstrap: 200
+  metrics: [numeric_error_rate, evidence_accuracy, unsupported_claim_rate, claims_with_evidence_ratio, verification_passed]

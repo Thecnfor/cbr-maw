@@ -1,0 +1,10 @@
+{"id": "h001", "claim": "跨境融资宏观审慎调节参数被上调。", "evidence": "央行将全口径跨境融资宏观审慎调节参数从 1.25 提高至 1.5。", "label": "supports"}
+{"id": "h002", "claim": "北向资金流出导致人民币贬值。", "evidence": "北向资金连续净流出；同期人民币对美元贬值 1.2%。", "label": "unsupported"}
+{"id": "h003", "claim": "融资成本小幅上升。", "evidence": "境外融资利差扩大 180 个基点，融资成本显著抬升。", "label": "contradicts"}
+{"id": "h004", "claim": "监管未提及跨境资本流动风险。", "evidence": "监管文件中专章讨论跨境资本流动风险与宏观审慎管理。", "label": "contradicts"}
+{"id": "h005", "claim": "2024 年政策收紧。", "evidence": "2019 年文件提出加强跨境资金流动管理。", "label": "unsupported"}
+{"id": "h006", "claim": "房地产企业融资压力上升。", "evidence": "制造业企业融资成本上升，房地产相关数据未披露。", "label": "unsupported"}
+{"id": "h007", "claim": "文件明确提出将外汇存款准备金率下调至 3%。", "evidence": "文件提出优化跨境融资宏观审慎管理，未涉及外汇存款准备金率。", "label": "fabricated"}
+{"id": "h008", "claim": "跨境资金流动显著恶化。", "evidence": "跨境资金流动小幅波动，总体保持平稳。", "label": "contradicts"}
+{"id": "h009", "claim": "市场压力处于历史高位。", "evidence": "压力分位达到 92%，接近历史高位。", "label": "supports"}
+{"id": "h010", "claim": "组合尾部损失可控。", "evidence": "极端情景下 VaR 与 CVaR 均明显上升，报告未评估组合损失是否可控。", "label": "unsupported"}

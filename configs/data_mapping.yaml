@@ -1,0 +1,258 @@
+# CBR-MAW custom 数据字段映射（由 scripts/build_real_custom_data.py 生成）
+# 数据来源：用户提供 zip + 飞书 Base 资金流 + 公开接口补齐 + 飞书文本语料。
+custom_data_dir: data/custom
+
+series:
+  - series_id: market.cn_equity.csi300
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_equity.csi300
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_equity.csi500
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_equity.csi500
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_equity.turnover
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_equity.turnover
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿元'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_bond.cgb_2y
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_bond.cgb_2y
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_bond.cgb_10y
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_bond.cgb_10y
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_bond.repo_7d
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_bond.repo_7d
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_bond.term_spread
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_bond.term_spread
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'bp'
+    frequency: daily
+    source: user-provided
+  - series_id: market.cn_bond.cgb_index
+    file: daily_series.csv
+    date_column: date
+    value_column: market.cn_bond.cgb_index
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: rates.credit.aa_spread
+    file: daily_series.csv
+    date_column: date
+    value_column: rates.credit.aa_spread
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'bp'
+    frequency: daily
+    source: user-provided
+  - series_id: market.fx.usdcny
+    file: daily_series.csv
+    date_column: date
+    value_column: market.fx.usdcny
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'CNY/USD'
+    frequency: daily
+    source: user-provided
+  - series_id: market.fx.usdcnh
+    file: daily_series.csv
+    date_column: date
+    value_column: market.fx.usdcnh
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'CNH/USD'
+    frequency: daily
+    source: user-provided
+  - series_id: market.fx.cnh_cny_gap
+    file: daily_series.csv
+    date_column: date
+    value_column: market.fx.cnh_cny_gap
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'pips'
+    frequency: daily
+    source: user-provided
+  - series_id: market.global.dxy
+    file: daily_series.csv
+    date_column: date
+    value_column: market.global.dxy
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: market.global.vix
+    file: daily_series.csv
+    date_column: date
+    value_column: market.global.vix
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: market.global.sp500
+    file: daily_series.csv
+    date_column: date
+    value_column: market.global.sp500
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: market.global.us10y
+    file: daily_series.csv
+    date_column: date
+    value_column: market.global.us10y
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: daily
+    source: user-provided
+  - series_id: market.global.cn_us_spread
+    file: daily_series.csv
+    date_column: date
+    value_column: market.global.cn_us_spread
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: 'bp'
+    frequency: daily
+    source: user-provided
+  - series_id: crossborder.flows.northbound_net
+    file: daily_series.csv
+    date_column: date
+    value_column: crossborder.flows.northbound_net
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿元'
+    frequency: daily
+    source: user-provided
+  - series_id: crossborder.flows.southbound_net
+    file: daily_series.csv
+    date_column: date
+    value_column: crossborder.flows.southbound_net
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿元'
+    frequency: daily
+    source: user-provided
+  - series_id: crossborder.holdings.northbound_hold
+    file: daily_series.csv
+    date_column: date
+    value_column: crossborder.holdings.northbound_hold
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿元'
+    frequency: daily
+    source: user-provided
+  - series_id: crossborder.holdings.southbound_hold
+    file: daily_series.csv
+    date_column: date
+    value_column: crossborder.holdings.southbound_hold
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿元'
+    frequency: daily
+    source: user-provided
+  - series_id: crossborder.flows.ah_premium
+    file: daily_series.csv
+    date_column: date
+    value_column: crossborder.flows.ah_premium
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: daily
+    source: user-provided
+  - series_id: macro.pmi.manufacturing
+    file: monthly_series.csv
+    date_column: date
+    value_column: macro.pmi.manufacturing
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '点'
+    frequency: monthly
+    source: user-provided
+  - series_id: macro.cpi.yoy
+    file: monthly_series.csv
+    date_column: date
+    value_column: macro.cpi.yoy
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: monthly
+    source: user-provided
+  - series_id: macro.social_financing.yoy
+    file: monthly_series.csv
+    date_column: date
+    value_column: macro.social_financing.yoy
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: monthly
+    source: user-provided
+  - series_id: macro.fx_reserves
+    file: monthly_series.csv
+    date_column: date
+    value_column: macro.fx_reserves
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '亿美元'
+    frequency: monthly
+    source: user-provided
+  - series_id: macro.lpr.1y
+    file: monthly_series.csv
+    date_column: date
+    value_column: macro.lpr.1y
+    release_time_column: release_time
+    release_lag_days: 0
+    unit: '%'
+    frequency: monthly
+    source: user-provided
+
+documents:
+  - file: policy_news.csv
+    publish_time_column: publish_time
+    title_column: title
+    body_column: content
+    source_column: source
+    url_column: url
+    doc_id_column: doc_id
+    source_name: feishu-text-corpus

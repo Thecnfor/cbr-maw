@@ -1,0 +1,14 @@
+# 判断层配置（WS2）
+model: jev-1.14.0
+base_url: https://api.typesafe.ai
+timeout_seconds: 30
+max_retries: 2
+prefer_ipv4: true
+cache_dir: artifacts/judgments/cache
+
+thresholds:
+  evidence_verification:
+    auto_accept: 0.8
+    auto_reject: 0.8
+  exploration_gate:
+    min_confidence: 0.6

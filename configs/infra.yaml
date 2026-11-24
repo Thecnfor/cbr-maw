@@ -1,0 +1,35 @@
+# CBR-MAW 可选基础设施配置（实时抓取 / RAG / 持久化）
+#
+# 全部为可选：enabled=false 或服务不可达时，代码自动降级到本地实现，
+# 不装 Docker 也能跑通全量测试与 SYNTHETIC 演示。映射见 docker-compose.yml。
+
+infra:
+  enabled: false            # 全局开关；false 时所有组件走本地降级实现
+  probe_timeout_seconds: 1.0
+
+  postgres:
+    enabled: false
+    dsn: postgresql://cbr:cbr@127.0.0.1:55432/cbr
+
+  redis:
+    enabled: false
+    url: redis://127.0.0.1:56379/0
+
+  mongodb:
+    enabled: false
+    uri: mongodb://cbr:cbr@127.0.0.1:57017
+    database: cbr
+
+  # 向量检索（RAG）：backend 可选 local | qdrant | pgvector
+  vector:
+    backend: local
+    collection: cbr_chunks
+    embedding:
+      provider: hashing     # hashing（离线默认）| openai
+      model: text-embedding-3-small
+      dimension: 256
+    qdrant:
+      url: http://127.0.0.1:56333
+    pgvector:
+      dsn: postgresql://cbr:cbr@127.0.0.1:55432/cbr
+      table: cbr_chunks

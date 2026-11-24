@@ -1,0 +1,66 @@
+# ===== Dart / Flutter =====
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+pubspec_overrides.yaml
+
+# ===== FVM =====
+.fvm/
+.fvmrc.lock
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ===== 构建产物 =====
+*.exe
+*.dll
+*.so
+*.dylib
+*.msix
+*.apk
+*.aab
+*.zip
+!docs/**/*.zip
+
+# ===== 凭证与本地环境 =====
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.key.dpapi
+!secrets/README.md
+
+# ===== 运行时数据（不入库）=====
+data/inbox/
+data/traces/
+data/raw/
+data/custom/
+data/processed/
+data/knowledge/index/
+*.duckdb
+*.duckdb.wal
+artifacts/
+artifacts_real/
+
+# 注：data/samples/ 故意**入库**（约 2.3 MB，MANIFEST 声明 synthetic=true），
+# 保证全新克隆即可跑测试夹具；待 tools/build_sample_data.dart 就位后可改为忽略并生成。
+
+# ===== 研究参考材料（体积大、来源受限）=====
+ref/
+
+# ===== 本地工作区材料 =====
+.remember/
+.remember/
+.scratch/
+.playwright-mcp/
+*.log

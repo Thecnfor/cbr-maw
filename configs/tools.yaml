@@ -1,0 +1,106 @@
+# 确定性工具层配置：工具版本 / 默认参数 / 数据序列映射 / 知识库索引参数
+#
+# 说明：
+# - 权限矩阵不在此配置，唯一来源是 configs/roles.yaml 的 tool_permissions；
+# - series 中的 DataProvider series_id 以 data-model 发布的 src/cbr/data/series.py 为准，
+#   本文件可覆盖（工具参数也可显式传入 series_id 覆盖默认值）；
+# - 工具实现本身不硬编码序列名，均从本文件（或显式参数）读取。
+registry_version: tools-v1
+default_deny: true
+
+# 工具默认使用的数据序列（DataProvider.history 的 series_id，口径见 src/cbr/data/series.py）
+series:
+  equity: market.cn_equity.csi300      # 沪深300（风险测度/情景目标，点位）
+  bond: market.cn_bond.cgb_index       # 中债国债指数（CoVaR 资产端，点位）
+  global_equity: market.global.sp500   # 标普500（外部冲击，点位）
+  fx_usdcny: market.fx.usdcny          # USDCNY（人民币贬值 = 上行，CNY/USD）
+  credit_spread: rates.credit.aa_spread # AA 信用利差（bp）
+  northbound: crossborder.flows.northbound_net  # 北向净流入（亿元）
+  southbound: crossborder.flows.southbound_net  # 南向净流入（亿元，缺失时 capital_flow 降级）
+  ah_premium: crossborder.flows.ah_premium      # AH 溢价指数（点）
+
+# 系统性风险工具（DY 溢出指数）使用的跨市场序列集合（统一为价格/点位类，收益率为简单收益）
+dy_series:
+  - market.cn_equity.csi300
+  - market.global.sp500
+  - market.fx.usdcny
+  - market.global.vix
+
+tools:
+  risk_measure:
+    version: "1.0.0"
+    defaults:
+      lookback: 252
+      annualization: 252
+      confidence: 0.95
+      horizon_days: 1
+      values_are: price
+      min_observations: 20
+
+  systemic_risk:
+    version: "1.0.0"
+    defaults:
+      lookback: 252
+      tail_q: 0.05
+      dy_window: 120
+      dy_lag: 1
+      dy_horizon: 10
+      values_are: price
+
+  capital_flow:
+    version: "1.0.0"
+    defaults:
+      lookback: 60
+      z_window: 60
+      anomaly_z: 1.5
+      top_n: 5
+      flow_unit: "亿元"
+
+  funding_cost:
+    version: "1.0.0"
+    defaults:
+      lookback: 252
+      momentum_window: 20
+      spread_unit: bp      # rates.credit.aa_spread 单位为 bp（见 data/series.py）
+      cost_jump_bp: 50.0
+      cost_medium_bp: 25.0
+      refinancing_horizon_days: 90
+
+  scenario:
+    version: "1.0.0"
+    defaults:
+      lookback: 252
+      us_equity_drop_pct: 10.0
+      fx_depreciation_pct: 5.0
+      spread_widening_bp: 100.0
+      method: both
+      analog_k: 10
+      spread_unit: bp      # rates.credit.aa_spread 单位为 bp
+      min_observations: 60
+      values_are: price
+
+  forecast:
+    version: "1.0.0"
+    defaults:
+      horizon: 5
+      include_drivers: true
+
+  knowledge_search:
+    version: "1.0.0"
+    defaults:
+      top_k: 5
+
+# 时点知识库（knowledge 模块读取同一文件的 knowledge 段）
+knowledge:
+  corpus_dir: data/knowledge/corpus
+  index_dir: data/knowledge/index
+  chunk_size: 240        # 每块目标字符数
+  chunk_overlap: 48      # 块间重叠字符数
+  top_k: 5               # 默认返回条数
+  bm25_k1: 1.5
+  bm25_b: 0.75
+  index_version: kb-bm25-v1
+  auto_build: true             # 索引缺失/过期时在内存中重建
+  write_index_on_miss: false   # 是否在索引缺失时自动写盘（scripts/build_knowledge.py 显式构建）
+  embedding:
+    provider: none             # 预留 embedding 召回接口，当前使用 BM25

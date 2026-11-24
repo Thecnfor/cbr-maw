@@ -1,0 +1,15 @@
+# CBR-MAW 执行 harness 配置
+#
+# backend:
+#   in-process  默认；在本进程内按任务类型分派（零外部依赖，测试/演示用）
+#   remote      转发到外部执行器（OpenHands 二开 / Python+TS 二开）的 HTTP 网关
+#
+# 决策记录见 docs/architecture/adr-2026-10-27-agent-harness.md。
+
+harness:
+  backend: in-process
+  # 仅 backend=remote 时生效：
+  base_url: "http://127.0.0.1:3000"
+  submit_path: "/v1/tasks"
+  timeout_seconds: 60
+  # api_key: "sk-..."   # 建议用环境变量注入，不要提交到仓库

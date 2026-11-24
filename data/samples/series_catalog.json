@@ -1,0 +1,245 @@
+{
+  "market.cn_equity.csi300": {
+    "name": "沪深300指数",
+    "domain": "market.cn_equity",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "收盘价，用于收益、已实现波动与压力指数的权益分量"
+  },
+  "market.cn_equity.csi500": {
+    "name": "中证500指数",
+    "domain": "market.cn_equity",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "中小盘代表，用于风格/集中度与同步性刻画"
+  },
+  "market.cn_equity.turnover": {
+    "name": "沪深两市成交额",
+    "domain": "market.cn_equity",
+    "unit": "亿元",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "日成交金额，用于流动性/换手压力代理"
+  },
+  "market.cn_bond.cgb_2y": {
+    "name": "2年期国债到期收益率",
+    "domain": "market.cn_bond",
+    "unit": "%",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "银行间国债收益率曲线短端"
+  },
+  "market.cn_bond.cgb_10y": {
+    "name": "10年期国债到期收益率",
+    "domain": "market.cn_bond",
+    "unit": "%",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "长端基准利率；避险情景下通常下行"
+  },
+  "market.cn_bond.repo_7d": {
+    "name": "银行间7天质押式回购利率",
+    "domain": "market.cn_bond",
+    "unit": "%",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "资金面松紧与流动性压力代理"
+  },
+  "market.cn_bond.term_spread": {
+    "name": "10Y-2Y国债期限利差",
+    "domain": "market.cn_bond",
+    "unit": "bp",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": true,
+    "notes": "派生：cgb_10y - cgb_2y，乘以 100 转为 bp"
+  },
+  "market.cn_bond.cgb_index": {
+    "name": "中债国债全价指数（仿真派生）",
+    "domain": "market.cn_bond",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": true,
+    "notes": "派生：由 10 年期国债收益率日变动按久期约 7.5 年近似，供债券价格类风险测度使用"
+  },
+  "rates.credit.aa_spread": {
+    "name": "AA级中票信用利差",
+    "domain": "rates.credit",
+    "unit": "bp",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "信用风险溢价代理，压力期走阔"
+  },
+  "market.fx.usdcny": {
+    "name": "美元兑人民币在岸即期汇率",
+    "domain": "market.fx",
+    "unit": "CNY/USD",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "在岸收盘价；数值上升表示人民币贬值"
+  },
+  "market.fx.usdcnh": {
+    "name": "美元兑离岸人民币即期汇率",
+    "domain": "market.fx",
+    "unit": "CNH/USD",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "离岸收盘价，对跨境资金与外部冲击更敏感"
+  },
+  "market.fx.cnh_cny_gap": {
+    "name": "离岸-在岸人民币汇差",
+    "domain": "market.fx",
+    "unit": "pips",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": true,
+    "notes": "派生：(usdcnh - usdcny) * 10000，正值表示离岸贬值预期更强"
+  },
+  "market.global.dxy": {
+    "name": "美元指数",
+    "domain": "market.global",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "全球美元流动性/避险需求代理；按 t-1 海外收盘对齐"
+  },
+  "market.global.vix": {
+    "name": "VIX恐慌指数",
+    "domain": "market.global",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "全球风险偏好与波动率代理；按 t-1 海外收盘对齐"
+  },
+  "market.global.sp500": {
+    "name": "标普500指数",
+    "domain": "market.global",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "全球风险资产基准；按 t-1 海外收盘对齐"
+  },
+  "market.global.us10y": {
+    "name": "美国10年期国债收益率",
+    "domain": "market.global",
+    "unit": "%",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "全球无风险利率；按 t-1 海外收盘对齐，用于中美利差"
+  },
+  "market.global.cn_us_spread": {
+    "name": "中美10年期国债利差",
+    "domain": "market.global",
+    "unit": "bp",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": true,
+    "notes": "派生：(cgb_10y - us10y) * 100，负值表示中美利差倒挂"
+  },
+  "crossborder.flows.northbound_net": {
+    "name": "北向资金净流入",
+    "domain": "crossborder.flows",
+    "unit": "亿元",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "沪深港通北向每日净买入；压力期通常转为流出；2024-08-16 后停止披露（仿真同样置缺失）"
+  },
+  "crossborder.flows.southbound_net": {
+    "name": "南向资金净流入",
+    "domain": "crossborder.flows",
+    "unit": "亿元",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "沪深港通南向每日净买入；与北向可能分化"
+  },
+  "crossborder.holdings.northbound_hold": {
+    "name": "北向持股总市值",
+    "domain": "crossborder.holdings",
+    "unit": "亿元",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "外资持仓存量，用于持仓变动/集中度分析；2024-08-16 后停止披露（仿真同样置缺失）"
+  },
+  "crossborder.holdings.southbound_hold": {
+    "name": "南向持股总市值",
+    "domain": "crossborder.holdings",
+    "unit": "亿元",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "内资港股持仓存量"
+  },
+  "crossborder.flows.ah_premium": {
+    "name": "AH股溢价指数",
+    "domain": "crossborder.flows",
+    "unit": "点",
+    "frequency": "daily",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "A/H 价差，衡量跨境定价分割与资金扰动"
+  },
+  "macro.pmi.manufacturing": {
+    "name": "制造业PMI",
+    "domain": "macro",
+    "unit": "点",
+    "frequency": "monthly",
+    "release_lag_days": 1,
+    "derived": false,
+    "notes": "月末后约 1 天由国家统计局发布（仿真按自然日近似）"
+  },
+  "macro.cpi.yoy": {
+    "name": "CPI同比",
+    "domain": "macro",
+    "unit": "%",
+    "frequency": "monthly",
+    "release_lag_days": 10,
+    "derived": false,
+    "notes": "次月约 10 日发布，标签/特征使用时必须遵守发布时滞"
+  },
+  "macro.social_financing.yoy": {
+    "name": "社融存量同比",
+    "domain": "macro",
+    "unit": "%",
+    "frequency": "monthly",
+    "release_lag_days": 12,
+    "derived": false,
+    "notes": "次月约 12 日发布"
+  },
+  "macro.fx_reserves": {
+    "name": "外汇储备",
+    "domain": "macro",
+    "unit": "亿美元",
+    "frequency": "monthly",
+    "release_lag_days": 7,
+    "derived": false,
+    "notes": "次月约 7 日发布"
+  },
+  "macro.lpr.1y": {
+    "name": "1年期贷款市场报价利率(LPR)",
+    "domain": "macro",
+    "unit": "%",
+    "frequency": "monthly",
+    "release_lag_days": 0,
+    "derived": false,
+    "notes": "每月 20 日发布，当日可得"
+  }
+}

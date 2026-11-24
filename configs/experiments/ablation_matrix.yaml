@@ -1,0 +1,69 @@
+# 消融矩阵 E0–E12：与 docs/techdoc/chapter4_method.md 表 4-8 一一对应
+# 用法：scripts/run_experiment.py 目前实现 E1（p1_modality）、E9–E11（p3_collaboration）、E6–E7（p2_augment）的试点；
+#      其余配置为论文正式实验预留（同一代码路径，按 mode/开关组合执行）。
+experiments:
+  - id: E0
+    name: 传统金融预测基线（仅数值、无 LLM）
+    kind: p1
+    config: configs/experiments/p1_modality.yaml
+    overrides: {modality: {text: false}, augment: {rag: false, tools: false}, agents: {enabled: false}}
+  - id: E1
+    name: 数值 + 文本融合预测器
+    kind: p1
+    config: configs/experiments/p1_modality.yaml
+    overrides: {modality: {text: true}, augment: {rag: false, tools: false}, agents: {enabled: false}}
+  - id: E2
+    name: 单智能体（无工具 / 无知识库）
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: single, augment: {rag: false, tools: false}}
+  - id: E3
+    name: 单智能体 + 工具
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: single, augment: {rag: false, tools: true}}
+  - id: E4
+    name: 单智能体 + 工具 + 知识库
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: single, augment: {rag: true, tools: true}}
+  - id: E5
+    name: 三个独立智能体（无共享、无协调）
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: independent}
+  - id: E6
+    name: 协同 - 仅证据共享
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, coordination: {evidence_share: true, cross_validation: false, conflict_resolution: false}}
+  - id: E7
+    name: 协同 - 证据共享 + 交叉验证
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, coordination: {evidence_share: true, cross_validation: true, conflict_resolution: false}}
+  - id: E8
+    name: 伪分工对照（三角色同 prompt/同工具权限）
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, pseudo_specialization: true}
+  - id: E9
+    name: 完整协同（证据共享 + 交叉验证 + 冲突协调）
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, coordination: {evidence_share: true, cross_validation: true, conflict_resolution: true}}
+  - id: E10
+    name: 协同去除交叉验证
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, coordination: {evidence_share: true, cross_validation: false, conflict_resolution: true}}
+  - id: E11
+    name: 协同去除冲突协调
+    kind: p3
+    config: configs/experiments/p3_collaboration.yaml
+    overrides: {mode: collaborative, coordination: {evidence_share: true, cross_validation: true, conflict_resolution: false}}
+  - id: E12
+    name: 协同 + 工具/知识库消融
+    kind: p2
+    config: configs/experiments/p2_augment.yaml
+    overrides: {augment: {rag: false, tools: false}}
