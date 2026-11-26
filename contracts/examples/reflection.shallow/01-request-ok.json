@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": "41",
+  "method": "reflection.shallow",
+  "params": {
+    "as_of": "2026-10-01",
+    "top_k": 5,
+    "horizon": 20
+  }
+}

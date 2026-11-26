@@ -1,0 +1,41 @@
+{
+  "jsonrpc": "2.0",
+  "id": "41",
+  "result": {
+    "as_of": "2026-10-01",
+    "model_version": "cfsi-deterministic-v1",
+    "current": {
+      "value": 0.7143,
+      "level": "medium",
+      "dims": {
+        "bond": 0.63,
+        "credit": 0.35,
+        "crossborder": 0.76,
+        "equity": 0.56,
+        "fx": 0.28,
+        "global": 0.74
+      }
+    },
+    "history_size": 2380,
+    "similar_cases": [
+      {
+        "as_of": "2022-09-19",
+        "distance": 0.0412,
+        "level": "high",
+        "value": 0.8801,
+        "outcome": {
+          "days": 20,
+          "peak": 0.9312,
+          "last": 0.8744,
+          "delta": 0.0511
+        }
+      }
+    ],
+    "similarity": "dimension_structure_euclidean",
+    "limitations": [
+      "相似案例只做归因参考：结构相似不等于因果相同",
+      "事后走势回看 20 个交易日，仅供复盘，不得写入当期定级",
+      "历史检索上界为 as_of，不含任何未来数据"
+    ]
+  }
+}

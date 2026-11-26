@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/reflection.shallow.response.schema.json",
+  "title": "reflection.shallow 响应信封",
+  "description": "reflection.shallow 的成功或失败响应。历史不足或当日信号缺失时返回 E_DATA_MISSING（不插值、不补数）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "as_of": {
+              "type": "string",
+              "description": "决策时点"
+            },
+            "model_version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "信号模型版本"
+            },
+            "current": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "当期信号（值/等级/六维）"
+            },
+            "history_size": {
+              "type": "integer",
+              "description": "可用历史信号条数"
+            },
+            "similar_cases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "description": "相似历史案例（含事后走势）"
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "局限说明"
+            },
+            "similarity": {
+              "type": "string",
+              "description": "相似度口径"
+            }
+          },
+          "required": [
+            "as_of",
+            "current",
+            "history_size",
+            "similar_cases",
+            "similarity",
+            "limitations"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_PARAMS",
+                    "E_NOT_INITIALIZED",
+                    "E_DATA_MISSING",
+                    "E_PERMISSION_DENIED",
+                    "E_INTERNAL",
+                    "E_METHOD_NOT_FOUND",
+                    "E_VERSION_MISMATCH"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

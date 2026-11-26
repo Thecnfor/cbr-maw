@@ -11,6 +11,7 @@ pub mod ingest;
 pub mod kb;
 pub mod numeric;
 pub mod pit;
+pub mod reflection;
 pub mod signal;
 pub mod tools;
 pub mod workspace;
@@ -26,7 +27,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CONTRACT_VERSION: &str = "1.0.0";
 
 /// 本内核实现的方法（`initialize.result.capabilities`）。
-pub const CAPABILITIES: [&str; 17] = [
+pub const CAPABILITIES: [&str; 18] = [
     "initialize",
     "shutdown",
     "ping",
@@ -44,6 +45,7 @@ pub const CAPABILITIES: [&str; 17] = [
     "kernel.hash",
     "contract.capabilities",
     "tools.describe",
+    "reflection.shallow",
 ];
 
 /// 运行期上下文。
@@ -243,6 +245,7 @@ impl Kernel {
             "signal.compute" => self.signal_compute(params),
             "cfsi.compute" => self.cfsi_compute(params),
             "tools.invoke" => self.tools_invoke(params),
+            "reflection.shallow" => self.reflection_shallow(params),
             "kernel.hash" => kernel_hash(params),
             other => Err(KernelError::method_not_found(other)),
         }
@@ -390,6 +393,19 @@ impl Kernel {
         let as_of = require_str(params, "as_of")?;
         let catalog = self.catalog.clone();
         signal::compute(self.workspace()?, &catalog, as_of)
+    }
+
+    fn reflection_shallow(&mut self, params: &Value) -> Result<Value> {
+        let as_of = require_str(params, "as_of")?;
+        let top_k = params
+            .get("top_k")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(5) as usize;
+        let horizon = params
+            .get("horizon")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(20) as usize;
+        reflection::shallow(self.workspace()?, as_of, top_k, horizon)
     }
 
     fn tools_invoke(&mut self, params: &Value) -> Result<Value> {

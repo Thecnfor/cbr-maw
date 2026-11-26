@@ -2004,6 +2004,102 @@ final class PitIngestResult extends RpcResult {
   };
 }
 
+/// `reflection.shallow` params。
+final class ReflectionShallowParams extends RpcParams {
+  const ReflectionShallowParams({required this.asOf, this.topK, this.horizon});
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory ReflectionShallowParams.parse(Object? json) {
+    final r = JsonReader(json, 'params');
+    return ReflectionShallowParams(
+      asOf: r.str('as_of'),
+      topK: r.integerOpt('top_k'),
+      horizon: r.integerOpt('horizon'),
+    );
+  }
+
+  @override
+  String get method => 'reflection.shallow';
+
+  /// 决策时点（历史检索上界，强制 available_at <= as_of）
+  final String asOf;
+
+  /// 返回的相似案例数
+  final int? topK;
+
+  /// 事后回看窗口（交易日）
+  final int? horizon;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'as_of': asOf,
+    'top_k': topK,
+    'horizon': horizon,
+  };
+}
+
+/// `reflection.shallow` result。
+final class ReflectionShallowResult extends RpcResult {
+  const ReflectionShallowResult({
+    required this.asOf,
+    this.modelVersion,
+    required this.current,
+    required this.historySize,
+    required this.similarCases,
+    required this.limitations,
+    required this.similarity,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory ReflectionShallowResult.parse(Object? json) {
+    final r = JsonReader(json, 'result');
+    return ReflectionShallowResult(
+      asOf: r.str('as_of'),
+      modelVersion: r.strOpt('model_version'),
+      current: r.obj('current'),
+      historySize: r.integer('history_size'),
+      similarCases: r.objects('similar_cases'),
+      limitations: r.strings('limitations'),
+      similarity: r.str('similarity'),
+    );
+  }
+
+  @override
+  String get method => 'reflection.shallow';
+
+  /// 决策时点
+  final String asOf;
+
+  /// 信号模型版本
+  final String? modelVersion;
+
+  /// 当期信号（值/等级/六维）
+  final Map<String, Object?> current;
+
+  /// 可用历史信号条数
+  final int historySize;
+
+  /// 相似历史案例（含事后走势）
+  final List<Map<String, Object?>> similarCases;
+
+  /// 局限说明
+  final List<String> limitations;
+
+  /// 相似度口径
+  final String similarity;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'as_of': asOf,
+    'model_version': modelVersion,
+    'current': current,
+    'history_size': historySize,
+    'similar_cases': similarCases,
+    'limitations': limitations,
+    'similarity': similarity,
+  };
+}
+
 /// `signal.compute` params。
 final class SignalComputeParams extends RpcParams {
   const SignalComputeParams({required this.asOf});

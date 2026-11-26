@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/reflection.shallow.request.schema.json",
+  "title": "reflection.shallow 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 reflection.shallow。浅层反思：按压力结构检索 as_of 之前的历史相似时点，并给出这些时点之后的真实走势（仅供归因，不写入当期定级）。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "reflection.shallow"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "description": "决策时点（历史检索上界，强制 available_at <= as_of）"
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 5,
+          "description": "返回的相似案例数"
+        },
+        "horizon": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 20,
+          "description": "事后回看窗口（交易日）"
+        }
+      },
+      "required": [
+        "as_of"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "41",
+  "error": {
+    "code": -32004,
+    "message": "历史信号不足，无法做相似案例检索",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "历史样本不足",
+        "available": 12
+      }
+    }
+  }
+}
