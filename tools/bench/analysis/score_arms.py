@@ -53,6 +53,18 @@ def mcnemar(b: list[int], c: list[int]) -> dict:
     return {'b': n01, 'c': n10, 'p': min(1.0, p)}
 
 
+def wilson(k: int, n: int) -> tuple[float, float]:
+    """Wilson 95% 置信区间（小样本比正态近似可靠）。"""
+    if n == 0:
+        return (0.0, 1.0)
+    z = 1.959963984540054
+    p = k / n
+    denom = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return (max(0.0, center - half), min(1.0, center + half))
+
+
 def arm_metrics(preds: list[int], truth: list[int]) -> dict:
     tp = sum(1 for p, t in zip(preds, truth) if p == 1 and t == 1)
     fp = sum(1 for p, t in zip(preds, truth) if p == 1 and t == 0)
@@ -66,6 +78,13 @@ def arm_metrics(preds: list[int], truth: list[int]) -> dict:
         'n': len(truth), 'tp': tp, 'fp': fp, 'fn': fn, 'tn': tn,
         'precision': precision, 'recall': recall, 'base_rate': base, 'lift': lift,
         'trigger_rate': (tp + fp) / len(truth) if truth else None,
+        'precision_ci95': wilson(tp, tp + fp) if tp + fp else None,
+        'recall_ci95': wilson(tp, tp + fn) if tp + fn else None,
+        # 平衡准确率：正负例各半抽样时，比 precision 更能区分「会不会区分」。
+        'balanced_accuracy': (
+            (tp / (tp + fn) + tn / (tn + fp)) / 2
+            if (tp + fn) and (tn + fp) else None
+        ),
     }
 
 
@@ -100,7 +119,7 @@ def main(argv: list[str]) -> int:
     threshold = 'high'  # 「高压力预警」= high 及以上
     results = {}
     print(f'{"臂":<16}{"n":>4}{"prec":>8}{"recall":>8}{"lift":>8}'
-          f'{"触发率":>8}{"ms":>9}{"tokens":>8}')
+          f'{"触发率":>8}{"均衡准确":>9}{"ms":>9}{"tokens":>8}')
     for arm in arms:
         pairs = [(binary(lv, threshold), int(y))
                  for lv, y in zip(frame[arm], frame['y20'])
@@ -117,8 +136,12 @@ def main(argv: list[str]) -> int:
         print(f'{arm:<16}{m["n"]:>4}'
               f'{(m["precision"] or 0):>8.3f}{(m["recall"] or 0):>8.3f}'
               f'{(m["lift"] or 0):>8.3f}{(m["trigger_rate"] or 0):>8.3f}'
+              f'{(m["balanced_accuracy"] or 0):>9.3f}'
               f'{(ms.mean() if len(ms) else 0):>9.0f}'
               f'{(tok.mean() if len(tok) else 0):>8.0f}')
+        if m['precision_ci95']:
+            lo, hi = m['precision_ci95']
+            print(f'{"":16}  precision 95% CI [{lo:.3f}, {hi:.3f}]')
 
     # 配对比较：单模型 vs 协同（这是论文的核心问题）。
     print()
