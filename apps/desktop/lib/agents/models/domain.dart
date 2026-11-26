@@ -697,6 +697,7 @@ final class AgentOutput {
     this.latencyMs = 0,
     this.failure,
     this.numericMismatches = 0,
+    this.llmAssessment,
   });
 
   /// 角色。
@@ -725,6 +726,13 @@ final class AgentOutput {
 
   /// 本角色 LLM 自报数值与工具重算不一致的条数。
   final int numericMismatches;
+
+  /// LLM 自己对当前风险的自评（`risk_level_assessment`）。
+  ///
+  /// 系统定级由确定性规则给出（docs/03 §1.8），这个字段只作参考；但它是
+  /// 「模型自己怎么看」的唯一直通道——评估多智能体协同的贡献必须看它，
+  /// 否则协同与不协同在指标上完全同形。
+  final RiskLevel? llmAssessment;
 }
 
 /// 冲突。
@@ -963,6 +971,7 @@ final class DecisionCard {
     this.partial = false,
     this.humanOverrides = const [],
     this.numericMismatches = 0,
+    this.llmAssessments = const {},
   });
 
   /// run id。
@@ -1009,6 +1018,12 @@ final class DecisionCard {
 
   /// 本次研判中 LLM 自报数值与工具重算不一致的条数（docs/23 §3.2）。
   final int numericMismatches;
+
+  /// 各主体的 LLM 自评等级（角色 → 等级）。
+  ///
+  /// 系统定级是确定性规则的结果（docs/03 §1.8），这张表是「模型自己怎么看」
+  /// 的唯一记录——评估协同是否带来增量，必须拿它与单模型对照。
+  final Map<RoleId, RiskLevel> llmAssessments;
 
   /// 人工覆盖（不进 evidenceIds）。
   final List<String> humanOverrides;

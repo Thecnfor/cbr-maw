@@ -214,7 +214,9 @@ pub fn query(
                 // end 不能晚于 as_of（继续收紧，不放宽）
                 applied_as_of = raw.clone();
             }
-            clauses.push(format!("{column} {op} CAST(? AS VARCHAR)"));
+            // 列可能是 DATE / TIMESTAMP / VARCHAR：一律按 VARCHAR 比较会让
+            // DuckDB 报「Cannot compare DATE and VARCHAR」，日期区间查询直接失败。
+            clauses.push(format!("CAST({column} AS VARCHAR) {op} CAST(? AS VARCHAR)"));
             params.push(Box::new(raw));
         }
     }
@@ -456,6 +458,31 @@ mod tests {
         let result = query(&ws, "pit_observations", None, "2026-06-30", 100).unwrap();
         let rows = result["rows"].as_array().unwrap();
         assert_eq!(rows.len(), 2, "as_of 之后的行必须被过滤");
+        drop(ws);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn query_accepts_date_range_filters() {
+        // 回归：区间过滤曾把 DATE 列直接与 VARCHAR 比较，DuckDB 报
+        // 「Cannot compare values of type DATE and type VARCHAR」→ 任何
+        // 带 start/end 的查询都 500。
+        let (ws, path) = temp_ws("range");
+        ws.conn
+            .execute_batch(
+                "INSERT INTO series_obs VALUES \
+                 ('market.cn_equity.csi300', '2026-06-29', 4000.0, '2026-06-29 10:00:00', 't', '点'), \
+                 ('market.cn_equity.csi300', '2026-06-30', 4025.0, '2026-06-30 10:00:00', 't', '点'), \
+                 ('market.cn_equity.csi300', '2026-07-01', 4050.0, '2026-07-01 10:00:00', 't', '点');",
+            )
+            .unwrap();
+        let filters = json!({"series_id": "market.cn_equity.csi300", "start": "2026-06-30"});
+        let result = query(&ws, "pit_observations", Some(&filters), "2026-12-31", 100).unwrap();
+        let rows = result["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 2, "start 边界是包含的，且必须只返回之后的行");
+        let end = json!({"end": "2026-06-30"});
+        let result = query(&ws, "pit_observations", Some(&end), "2026-12-31", 100).unwrap();
+        assert_eq!(result["rows"].as_array().unwrap().len(), 2);
         drop(ws);
         let _ = std::fs::remove_file(path);
     }

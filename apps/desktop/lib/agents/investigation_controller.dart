@@ -190,6 +190,9 @@ final class AgentRuntime {
             signalRef: signal?.evidenceId,
           ),
         );
+        // 角色自己的生成 token 必须计费：否则 single / independent 臂的
+        // 成本恒为 0，J = L + μC 在对照臂上完全失真。
+        guard.chargeTokens(roles.indexOf(role), output.tokens.total);
         outputs[role] = output;
         if (output.card != null) {
           for (final claim in output.card!.claims) {
@@ -401,6 +404,11 @@ final class AgentRuntime {
       numericMismatches: [
         for (final output in outputs.values) output.numericMismatches,
       ].fold(0, (a, b) => a + b),
+      llmAssessments: {
+        for (final entry in outputs.entries)
+          if (entry.value.llmAssessment != null)
+            entry.key: entry.value.llmAssessment!,
+      },
     );
 
     settings.runHooks?.onDecision?.call(decision);
@@ -551,6 +559,7 @@ final class AgentRuntime {
           signalRef: signal?.evidenceId,
         ),
       );
+      guard.chargeTokens(roles.indexOf(role), output.tokens.total);
       outputs[role] = output;
     }
     return outputs;

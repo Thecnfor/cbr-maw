@@ -196,7 +196,22 @@ final class RoleAgent {
       ),
       latencyMs: response.latencyMs,
       numericMismatches: materialized.numericMismatches,
+      llmAssessment: _assessment(response.json['risk_level_assessment']),
     );
+  }
+
+  /// 解析 LLM 自评等级（非法值按 null 处理，不猜）。
+  static RiskLevel? _assessment(Object? raw) {
+    if (raw is! String) {
+      return null;
+    }
+    return switch (raw) {
+      'low' => RiskLevel.low,
+      'medium' => RiskLevel.medium,
+      'high' => RiskLevel.high,
+      'critical' => RiskLevel.critical,
+      _ => null,
+    };
   }
 
   List<DraftClaim> _parseDrafts(Object? raw) {
