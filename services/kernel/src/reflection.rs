@@ -94,6 +94,236 @@ pub fn shallow(ws: &Workspace, as_of: &str, top_k: usize, horizon: usize) -> Res
     }))
 }
 
+/// 深层反思（HLR）：回看过去 `lookback_days` 天，把**当时的预警等级**与
+/// **事后真实走势**对照，给出预警效能曲线。
+///
+/// 这是 `X-AlertAgent` 外环的复盘半边：浅层反思回答「现在像历史上哪天」，
+/// 深层反思回答「我们过去报警报得准不准」。
+///
+/// 口径：
+/// - 事后窗口固定 `horizon` 个交易日（与 y_20 一致）；
+/// - 「命中」= 当时 level ∈ {high, critical} 且事后窗口内压力峰值 ≥ τ；
+/// - 未到 `horizon` 的近期时点**不参与**统计（标签未成熟，不能算对错）。
+pub fn deep(
+    ws: &Workspace,
+    as_of: &str,
+    lookback_days: usize,
+    horizon: usize,
+) -> Result<Value> {
+    let day = &as_of[..10.min(as_of.len())];
+    // τ 取自当日信号（缺维时 τ 会按可用维度重估，ADR-008）。
+    let current = load_signal(ws, day)?;
+    let Some(current) = current else {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            "as_of 当日没有已计算的信号，无法做效能复盘",
+        )
+        .with_detail(json!({"reason": "当日信号未计算", "as_of": day})));
+    };
+
+    // 日历：用 CFSI 历史表的交易日作为基准（信号表可能稀疏）。
+    let calendar = trading_days(ws, day)?;
+    if calendar.is_empty() {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            "没有可用的交易日历，无法确定事后窗口",
+        ));
+    }
+    let Some(pos_now) = calendar.iter().position(|d| d == day) else {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            format!("{day} 不在交易日历内"),
+        ));
+    };
+    // 只看「已经走完 horizon 天」的历史时点。
+    if pos_now < horizon {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            format!("历史不足 {horizon} 个交易日，无法复盘"),
+        )
+        .with_detail(json!({"reason": "标签未成熟", "need": horizon, "have": pos_now})));
+    }
+    let mature_end = pos_now - horizon;
+    let start = mature_end.saturating_sub(lookback_days);
+
+    let signals = load_signals_between(
+        ws,
+        calendar.get(start).map(String::as_str).unwrap_or(&calendar[0]),
+        calendar[mature_end].as_str(),
+    )?;
+    if signals.is_empty() {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            "回看窗口内没有任何已计算的信号，无法复盘",
+        ));
+    }
+
+    // τ 用当日值（口径一致；缺维时它本身已按 ADR-008 重估）。
+    let tau = load_tau(ws, day)?.unwrap_or(91.506447831184);
+
+    let mut hits = 0usize;
+    let mut alarms = 0usize;
+    let mut missed = 0usize;
+    let mut false_alarms = 0usize;
+    let mut cases = Vec::new();
+    for row in &signals {
+        let Some(case_day) = row["as_of"].as_str() else { continue };
+        let Some(pos) = calendar.iter().position(|d| d == case_day) else {
+            continue;
+        };
+        if pos + horizon >= calendar.len() {
+            continue; // 标签未成熟
+        }
+        let level = row["level"].as_str().unwrap_or("");
+        let alarmed = level == "high" || level == "critical";
+        let peak = peak_between(ws, &calendar[pos + 1..=pos + horizon])?;
+        let Some(peak) = peak else { continue };
+        let actually_stressed = peak >= tau;
+        if alarmed {
+            alarms += 1;
+        }
+        match (alarmed, actually_stressed) {
+            (true, true) => hits += 1,
+            (true, false) => false_alarms += 1,
+            (false, true) => missed += 1,
+            (false, false) => {}
+        }
+        cases.push(json!({
+            "as_of": case_day,
+            "level": level,
+            "alarmed": alarmed,
+            "peak_after": r(peak),
+            "actually_stressed": actually_stressed,
+        }));
+    }
+
+    let precision = if alarms > 0 { Some(hits as f64 / alarms as f64) } else { None };
+    let recall = if hits + missed > 0 {
+        Some(hits as f64 / (hits + missed) as f64)
+    } else {
+        None
+    };
+    let base_rate = if !cases.is_empty() {
+        cases.iter().filter(|c| c["actually_stressed"] == true).count() as f64
+            / cases.len() as f64
+    } else {
+        0.0
+    };
+    let lift = match precision {
+        Some(p) if base_rate > 0.0 => Some(p / base_rate),
+        _ => None,
+    };
+
+    Ok(json!({
+        "as_of": day,
+        "model_version": current["model_version"],
+        "window": {
+            "lookback_days": lookback_days,
+            "horizon": horizon,
+            "from": cases.first().and_then(|c| c["as_of"].as_str()),
+            "to": cases.last().and_then(|c| c["as_of"].as_str()),
+            "evaluable_days": cases.len(),
+        },
+        "tau": r(tau),
+        "performance": {
+            "alarms": alarms,
+            "hits": hits,
+            "false_alarms": false_alarms,
+            "missed": missed,
+            "precision": precision.map(r),
+            "recall": recall.map(r),
+            "base_rate": r(base_rate),
+            "lift": lift.map(r),
+        },
+        "cases": cases,
+        "limitations": [
+            "效能复盘只用**已成熟**的时点（事后窗口走完）；近期时点不参与统计",
+            "命中定义为「事后窗口内压力峰值 ≥ τ」；τ 随缺维重估，跨期口径可能变化",
+            "样本量小（< 30）时 precision/recall 不作显著性主张",
+            "复盘结果驱动 HLR 反思，不写回当期定级",
+        ],
+    }))
+}
+
+/// 交易日历（`cfsi_history` 的 as_of 列，升序）。
+fn trading_days(ws: &Workspace, as_of: &str) -> Result<Vec<String>> {
+    let mut stmt = ws
+        .conn
+        .prepare(
+            "SELECT DISTINCT as_of FROM cfsi_history WHERE as_of <= CAST(? AS DATE) \
+             ORDER BY as_of ASC",
+        )
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut rows = stmt
+        .query(duckdb::params![as_of])
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? {
+        if let Ok(d) = row.get::<usize, chrono::NaiveDate>(0) {
+            out.push(d.to_string());
+        }
+    }
+    Ok(out)
+}
+
+/// 区间内的信号（含两端）。
+fn load_signals_between(ws: &Workspace, from: &str, to: &str) -> Result<Vec<Value>> {
+    let mut stmt = ws
+        .conn
+        .prepare(
+            "SELECT as_of, value, level FROM signals \
+             WHERE as_of >= CAST(? AS DATE) AND as_of <= CAST(? AS DATE) ORDER BY as_of ASC",
+        )
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut rows = stmt
+        .query(duckdb::params![from, to])
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? {
+        out.push(json!({
+            "as_of": row.get::<usize, chrono::NaiveDate>(0).map(|d| d.to_string()).ok(),
+            "value": row.get::<usize, f64>(1).ok(),
+            "level": row.get::<usize, String>(2).ok(),
+        }));
+    }
+    Ok(out)
+}
+
+/// 当日 τ（缺维时按可用维度重估，ADR-008）。
+fn load_tau(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
+    let mut stmt = ws
+        .conn
+        .prepare("SELECT tau FROM cfsi_history WHERE as_of = CAST(? AS DATE)")
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut rows = stmt
+        .query(duckdb::params![as_of])
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? else {
+        return Ok(None);
+    };
+    Ok(row.get::<usize, f64>(0).ok())
+}
+
+/// 区间内 CFSI 的峰值。
+fn peak_between(ws: &Workspace, days: &[String]) -> Result<Option<f64>> {
+    let Some(first) = days.first() else { return Ok(None) };
+    let last = days.last().unwrap_or(first);
+    let mut stmt = ws
+        .conn
+        .prepare(
+            "SELECT MAX(cfsi) FROM cfsi_history \
+             WHERE as_of >= CAST(? AS DATE) AND as_of <= CAST(? AS DATE)",
+        )
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let mut rows = stmt
+        .query(duckdb::params![first, last])
+        .map_err(|e| KernelError::internal(e.to_string()))?;
+    let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? else {
+        return Ok(None);
+    };
+    Ok(row.get::<usize, f64>(0).ok())
+}
+
 /// 读取当日已计算的信号。
 fn load_signal(ws: &Workspace, as_of: &str) -> Result<Option<Value>> {
     let mut stmt = ws
@@ -248,6 +478,63 @@ mod tests {
         }
         // 事后走势只能看 case 之后的信号，且不得越界到 as_of 之后。
         assert!(cases[0]["outcome"].is_object() || cases[0]["outcome"].is_null());
+        drop(ws);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn deep_reflection_counts_hits_and_misses() {
+        let (ws, path) = temp_ws("deep");
+        // 20 个交易日：前 10 天低压、后 10 天高压（cfsi 越过 τ）。
+        for i in 0..20 {
+            let day = format!("2026-01-{:02}", i + 1);
+            let cfsi = if i < 10 { 10.0 } else { 99.0 };
+            ws.conn
+                .execute(
+                    "INSERT INTO cfsi_history(as_of, cfsi, level, tau, dims, missing_dims, limitations, index_version, label_version) \
+                     VALUES (CAST(? AS DATE), ?, 'low', 91.5, '{}', '[]', '[]', 'cfsi-v1', 'stress_pca_q90')",
+                    duckdb::params![day, cfsi],
+                )
+                .unwrap();
+            // 信号：前 5 天报警（其中部分是误报），后 15 天不报警。
+            let level = if i < 5 { "high" } else { "low" };
+            insert_signal(&ws, &day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, 0.5);
+            ws.conn
+                .execute(
+                    "UPDATE signals SET level = ? WHERE as_of = CAST(? AS DATE)",
+                    duckdb::params![level, day],
+                )
+                .unwrap();
+        }
+        // 在末日复盘：horizon=5，只看已成熟的时点。
+        let out = deep(&ws, "2026-01-20", 30, 5).unwrap();
+        let perf = &out["performance"];
+        // 前 5 天报警、其后 5 天（1/6..1/10）仍是低压 → 全为误报。
+        assert_eq!(perf["false_alarms"].as_u64(), Some(5));
+        assert_eq!(perf["hits"].as_u64(), Some(0));
+        // 后 15 天不报警，其中 1/11..1/15 之后进入高压 → 有漏报。
+        assert!(perf["missed"].as_u64().unwrap() > 0);
+        drop(ws);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn deep_reflection_refuses_immature_window() {
+        let (ws, path) = temp_ws("deep-immature");
+        for i in 0..3 {
+            let day = format!("2026-01-{:02}", i + 1);
+            ws.conn
+                .execute(
+                    "INSERT INTO cfsi_history(as_of, cfsi, level, tau, dims, missing_dims, limitations, index_version, label_version) \
+                     VALUES (CAST(? AS DATE), 10.0, 'low', 91.5, '{}', '[]', '[]', 'cfsi-v1', 'stress_pca_q90')",
+                    duckdb::params![day],
+                )
+                .unwrap();
+            insert_signal(&ws, &day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, 0.5);
+        }
+        // horizon=20 但只有 3 天历史 → 必须报「标签未成熟」，不得硬算。
+        let err = deep(&ws, "2026-01-03", 10, 20).unwrap_err();
+        assert_eq!(err.kind, ErrorKind::DataMissing);
         drop(ws);
         let _ = std::fs::remove_file(path);
     }

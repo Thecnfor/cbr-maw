@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/reflection.deep.response.schema.json",
+  "title": "reflection.deep 响应信封",
+  "description": "reflection.deep 的成功或失败响应。历史不足或标签未成熟时返回 E_DATA_MISSING。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "as_of": {
+              "type": "string"
+            },
+            "model_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "回看窗口（起止、可评估天数）"
+            },
+            "tau": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "高压力阈值"
+            },
+            "performance": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "alarms/hits/false_alarms/missed/precision/recall/base_rate/lift"
+            },
+            "cases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "description": "逐时点复盘明细"
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "as_of",
+            "window",
+            "performance",
+            "cases",
+            "limitations"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_PARAMS",
+                    "E_NOT_INITIALIZED",
+                    "E_DATA_MISSING",
+                    "E_PERMISSION_DENIED",
+                    "E_INTERNAL",
+                    "E_METHOD_NOT_FOUND",
+                    "E_VERSION_MISMATCH"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

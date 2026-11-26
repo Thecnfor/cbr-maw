@@ -1,0 +1,41 @@
+{
+  "jsonrpc": "2.0",
+  "id": "42",
+  "result": {
+    "as_of": "2022-06-27",
+    "model_version": "cfsi-deterministic-v1",
+    "window": {
+      "lookback_days": 120,
+      "horizon": 20,
+      "from": "2021-12-01",
+      "to": "2022-05-27",
+      "evaluable_days": 101
+    },
+    "tau": 92.5725725726,
+    "performance": {
+      "alarms": 44,
+      "hits": 42,
+      "false_alarms": 2,
+      "missed": 53,
+      "precision": 0.9545454545,
+      "recall": 0.4421052632,
+      "base_rate": 0.9405940594,
+      "lift": 1.0148325359
+    },
+    "cases": [
+      {
+        "as_of": "2022-05-27",
+        "level": "high",
+        "alarmed": true,
+        "peak_after": 99.2,
+        "actually_stressed": true
+      }
+    ],
+    "limitations": [
+      "效能复盘只用**已成熟**的时点（事后窗口走完）；近期时点不参与统计",
+      "命中定义为「事后窗口内压力峰值 ≥ τ」；τ 随缺维重估，跨期口径可能变化",
+      "样本量小（< 30）时 precision/recall 不作显著性主张",
+      "复盘结果驱动 HLR 反思，不写回当期定级"
+    ]
+  }
+}

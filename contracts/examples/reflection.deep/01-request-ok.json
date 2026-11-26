@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": "42",
+  "method": "reflection.deep",
+  "params": {
+    "as_of": "2022-06-27",
+    "lookback_days": 120,
+    "horizon": 20
+  }
+}

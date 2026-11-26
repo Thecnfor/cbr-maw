@@ -27,7 +27,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CONTRACT_VERSION: &str = "1.0.0";
 
 /// 本内核实现的方法（`initialize.result.capabilities`）。
-pub const CAPABILITIES: [&str; 18] = [
+pub const CAPABILITIES: [&str; 19] = [
     "initialize",
     "shutdown",
     "ping",
@@ -46,6 +46,7 @@ pub const CAPABILITIES: [&str; 18] = [
     "contract.capabilities",
     "tools.describe",
     "reflection.shallow",
+    "reflection.deep",
 ];
 
 /// 运行期上下文。
@@ -246,6 +247,7 @@ impl Kernel {
             "cfsi.compute" => self.cfsi_compute(params),
             "tools.invoke" => self.tools_invoke(params),
             "reflection.shallow" => self.reflection_shallow(params),
+            "reflection.deep" => self.reflection_deep(params),
             "kernel.hash" => kernel_hash(params),
             other => Err(KernelError::method_not_found(other)),
         }
@@ -406,6 +408,19 @@ impl Kernel {
             .and_then(|v| v.as_u64())
             .unwrap_or(20) as usize;
         reflection::shallow(self.workspace()?, as_of, top_k, horizon)
+    }
+
+    fn reflection_deep(&mut self, params: &Value) -> Result<Value> {
+        let as_of = require_str(params, "as_of")?;
+        let lookback = params
+            .get("lookback_days")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(120) as usize;
+        let horizon = params
+            .get("horizon")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(20) as usize;
+        reflection::deep(self.workspace()?, as_of, lookback, horizon)
     }
 
     fn tools_invoke(&mut self, params: &Value) -> Result<Value> {

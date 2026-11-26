@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/reflection.deep.request.schema.json",
+  "title": "reflection.deep 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 reflection.deep。深层反思（HLR）：回看过去 lookback_days 天，把当时预警等级与事后真实走势对照，给出预警效能曲线。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "reflection.deep"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "description": "复盘时点（只统计事后窗口已走完的时点）"
+        },
+        "lookback_days": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 2000,
+          "default": 120,
+          "description": "回看交易日数"
+        },
+        "horizon": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 20,
+          "description": "事后窗口（交易日）"
+        }
+      },
+      "required": [
+        "as_of"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

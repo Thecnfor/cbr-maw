@@ -2004,6 +2004,106 @@ final class PitIngestResult extends RpcResult {
   };
 }
 
+/// `reflection.deep` params。
+final class ReflectionDeepParams extends RpcParams {
+  const ReflectionDeepParams({
+    required this.asOf,
+    this.lookbackDays,
+    this.horizon,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory ReflectionDeepParams.parse(Object? json) {
+    final r = JsonReader(json, 'params');
+    return ReflectionDeepParams(
+      asOf: r.str('as_of'),
+      lookbackDays: r.integerOpt('lookback_days'),
+      horizon: r.integerOpt('horizon'),
+    );
+  }
+
+  @override
+  String get method => 'reflection.deep';
+
+  /// 复盘时点（只统计事后窗口已走完的时点）
+  final String asOf;
+
+  /// 回看交易日数
+  final int? lookbackDays;
+
+  /// 事后窗口（交易日）
+  final int? horizon;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'as_of': asOf,
+    'lookback_days': lookbackDays,
+    'horizon': horizon,
+  };
+}
+
+/// `reflection.deep` result。
+final class ReflectionDeepResult extends RpcResult {
+  const ReflectionDeepResult({
+    required this.asOf,
+    this.modelVersion,
+    required this.window,
+    this.tau,
+    required this.performance,
+    required this.cases,
+    required this.limitations,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory ReflectionDeepResult.parse(Object? json) {
+    final r = JsonReader(json, 'result');
+    return ReflectionDeepResult(
+      asOf: r.str('as_of'),
+      modelVersion: r.strOpt('model_version'),
+      window: r.obj('window'),
+      tau: r.numberOpt('tau'),
+      performance: r.obj('performance'),
+      cases: r.objects('cases'),
+      limitations: r.strings('limitations'),
+    );
+  }
+
+  @override
+  String get method => 'reflection.deep';
+
+  ///
+  final String asOf;
+
+  ///
+  final String? modelVersion;
+
+  /// 回看窗口（起止、可评估天数）
+  final Map<String, Object?> window;
+
+  /// 高压力阈值
+  final double? tau;
+
+  /// alarms/hits/false_alarms/missed/precision/recall/base_rate/lift
+  final Map<String, Object?> performance;
+
+  /// 逐时点复盘明细
+  final List<Map<String, Object?>> cases;
+
+  ///
+  final List<String> limitations;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'as_of': asOf,
+    'model_version': modelVersion,
+    'window': window,
+    'tau': tau,
+    'performance': performance,
+    'cases': cases,
+    'limitations': limitations,
+  };
+}
+
 /// `reflection.shallow` params。
 final class ReflectionShallowParams extends RpcParams {
   const ReflectionShallowParams({required this.asOf, this.topK, this.horizon});

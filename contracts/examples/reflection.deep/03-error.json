@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "42",
+  "error": {
+    "code": -32004,
+    "message": "历史不足 20 个交易日，无法复盘",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "标签未成熟",
+        "need": 20,
+        "have": 3
+      }
+    }
+  }
+}
