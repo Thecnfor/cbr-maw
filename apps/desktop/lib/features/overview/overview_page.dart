@@ -1,4 +1,6 @@
 import 'package:cbr_maw_contracts/contracts_dart.dart';
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrChartCard, CbrSeries;
 
 import '../../app/app_state.dart';
 import '../../app/shell/app_shell.dart';
@@ -55,11 +57,36 @@ class _OverviewPageState extends State<OverviewPage> {
     } on AppError catch (e) {
       healthError = e;
     }
+    // 压力走势：只读已入库的 CFSI 历史（不在此处临时计算，避免页面打开就触发重算）。
+    var cfsi = const <({String date, double value})>[];
+    try {
+      final result = await repo.query(
+        view: DbView.cfsiHistory,
+        asOf: Clock.asOfNow(),
+        limit: 120,
+      );
+      final dateIdx = result.columns.indexOf('as_of');
+      final valueIdx = result.columns.indexOf('cfsi');
+      if (dateIdx >= 0 && valueIdx >= 0) {
+        cfsi = [
+          for (final row in result.rows)
+            if (row[dateIdx] is String && row[valueIdx] is num)
+              (
+                date: row[dateIdx]! as String,
+                value: (row[valueIdx]! as num).toDouble(),
+              ),
+        ];
+      }
+    } on AppError {
+      // 历史为空不算错误：图表显示空态，不编造曲线。
+      cfsi = const [];
+    }
     return _OverviewData(
       info: info,
       infoError: infoError,
       health: health,
       healthError: healthError,
+      cfsi: cfsi,
     );
   }
 
@@ -154,6 +181,21 @@ class _OverviewPageState extends State<OverviewPage> {
                     ],
                   ),
                   const SizedBox(height: Tokens.space4),
+                  if (data.cfsi.isNotEmpty) ...[
+                    CbrChartCard(
+                      title: '压力指数走势（最近 ${data.cfsi.length} 个交易日）',
+                      series: [
+                        CbrSeries(
+                          name: 'CFSI 压力分位',
+                          points: [
+                            for (var i = 0; i < data.cfsi.length; i++)
+                              (x: i.toDouble(), y: data.cfsi[i].value),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Tokens.space4),
+                  ],
                   SectionCard(
                     title: '来源健康',
                     trailing: TextButton(
@@ -300,6 +342,7 @@ final class _OverviewSkeleton extends StatelessWidget {
 
 final class _OverviewData {
   const _OverviewData({
+    this.cfsi = const [],
     this.info,
     this.infoError,
     this.health,
@@ -310,4 +353,5 @@ final class _OverviewData {
   final Object? infoError;
   final List<HealthEntry>? health;
   final Object? healthError;
+  final List<({String date, double value})> cfsi;
 }
