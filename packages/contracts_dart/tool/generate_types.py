@@ -489,10 +489,22 @@ def main():
             methods.append((method, req, res))
 
     # 先收集嵌套类型与枚举。
+    # 同名 $defs 合并（request / response 各写了一份，改一处会被静默忽略）。
     for method, req, res in methods:
         for defs in (req.get("$defs", {}), res.get("$defs", {})):
             for def_name, def_node in defs.items():
-                reg.nested.setdefault(def_name, def_node)
+                existing = reg.nested.get(def_name)
+                if existing is None:
+                    reg.nested[def_name] = def_node
+                    continue
+                props = dict(existing.get("properties", {}))
+                props.update(def_node.get("properties", {}))
+                required = set(existing.get("required", []))
+                required |= set(def_node.get("required", []))
+                merged = dict(def_node)
+                merged["properties"] = props
+                merged["required"] = sorted(required)
+                reg.nested[def_name] = merged
 
     blocks = []
     for def_name, def_node in reg.nested.items():

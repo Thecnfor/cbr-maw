@@ -7,10 +7,8 @@ part of 'rpc.dart';
 enum ToolRiskLevel {
   /// L0：只读、无副作用。
   l0('L0'),
-
   /// L1：写本地。
   l1('L1'),
-
   /// L2：触发外部动作，需 HITL。
   l2('L2');
 
@@ -105,15 +103,7 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'commorcial/src/cbr/tools/risk.py',
     description: '年化波动率、历史/参数 VaR 与 CVaR、最大回撤、压力分位（确定性纯计算）',
-    defaultParams: {
-      'lookback': 252,
-      'annualization': 252,
-      'confidence': 0.95,
-      'horizon_days': 1,
-      'values_are': 'price',
-      'min_observations': 20,
-      'series_id': 'market.cn_equity.csi300',
-    },
+    defaultParams: {'lookback': 252, 'annualization': 252, 'confidence': 0.95, 'horizon_days': 1, 'values_are': 'price', 'min_observations': 20, 'series_id': 'market.cn_equity.csi300'},
   ),
   ToolSpec(
     tool: 'systemic_risk',
@@ -125,22 +115,7 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'commorcial/src/cbr/tools/systemic.py',
     description: 'ΔCoVaR、MES、Diebold-Yilmaz 跨市场溢出指数（确定性纯计算）',
-    defaultParams: {
-      'lookback': 252,
-      'tail_q': 0.05,
-      'dy_window': 120,
-      'dy_lag': 1,
-      'dy_horizon': 10,
-      'values_are': 'price',
-      'market_series_id': 'market.cn_equity.csi300',
-      'asset_series_id': 'market.cn_bond.cgb_index',
-      'series_ids': [
-        'market.cn_equity.csi300',
-        'market.global.sp500',
-        'market.fx.usdcny',
-        'market.global.vix',
-      ],
-    },
+    defaultParams: {'lookback': 252, 'tail_q': 0.05, 'dy_window': 120, 'dy_lag': 1, 'dy_horizon': 10, 'values_are': 'price', 'market_series_id': 'market.cn_equity.csi300', 'asset_series_id': 'market.cn_bond.cgb_index', 'series_ids': ['market.cn_equity.csi300', 'market.global.sp500', 'market.fx.usdcny', 'market.global.vix']},
   ),
   ToolSpec(
     tool: 'capital_flow',
@@ -152,16 +127,7 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'commorcial/src/cbr/tools/capital.py',
     description: '跨境资金异常净流入 z-score、同步撤离、集中度与 AH 溢价（确定性纯计算）',
-    defaultParams: {
-      'lookback': 60,
-      'z_window': 60,
-      'anomaly_z': 1.5,
-      'top_n': 5,
-      'flow_unit': '亿元',
-      'inflow_series_id': 'crossborder.flows.northbound_net',
-      'outflow_series_id': 'crossborder.flows.southbound_net',
-      'ah_premium_series_id': 'crossborder.flows.ah_premium',
-    },
+    defaultParams: {'lookback': 60, 'z_window': 60, 'anomaly_z': 1.5, 'top_n': 5, 'flow_unit': '亿元', 'inflow_series_id': 'crossborder.flows.northbound_net', 'outflow_series_id': 'crossborder.flows.southbound_net', 'ah_premium_series_id': 'crossborder.flows.ah_premium'},
   ),
   ToolSpec(
     tool: 'funding_cost',
@@ -173,15 +139,7 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'commorcial/src/cbr/tools/funding.py',
     description: '信用利差代理、融资成本变化（bp）、再融资窗口估计（确定性纯计算）',
-    defaultParams: {
-      'lookback': 252,
-      'momentum_window': 20,
-      'spread_unit': 'bp',
-      'cost_jump_bp': 50.0,
-      'cost_medium_bp': 25.0,
-      'refinancing_horizon_days': 90,
-      'spread_series_id': 'rates.credit.aa_spread',
-    },
+    defaultParams: {'lookback': 252, 'momentum_window': 20, 'spread_unit': 'bp', 'cost_jump_bp': 50.0, 'cost_medium_bp': 25.0, 'refinancing_horizon_days': 90, 'spread_series_id': 'rates.credit.aa_spread'},
   ),
   ToolSpec(
     tool: 'scenario',
@@ -193,21 +151,7 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'commorcial/src/cbr/tools/scenario.py',
     description: '汇率/美股/利差冲击的线性与历史类比情景映射及压力传导（确定性纯计算）',
-    defaultParams: {
-      'lookback': 252,
-      'us_equity_drop_pct': 10.0,
-      'fx_depreciation_pct': 5.0,
-      'spread_widening_bp': 100.0,
-      'method': 'both',
-      'analog_k': 10,
-      'spread_unit': 'bp',
-      'min_observations': 60,
-      'values_are': 'price',
-      'target_series_id': 'market.cn_equity.csi300',
-      'us_equity_series_id': 'market.global.sp500',
-      'fx_series_id': 'market.fx.usdcny',
-      'spread_series_id': 'rates.credit.aa_spread',
-    },
+    defaultParams: {'lookback': 252, 'us_equity_drop_pct': 10.0, 'fx_depreciation_pct': 5.0, 'spread_widening_bp': 100.0, 'method': 'both', 'analog_k': 10, 'spread_unit': 'bp', 'min_observations': 60, 'values_are': 'price', 'target_series_id': 'market.cn_equity.csi300', 'us_equity_series_id': 'market.global.sp500', 'fx_series_id': 'market.fx.usdcny', 'spread_series_id': 'rates.credit.aa_spread'},
   ),
   ToolSpec(
     tool: 'forecast',
@@ -255,10 +199,6 @@ const List<ToolSpec> toolRegistry = [
     deterministic: true,
     legacyRef: 'docs/18-北向资金联动性领先信号.md §5',
     description: '双序列滚动 Kendall tau 联动性（变化率口径，含领先性诊断；确定性纯计算）',
-    defaultParams: {
-      'preset': 'csi300_x_northbound',
-      'window': 90,
-      'threshold_z': 0.5,
-    },
+    defaultParams: {'preset': 'csi300_x_northbound', 'window': 90, 'threshold_z': 0.5},
   ),
 ];

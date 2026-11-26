@@ -696,6 +696,7 @@ final class AgentOutput {
     this.tokens = const TokenUsage(),
     this.latencyMs = 0,
     this.failure,
+    this.numericMismatches = 0,
   });
 
   /// 角色。
@@ -721,6 +722,9 @@ final class AgentOutput {
 
   /// 失败描述。
   final AgentFailure? failure;
+
+  /// 本角色 LLM 自报数值与工具重算不一致的条数。
+  final int numericMismatches;
 }
 
 /// 冲突。
@@ -958,6 +962,7 @@ final class DecisionCard {
     required this.createdAt,
     this.partial = false,
     this.humanOverrides = const [],
+    this.numericMismatches = 0,
   });
 
   /// run id。
@@ -1001,6 +1006,9 @@ final class DecisionCard {
 
   /// 是否为部分结论（预算/时间不足）。
   final bool partial;
+
+  /// 本次研判中 LLM 自报数值与工具重算不一致的条数（docs/23 §3.2）。
+  final int numericMismatches;
 
   /// 人工覆盖（不进 evidenceIds）。
   final List<String> humanOverrides;

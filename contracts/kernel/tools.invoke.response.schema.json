@@ -177,6 +177,19 @@
         "params": {
           "type": "object",
           "description": "规范化后的入参"
+        },
+        "title": {
+          "type": "string",
+          "description": "证据标题（工具生成的可读名称）"
+        },
+        "summary": {
+          "type": "string",
+          "description": "证据摘要（工具生成的一句话解读）"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "工具产出的完整结构化读数（维度明细 / 窗口端点 / 新鲜度等）"
         }
       },
       "required": [

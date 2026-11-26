@@ -270,12 +270,16 @@ pub fn load_feature_row(ws: &Workspace, as_of: &str) -> Result<BTreeMap<String, 
 }
 
 /// 便捷：从库读取 CFSI 维度值（供 signal 的 dims 归因，避免重复实现）。
+///
+/// **必须精确匹配 as_of**：这里只用于「复用当日已算好的 CFSI」。
+/// 用 `as_of <= ?` 取最近一行会让某日算出的值被之后所有日期复用，
+/// 并把陈旧值写进新日期的历史行——信号在整段时间里恒定，判别力归零。
 pub fn load_cfsi_row(ws: &Workspace, as_of: &str) -> Result<Option<Value>> {
     let mut stmt = ws
         .conn
         .prepare(
             "SELECT cfsi, level, tau, dims, missing_dims, limitations FROM cfsi_history \
-             WHERE as_of <= CAST(? AS DATE) ORDER BY as_of DESC LIMIT 1",
+             WHERE as_of = CAST(? AS DATE)",
         )
         .map_err(|e| KernelError::internal(e.to_string()))?;
     let mut rows = stmt
@@ -332,6 +336,37 @@ mod tests {
         ));
         let _ = std::fs::remove_file(&path);
         (Workspace::open(&path).expect("open workspace"), path)
+    }
+
+    #[test]
+    fn cfsi_row_lookup_is_exact_not_latest_at_or_before() {
+        // 回归：曾用 `as_of <= ?` 取最近一行，导致某日算出的 CFSI 被之后
+        // 所有日期复用（信号恒定 → 判别力归零）。必须精确匹配。
+        let (ws, path) = temp_ws("cfsi-exact");
+        for (day, value) in [("2026-01-05", 61.5_f64), ("2026-01-06", 72.25)] {
+            persist_cfsi(
+                &ws,
+                day,
+                &json!({
+                    "cfsi": value,
+                    "level": "low",
+                    "tau": 91.5,
+                    "dims": {"dim_equity": {"value": 0.4}},
+                    "missing_dims": [],
+                    "limitations": [],
+                    "provenance": {"index_version": "cfsi-v1", "label_version": "stress_pca_q90"},
+                }),
+            )
+            .unwrap();
+        }
+        let first = load_cfsi_row(&ws, "2026-01-05").unwrap().unwrap();
+        assert_eq!(first["cfsi"].as_f64(), Some(61.5));
+        // 更晚的日期不得复用前一日的值。
+        let later = load_cfsi_row(&ws, "2026-01-07").unwrap();
+        assert!(later.is_none(), "未计算的日期不得复用历史行");
+        let exact = load_cfsi_row(&ws, "2026-01-06").unwrap().unwrap();
+        assert_eq!(exact["cfsi"].as_f64(), Some(72.25));
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

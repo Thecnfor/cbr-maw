@@ -195,6 +195,7 @@ final class RoleAgent {
         total: response.usage.total,
       ),
       latencyMs: response.latencyMs,
+      numericMismatches: materialized.numericMismatches,
     );
   }
 

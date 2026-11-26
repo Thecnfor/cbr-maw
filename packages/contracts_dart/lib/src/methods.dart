@@ -833,6 +833,9 @@ final class ToolEvidence {
     this.unit,
     required this.asOf,
     required this.params,
+    this.title,
+    this.summary,
+    this.data,
   });
 
   /// 从 JSON 对象解析（解析即校验；不符合契约抛 ContractFormatException）。
@@ -848,6 +851,9 @@ final class ToolEvidence {
       unit: r.strOpt('unit'),
       asOf: r.str('as_of'),
       params: r.obj('params'),
+      title: r.strOpt('title'),
+      summary: r.strOpt('summary'),
+      data: r.objOpt('data'),
     );
   }
 
@@ -878,6 +884,15 @@ final class ToolEvidence {
   /// 规范化后的入参
   final Map<String, Object?> params;
 
+  /// 证据标题（工具生成的可读名称）
+  final String? title;
+
+  /// 证据摘要（工具生成的一句话解读）
+  final String? summary;
+
+  /// 工具产出的完整结构化读数（维度明细 / 窗口端点 / 新鲜度等）
+  final Map<String, Object?>? data;
+
   /// 回写为 JSON 对象。
   Map<String, Object?> toJson() => {
     'evidence_id': evidenceId,
@@ -889,6 +904,9 @@ final class ToolEvidence {
     'unit': unit,
     'as_of': asOf,
     'params': params,
+    'title': title,
+    'summary': summary,
+    'data': data,
   };
 }
 

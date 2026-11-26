@@ -50,16 +50,22 @@ final class DraftClaim {
   final double? confidence;
 }
 
-/// 回填结果：保留的 claim 与被拒记录。
+/// 回填结果：保留的 claim、被拒记录与数值不一致计数。
 final class MaterializeResult {
   /// 创建结果。
-  const MaterializeResult(this.claims, this.rejected);
+  const MaterializeResult(this.claims, this.rejected, {this.numericMismatches = 0});
 
   /// 通过回填的 claim。
   final List<Claim> claims;
 
   /// 被丢弃的草稿索引与原因。
   final List<RejectedClaim> rejected;
+
+  /// LLM 自报数值与工具重算不一致的条数（docs/23 §3.2「数值不一致率」）。
+  ///
+  /// 主张里的数值最终一律以工具重算为准，所以这项必须单独计数：
+  /// 否则「LLM 说错了多少」在产品里完全不可观测。
+  final int numericMismatches;
 }
 
 /// 被拒的 claim 记录（写 `claim_rejected` 审计）。
@@ -94,6 +100,7 @@ MaterializeResult materializeClaims({
 }) {
   final claims = <Claim>[];
   final rejected = <RejectedClaim>[];
+  var numericMismatches = 0;
 
   for (var i = 0; i < drafts.length; i++) {
     final draft = drafts[i];
@@ -154,10 +161,19 @@ MaterializeResult materializeClaims({
       );
       continue;
     }
+    // 数值一致性（只看 LLM 明确给了数值的主张）：与工具重算比对。
+    // 容差与核验层一致（docs/09：abs 1e-6 / rel 1e-3）。
+    if (type == ClaimType.numeric &&
+        draft.value != null &&
+        claim.value != null &&
+        !_numbersMatch(draft.value!, claim.value!, absTol: 1e-6, relTol: 1e-3)) {
+      numericMismatches++;
+    }
+
     claims.add(claim);
   }
 
-  return MaterializeResult(claims, rejected);
+  return MaterializeResult(claims, rejected, numericMismatches: numericMismatches);
 }
 
 Claim? _numericClaim(
@@ -263,3 +279,13 @@ List<String> _ordered(List<String> ids, String first) => [
 
 double _clamp(double? value, double fallback) =>
     (value ?? fallback).clamp(0.0, 1.0).toDouble();
+
+/// 数值一致（容差与核验层一致）。
+bool _numbersMatch(double a, double b, {required double absTol, required double relTol}) {
+  final diff = (a - b).abs();
+  if (diff <= absTol) {
+    return true;
+  }
+  final scale = a.abs() > b.abs() ? a.abs() : b.abs();
+  return diff <= relTol * scale;
+}

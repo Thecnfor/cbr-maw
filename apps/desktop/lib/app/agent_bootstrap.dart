@@ -103,6 +103,12 @@ final class _GatedToolInvoker implements ToolInvoker {
         value: evidence.value,
         unit: evidence.unit,
         payload: evidence.params,
+        title: evidence.title,
+        summary: evidence.summary ?? '',
+        data: evidence.data ?? const {},
+        evidenceId: evidence.evidenceId,
+        inputsHash: evidence.inputsHash,
+        hash: evidence.hash,
       ),
       ToolCallDenied() => throw ToolUnavailable(tool, '角色越权，工具未执行'),
       ToolCallNeedsConfirmation() => throw ToolUnavailable(

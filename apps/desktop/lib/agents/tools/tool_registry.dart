@@ -59,6 +59,10 @@ final class ToolInvocation {
     this.payload = const {},
     this.title,
     this.summary = '',
+    this.data = const {},
+    this.evidenceId,
+    this.inputsHash,
+    this.hash,
   });
 
   /// 工具名。
@@ -81,6 +85,18 @@ final class ToolInvocation {
 
   /// 摘要。
   final String summary;
+
+  /// 工具产出的结构化读数（维度明细 / 窗口端点 / 新鲜度等）。
+  final Map<String, Object?> data;
+
+  /// kernel 计算的证据 id（**权威值**：kernel 是证据的单一写入者）。
+  final String? evidenceId;
+
+  /// kernel 计算的入参哈希（权威值）。
+  final String? inputsHash;
+
+  /// kernel 计算的证据载荷哈希（权威值）。
+  final String? hash;
 }
 
 /// 工具未实现（零 Mock：显式失败，不编造数值）。
@@ -190,21 +206,32 @@ final class ToolRegistry {
         asOf: asOf,
         params: merged,
       );
-      final inputsHash = sha256Hex(
-        canonicalJson({
-          'tool': result.tool,
-          'version': result.version,
-          'as_of': asOf,
-          'params': merged,
-        }),
-      );
+      // 哈希一律采用 kernel 的权威值（docs/00 红线：三级哈希逐字节一致）。
+      // kernel 是证据的单一写入者；Dart 侧重算必然与其口径分叉
+      // （kernel 的证据哈希覆盖工具读数 data，Dart 侧看不到）。
+      // 仅在无 kernel 值时（如测试桩）才本地兜底。
+      final inputsHash =
+          result.inputsHash ??
+          sha256Hex(
+            canonicalJson({
+              'tool': result.tool,
+              'version': result.version,
+              'as_of': asOf,
+              'params': merged,
+            }),
+          );
+      // payload = 工具原始读数 + 主数值/单位。维度明细、窗口端点等
+      // 必须进来：否则 Agent 侧看不到「数据截至哪天」，无法识别陈旧序列。
       final payload = {
         ...result.payload,
+        ...result.data,
         'value': result.value,
         'unit': result.unit,
       };
       final evidence = Evidence(
-        evidenceId: _evidenceId(result.tool, result.version, inputsHash),
+        evidenceId:
+            result.evidenceId ??
+            _evidenceId(result.tool, result.version, inputsHash),
         kind: EvidenceKind.tool,
         asOf: DateTime.parse(asOf.length == 10 ? asOf : asOf.substring(0, 10)),
         title: result.title ?? '${result.tool} 读数',
@@ -220,7 +247,7 @@ final class ToolRegistry {
         ),
         producedBy: result.tool,
         createdAt: DateTime.now().toUtc(),
-        hash: sha256Hex(canonicalJson(payload)),
+        hash: result.hash ?? sha256Hex(canonicalJson(payload)),
       );
       return ToolOutcome(ok: true, evidence: evidence);
     } on ToolUnavailable catch (error) {

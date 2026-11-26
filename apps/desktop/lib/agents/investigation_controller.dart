@@ -398,6 +398,9 @@ final class AgentRuntime {
       degradedRoles: degraded,
       createdAt: DateTime.now().toUtc(),
       partial: partial,
+      numericMismatches: [
+        for (final output in outputs.values) output.numericMismatches,
+      ].fold(0, (a, b) => a + b),
     );
 
     settings.runHooks?.onDecision?.call(decision);
