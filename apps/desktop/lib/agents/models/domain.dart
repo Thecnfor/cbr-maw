@@ -973,6 +973,7 @@ final class DecisionCard {
     this.numericMismatches = 0,
     this.llmAssessments = const {},
     this.conflictLoss = const {},
+    this.ablation = const {},
   });
 
   /// run id。
@@ -1025,6 +1026,9 @@ final class DecisionCard {
   /// 系统定级是确定性规则的结果（docs/03 §1.8），这张表是「模型自己怎么看」
   /// 的唯一记录——评估协同是否带来增量，必须拿它与单模型对照。
   final Map<RoleId, RiskLevel> llmAssessments;
+
+  /// 本轮消融开关快照（复现实验必须知道对照组配了什么）。
+  final Map<String, Object?> ablation;
 
   /// 冲突接入决策损失的分解（ADR-010 §1、docs/02 F5）。
   ///

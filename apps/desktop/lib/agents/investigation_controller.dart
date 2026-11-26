@@ -37,6 +37,7 @@ final class AgentSettings {
     this.signalSource,
     this.reflectionSource,
     this.runHooks,
+    this.ablation = const AblationFlags(),
   });
 
   /// 角色与编排配置。
@@ -71,6 +72,9 @@ final class AgentSettings {
 
   /// 每轮研判的生命周期钩子（基准 harness 用于落盘决策卡与审计）。
   final RunHooks? runHooks;
+
+  /// 认知与证据消融开关（ADR-010 §1）。与协作模式正交。
+  final AblationFlags ablation;
 }
 
 /// 每轮研判的生命周期钩子。
@@ -106,7 +110,11 @@ final class AgentRuntime {
     final specs = settings.catalog.specs;
     signal ??= await settings.signalSource?.call(asOf);
     // 跨时点反思：失败不阻断（反思是增强，不是结论前提）。
-    final reflection = await settings.reflectionSource?.call(asOf);
+    // 消融开关关掉时**根本不调用**——这是消融实验能成立的前提：
+    // 对照组不能只是「忽略结果」，必须是「没有发生」。
+    final reflection = settings.ablation.usesReflection
+        ? await settings.reflectionSource?.call(asOf)
+        : null;
     final roles = settings.roles ?? settings.catalog.analyticalRoles;
     final guard = BudgetGuard(
       perRole: RoleBudget.fromSettings(settings.catalog.orchestration),
@@ -419,6 +427,7 @@ final class AgentRuntime {
           if (entry.value.llmAssessment != null)
             entry.key: entry.value.llmAssessment!,
       },
+      ablation: settings.ablation.toJson(),
       conflictLoss: conflictLossBreakdown(
         conflicts: conflicts,
         escalated: escalated,
