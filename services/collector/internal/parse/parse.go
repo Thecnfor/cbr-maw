@@ -63,6 +63,10 @@ type Config struct {
 type RawRow struct {
 	Date  string
 	Value string
+	// Code 是行级实体代码（港股通/多标的表的股票代码）；单序列表为空。
+	// 铁律 2 要求按「交易日 + 标准代码」去重，缺了它多标的表会被日期去重
+	// 压成一行。
+	Code string
 }
 
 // ParseJSONRows 解析 http_json 响应。
@@ -172,7 +176,12 @@ func Normalize(rows []RawRow, seriesID, unit, source, evidenceID string, dateFor
 			dropped++
 			continue
 		}
+		// 铁律 2（1 组 1028）：港股通按「交易日 + 标准代码」去重。
+		// 多标的表里同一天有 N 个代码，只按日期去重会丢掉 N-1 条真实数据。
 		key := obsDate.Format("2006-01-02")
+		if code := canonicalCode(r.Code); code != "" {
+			key += "|" + code
+		}
 		obs := Observation{
 			SeriesID:    seriesID,
 			ObsDate:     key,
@@ -191,6 +200,26 @@ func Normalize(rows []RawRow, seriesID, unit, source, evidenceID string, dateFor
 		out = append(out, obs)
 	}
 	return out, dropped
+}
+
+// canonicalCode 把港股通代码归一为 5 位数字（去掉 HK./.HK/前导零差异）。
+//
+// 同一标的在不同来源里可能写成 `00700`、`HK.00700`、`700.HK`，
+// 不归一会把同一条记录当成两条，或把两条当成一条。
+func canonicalCode(raw string) string {
+	code := strings.ToUpper(strings.TrimSpace(raw))
+	code = strings.TrimPrefix(code, "HK.")
+	code = strings.TrimSuffix(code, ".HK")
+	code = strings.TrimLeft(code, "0")
+	if code == "" {
+		return ""
+	}
+	for _, r := range code {
+		if r < '0' || r > '9' {
+			return "" // 非数字代码不参与归一（避免误合并）
+		}
+	}
+	return code
 }
 
 // weekendCopySeries 判断该序列是否适用「删周六复制行」铁律。

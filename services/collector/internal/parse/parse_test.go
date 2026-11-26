@@ -97,6 +97,32 @@ func TestNormalizeDropsSaturdayCopy(t *testing.T) {
 	}
 }
 
+// TestNormalizeDedupesByCode 铁律 2：港股通按「交易日 + 标准代码」去重。
+func TestNormalizeDedupesByCode(t *testing.T) {
+	rows := []RawRow{
+		{Date: "2026-11-06", Value: "10", Code: "00700"},
+		{Date: "2026-11-06", Value: "20", Code: "00939"},
+		{Date: "2026-11-06", Value: "10.5", Code: "HK.00700"}, // 同标的的另一种写法
+		{Date: "2026-11-06", Value: "30", Code: "700.HK"},     // 第三种写法
+	}
+	rel := func(d time.Time) (time.Time, error) { return d, nil }
+	obs, _ := Normalize(rows, "crossborder.holdings.hk_connect", "万元", "t", "ev", "", 1, rel, "test")
+	if len(obs) != 2 {
+		t.Fatalf("同一交易日两个标的应保留 2 行，实际 %d 行: %+v", len(obs), obs)
+	}
+	// 后出现的同代码行覆盖前一条（保留最后一条的口径）。
+	values := map[float64]bool{}
+	for _, o := range obs {
+		values[o.Value] = true
+	}
+	if !values[30] {
+		t.Fatalf("700.HK 归一后应覆盖 00700 的值，实际 %+v", values)
+	}
+	if !values[20] {
+		t.Fatalf("00939 不应被其他标的覆盖")
+	}
+}
+
 // TestParseRSS 文档行。
 func TestParseRSS(t *testing.T) {
 	body := []byte(`<?xml version="1.0"?><rss version="2.0"><channel>
