@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/collect.run.request.schema.json",
+  "title": "collect.run 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 collect.run。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "collect.run"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "description": "台账条目 ID"
+        },
+        "range": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "抓取区间"
+        },
+        "dry_run": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false,
+          "description": "只探测不落盘"
+        }
+      },
+      "required": [
+        "source_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "DateRange": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "起始日（YYYY-MM-DD）"
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "结束日（YYYY-MM-DD）"
+        }
+      },
+      "additionalProperties": true
+    },
+    "CollectEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "证据 ID"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "台账条目 ID"
+        },
+        "series_id": {
+          "type": "string",
+          "description": "关联序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "观测条数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则（可查）"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "产出文件相对路径"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_id",
+        "series_id",
+        "rows",
+        "release_time_rule"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

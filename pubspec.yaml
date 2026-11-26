@@ -1,0 +1,17 @@
+name: cbr_maw_workspace
+description: CBR-MAW 单仓多语言工作区根（Dart pub workspace + Go collector + Rust kernel）。
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.14.0
+
+workspace:
+  - apps/desktop
+  - packages/contracts_dart
+  - packages/design_system
+  - packages/a2ui_catalog
+
+# 依赖治理走 ADR（见 docs/adr/）；根 workspace 不直接引入运行时依赖。
+dev_dependencies:
+  lints: ^6.0.0

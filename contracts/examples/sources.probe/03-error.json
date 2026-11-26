@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "21",
+  "error": {
+    "code": -32602,
+    "message": "参数不合法",
+    "data": {
+      "kind": "E_INVALID_PARAMS",
+      "retryable": false,
+      "detail": {
+        "reason": "timeout_s 必须在 1..300 之间",
+        "field": "timeout_s"
+      }
+    }
+  }
+}

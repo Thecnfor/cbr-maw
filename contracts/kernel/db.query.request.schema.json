@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/db.query.request.schema.json",
+  "title": "db.query 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 db.query。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "db.query"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "view": {
+          "type": "string",
+          "enum": [
+            "market_daily",
+            "macro_monthly",
+            "pit_observations",
+            "data_cards",
+            "documents",
+            "signals",
+            "cfsi_history",
+            "series_catalog",
+            "ingest_batches",
+            "audit_events"
+          ],
+          "description": "具名视图（不接受任意 SQL）"
+        },
+        "filters": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "参数化过滤条件"
+        },
+        "as_of": {
+          "type": "string",
+          "description": "时点（由 kernel 强制注入过滤）"
+        },
+        "limit": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 100000,
+          "default": 1000,
+          "description": "返回行上限"
+        }
+      },
+      "required": [
+        "view",
+        "as_of"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

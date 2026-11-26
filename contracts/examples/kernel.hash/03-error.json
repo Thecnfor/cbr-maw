@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "41",
+  "error": {
+    "code": -32602,
+    "message": "参数不合法",
+    "data": {
+      "kind": "E_INVALID_PARAMS",
+      "retryable": false,
+      "detail": {
+        "reason": "kind 必须是 inputs_hash / evidence_id / evidence_hash",
+        "field": "kind"
+      }
+    }
+  }
+}

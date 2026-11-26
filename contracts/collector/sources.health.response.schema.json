@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/sources.health.response.schema.json",
+  "title": "sources.health 响应信封",
+  "description": "sources.health 的成功或失败响应。失败时 error.data.kind 取 contracts/README.md §2 错误码表；detail.reason 必填（中文短句）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/HealthEntry"
+              },
+              "description": "各来源健康状态"
+            }
+          },
+          "required": [
+            "entries"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_REQUEST",
+                    "E_METHOD_NOT_FOUND",
+                    "E_INVALID_PARAMS",
+                    "E_INTERNAL",
+                    "E_PLATFORM_UNSUPPORTED",
+                    "E_NOT_AUTHORIZED",
+                    "E_SOURCE_UNAVAILABLE",
+                    "E_DATA_MISSING",
+                    "E_CONTRACT_MISMATCH",
+                    "E_RATE_LIMITED",
+                    "E_TIMEOUT",
+                    "E_NOT_INITIALIZED",
+                    "E_PERMISSION_DENIED"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "stack": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "HealthEntry": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "description": "台账条目 ID"
+        },
+        "last_success_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "最后一次成功抓取时刻"
+        },
+        "stale": {
+          "type": "boolean",
+          "description": "是否已超过 staleThresholdDays"
+        },
+        "coverage_start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "覆盖区间起始日"
+        },
+        "coverage_end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "覆盖区间结束日"
+        },
+        "failure_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "失败原因（五态映射）"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "reachable",
+            "need_auth",
+            "need_login",
+            "restricted",
+            "unreachable"
+          ],
+          "description": "可达性状态"
+        }
+      },
+      "required": [
+        "source_id",
+        "stale",
+        "state"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

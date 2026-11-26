@@ -1,0 +1,15 @@
+name: cbr_maw_contracts
+description: CBR-MAW 跨语言契约的 Dart 类型层（由 contracts/ 的 JSON Schema 对应而来，解析即校验）。
+publish_to: none
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  crypto: ^3.0.6
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": "34",
+  "method": "kb.search",
+  "params": {
+    "query": "跨境资金异常流动的监管口径",
+    "top_k": 5,
+    "filters": {}
+  }
+}

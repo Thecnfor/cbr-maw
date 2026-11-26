@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/features.build.request.schema.json",
+  "title": "features.build 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 features.build。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "features.build"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "series_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "参与计算的序列 ID"
+        },
+        "as_of": {
+          "type": "string",
+          "description": "时点"
+        }
+      },
+      "required": [
+        "series_ids",
+        "as_of"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

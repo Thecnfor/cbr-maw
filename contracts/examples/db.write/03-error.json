@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "31",
+  "error": {
+    "code": -32009,
+    "message": "角色越权",
+    "data": {
+      "kind": "E_PERMISSION_DENIED",
+      "retryable": false,
+      "detail": {
+        "reason": "当前角色无权直接写本地库",
+        "role": "investor"
+      }
+    }
+  }
+}

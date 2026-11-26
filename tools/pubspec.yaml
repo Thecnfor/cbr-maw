@@ -1,0 +1,17 @@
+name: cbr_tools
+description: CBR-MAW 仓库级校验与基准脚本（dart run tools/xxx.dart）。
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  crypto: ^3.0.6
+  json_schema: ^5.2.2
+  path: ^1.9.0
+  cbr_maw_contracts:
+    path: ../packages/contracts_dart
+
+dev_dependencies:
+  lints: ^6.0.0

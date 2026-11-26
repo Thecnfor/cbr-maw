@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "35",
+  "error": {
+    "code": -32008,
+    "message": "未握手",
+    "data": {
+      "kind": "E_NOT_INITIALIZED",
+      "retryable": false,
+      "detail": {
+        "reason": "workspace.info 需在 initialize 之后调用"
+      }
+    }
+  }
+}

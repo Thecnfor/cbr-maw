@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "22",
+  "result": {
+    "entries": [
+      {
+        "source_id": "REG-01",
+        "last_success_at": "2026-11-24T18:05:00+08:00",
+        "stale": false,
+        "coverage_start": "2026-11-01",
+        "coverage_end": "2026-11-24",
+        "failure_reason": null,
+        "state": "reachable"
+      }
+    ]
+  }
+}

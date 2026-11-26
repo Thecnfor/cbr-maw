@@ -1,0 +1,260 @@
+// 校验 contracts/ 自身一致性，四件事：
+// 1) 每个 *.schema.json 是合法 JSON Schema draft 2020-12；
+// 2) 每个 contracts/examples/<method>/*.json 与对应 schema 一致；
+// 3) contracts/tools/tools.json 与 Dart 生成的 toolRegistry 一致（同源不手抄）；
+// 4) contracts/VERSION 与各语言实现的版本声明一致。
+//
+// 不一致一律非零退出（1 = 有违规；2 = 环境问题）。
+// ignore_for_file: avoid_print
+import 'dart:io';
+
+import 'package:cbr_maw_contracts/contracts_dart.dart' show toolRegistry;
+import 'package:json_schema/json_schema.dart';
+import 'package:path/path.dart' as p;
+
+import 'src/repo.dart';
+import 'src/versions.dart';
+
+/// 官方 draft 2020-12 元 schema 的 $id；本地离线元校验只依赖包内置词汇表。
+const _metaUri = 'https://json-schema.org/draft/2020-12/schema';
+
+void main(List<String> args) {
+  final root = repoRoot();
+  final contracts = Directory(p.join(root.path, 'contracts'));
+  if (!contracts.existsSync()) {
+    stderr.writeln('缺少 contracts/ 目录：${contracts.path}');
+    exit(2);
+  }
+
+  final schemas = listFiles(contracts, (f) => f.endsWith('.schema.json'));
+  final errors = <String>[];
+  var checked = 0;
+
+  section('[1] schema 元校验（draft 2020-12）');
+  final byMethod = <String, ({String request, String response})>{};
+  for (final file in schemas) {
+    checked++;
+    final rel = relPath(root, file.path);
+    Map<String, Object?> schema;
+    try {
+      schema = readJsonObject(file.path);
+    } on FormatException catch (e) {
+      errors.add('$rel: JSON 解析失败：${e.message}');
+      continue;
+    }
+    if (schema[r'$schema'] != _metaUri) {
+      errors.add('$rel: \$schema 必须是 $_metaUri，实际 ${schema[r'$schema']}');
+    }
+    final id = schema[r'$id'];
+    if (id != rel) {
+      errors.add('$rel: \$id 必须等于仓库相对路径（实际 ${id ?? "缺失"}）');
+    }
+    try {
+      // 构造即元校验；对空实例做一次求值以强制解析全部 $ref。
+      final validator = JsonSchema.create(
+        schema,
+        schemaVersion: SchemaVersion.draft2020_12,
+        refProvider: RefProvider.sync((String ref) {
+          // 只允许本地 #/ 引用；远程引用会让 CI 依赖网络，直接判失败。
+          throw StateError('schema 引用了外部资源：$ref（契约内只允许 #/ 本地引用）');
+        }),
+      );
+      validator.validate(const <String, Object?>{});
+    } catch (e) {
+      errors.add('$rel: 不是合法 draft 2020-12 schema：$e');
+      continue;
+    }
+    if (rel.endsWith('.request.schema.json') &&
+        !rel.startsWith('contracts/tools/')) {
+      final method = p.basename(rel).replaceFirst('.request.schema.json', '');
+      final response = rel.replaceFirst(
+        '.request.schema.json',
+        '.response.schema.json',
+      );
+      if (!File(p.join(root.path, response)).existsSync()) {
+        errors.add('$rel: 缺少配对的响应 schema（$response）');
+      } else {
+        byMethod[method] = (request: rel, response: response);
+      }
+    }
+  }
+  print('schema 文件 ${schemas.length} 个，方法 ${byMethod.length} 个');
+
+  section('[2] 样例与 schema 一致');
+  final examplesRoot = Directory(p.join(contracts.path, 'examples'));
+  var exampleCount = 0;
+  if (!examplesRoot.existsSync()) {
+    errors.add('缺少 contracts/examples/ 目录');
+  } else {
+    final exampleDirs = examplesRoot.listSync().whereType<Directory>().toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+    for (final dir in exampleDirs) {
+      final method = p.basename(dir.path);
+      final pair = byMethod[method];
+      if (pair == null) {
+        errors.add('contracts/examples/$method: 没有对应的 *.request.schema.json');
+        continue;
+      }
+      final files =
+          dir
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.json'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+      final kinds = <String>{};
+      for (final file in files) {
+        exampleCount++;
+        final name = p.basename(file.path);
+        final kind = name.contains('error')
+            ? 'error'
+            : name.contains('request')
+            ? 'request'
+            : name.contains('response')
+            ? 'response'
+            : null;
+        if (kind == null) {
+          errors.add(
+            'contracts/examples/$method/$name: 文件名必须含 request/response/error',
+          );
+          continue;
+        }
+        kinds.add(kind);
+        final schemaRel = kind == 'request' ? pair.request : pair.response;
+        final schema = readJsonObject(p.join(root.path, schemaRel));
+        final validator = JsonSchema.create(
+          schema,
+          schemaVersion: SchemaVersion.draft2020_12,
+        );
+        final instance = readJson(file.path);
+        final result = validator.validate(instance);
+        if (!result.isValid) {
+          final details = result.errors
+              .take(3)
+              .map(
+                (e) =>
+                    '${e.instancePath.isEmpty ? "/" : e.instancePath}: ${e.message}',
+              )
+              .join('；');
+          errors.add(
+            'contracts/examples/$method/$name 不符合 $schemaRel：$details',
+          );
+        }
+        // 样例的方法名必须与目录一致。
+        if (instance is Map<String, Object?> &&
+            instance['method'] != null &&
+            instance['method'] != method) {
+          errors.add(
+            'contracts/examples/$method/$name: method=${instance['method']} 与目录 $method 不一致',
+          );
+        }
+      }
+      if (!{'request', 'response', 'error'}.every(kinds.contains)) {
+        errors.add(
+          'contracts/examples/$method: 必须同时有 request / response / error 三类样例（现有 ${kinds.join("/")}）',
+        );
+      }
+    }
+    // 反向：每个方法必须有样例目录。
+    for (final method in byMethod.keys) {
+      if (!Directory(p.join(examplesRoot.path, method)).existsSync()) {
+        errors.add('contracts/examples/$method: 缺少样例目录');
+      }
+    }
+  }
+  print('样例文件 $exampleCount 个');
+
+  section('[3] 工具注册表与 Dart 常量一致');
+  final registryFile = File(p.join(contracts.path, 'tools', 'tools.json'));
+  if (!registryFile.existsSync()) {
+    errors.add('缺少 contracts/tools/tools.json');
+  } else {
+    final registry = readJsonObject(registryFile.path);
+    final tools =
+        (registry['tools'] as List?)
+            ?.whereType<Map<String, Object?>>()
+            .toList() ??
+        const [];
+    checked += tools.length;
+    if (tools.length != toolRegistry.length) {
+      errors.add(
+        'tools.json 有 ${tools.length} 个工具，Dart toolRegistry 有 ${toolRegistry.length} 个',
+      );
+    } else {
+      for (var i = 0; i < tools.length; i++) {
+        final json = tools[i];
+        final spec = toolRegistry[i];
+        if (json['tool'] != spec.tool) {
+          errors.add('tools[$i]: tools.json=${json['tool']} Dart=${spec.tool}');
+        }
+        if (json['version'] != spec.version) {
+          errors.add(
+            '${spec.tool}: tools.json 版本 ${json['version']}，Dart ${spec.version}',
+          );
+        }
+        if (json['risk_level'] != spec.riskLevel.wire) {
+          errors.add('${spec.tool}: risk_level 不一致');
+        }
+        final roles =
+            (json['allowed_roles'] as List?)?.cast<String>() ?? const [];
+        if (roles.join(',') != spec.allowedRoles.join(',')) {
+          errors.add(
+            '${spec.tool}: allowed_roles 不一致（tools.json ${roles.join("/")}，Dart ${spec.allowedRoles.join("/")}）',
+          );
+        }
+        // params_schema_ref 必须真实存在。
+        final ref = json['params_schema_ref'] as String?;
+        if (ref == null || !File(p.join(root.path, ref)).existsSync()) {
+          errors.add(
+            '${spec.tool}: params_schema_ref 指向的文件不存在（${ref ?? "缺失"}）',
+          );
+        }
+      }
+    }
+    // tools.invoke 请求信封的 tool 枚举必须与注册表逐项一致（否则新工具过不了 schema 校验）。
+    final invokeReq = File(
+      p.join(contracts.path, 'kernel', 'tools.invoke.request.schema.json'),
+    );
+    if (invokeReq.existsSync()) {
+      final schema = readJsonObject(invokeReq.path);
+      final props = schema['properties'] as Map?;
+      final params = props?['params'] as Map?;
+      final paramProps = params?['properties'] as Map?;
+      final tool = paramProps?['tool'] as Map?;
+      final listed = (tool?['enum'] as List?)?.cast<String>() ?? const [];
+      final registered = tools.map((t) => t['tool']).toList();
+      if (listed.join(',') != registered.join(',')) {
+        errors.add(
+          'tools.invoke.request.schema.json 的 tool 枚举与 tools.json 不一致：'
+          'schema=${listed.join("/")} registry=${registered.join("/")}',
+        );
+      }
+    } else {
+      errors.add('缺少 contracts/kernel/tools.invoke.request.schema.json');
+    }
+    print('工具注册表 ${tools.length} 条，params schema 引用与 invoke 枚举已核对');
+  }
+
+  section('[4] 版本一致性');
+  final version = File(p.join(contracts.path, 'VERSION'));
+  if (!version.existsSync()) {
+    errors.add('缺少 contracts/VERSION');
+  } else {
+    final expected = version.readAsStringSync().trim();
+    if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(expected)) {
+      errors.add('contracts/VERSION 不是语义化版本：$expected');
+    }
+    checked += 1;
+    errors.addAll(contractVersionMismatches(root, expected));
+    final declarations = contractVersionDeclarations(root);
+    print('contracts/VERSION = $expected；核对实现 ${declarations.length} 处');
+    if (declarations.isEmpty) {
+      print('  ! 未找到任何实现侧契约版本声明（services/ 或 apps/desktop 尚未落地？）');
+      print('  ! 这是提示不是失败：实现落地后本项会自动纳入比对。');
+    } else if (declarations.length < 3) {
+      print('  ! 只找到 ${declarations.length}/3 处声明（Rust/Go/Dart），缺失的实现尚未落地。');
+    }
+  }
+
+  finish(errors, checked + exampleCount, 'contracts 校验');
+}

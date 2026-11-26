@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": "25",
+  "method": "events.poll",
+  "params": {
+    "job_id": "job_20261125_0001"
+  }
+}

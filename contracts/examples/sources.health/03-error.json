@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "22",
+  "error": {
+    "code": -32003,
+    "message": "来源不可达",
+    "data": {
+      "kind": "E_SOURCE_UNAVAILABLE",
+      "retryable": true,
+      "detail": {
+        "reason": "连续 3 次探测超时，判定为不可达",
+        "source_id": "REG-07",
+        "retry_after_seconds": 300
+      }
+    }
+  }
+}

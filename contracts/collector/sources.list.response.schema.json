@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/sources.list.response.schema.json",
+  "title": "sources.list 响应信封",
+  "description": "sources.list 的成功或失败响应。失败时 error.data.kind 取 contracts/README.md §2 错误码表；detail.reason 必填（中文短句）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "sources": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SourceLedgerEntry"
+              },
+              "description": "来源台账条目"
+            }
+          },
+          "required": [
+            "sources"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_REQUEST",
+                    "E_METHOD_NOT_FOUND",
+                    "E_INVALID_PARAMS",
+                    "E_INTERNAL",
+                    "E_PLATFORM_UNSUPPORTED",
+                    "E_NOT_AUTHORIZED",
+                    "E_SOURCE_UNAVAILABLE",
+                    "E_DATA_MISSING",
+                    "E_CONTRACT_MISMATCH",
+                    "E_RATE_LIMITED",
+                    "E_TIMEOUT",
+                    "E_NOT_INITIALIZED",
+                    "E_PERMISSION_DENIED"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "stack": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "SourceLedgerEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "台账条目 ID（XL-xx / REG-xx）"
+        },
+        "modality": {
+          "type": "string",
+          "description": "模态（text/speech/image/video/numeric）"
+        },
+        "subject": {
+          "type": "string",
+          "description": "采集对象"
+        },
+        "source_name": {
+          "type": "string",
+          "description": "数据来源名称"
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "t1Public",
+            "t2Credentialed",
+            "t3Terminal",
+            "t4NotAllowed"
+          ],
+          "description": "可达性分档"
+        },
+        "access_mode": {
+          "type": "string",
+          "description": "访问方式"
+        },
+        "authorization_status": {
+          "type": "string",
+          "description": "授权状态"
+        },
+        "endpoint_status": {
+          "type": "string",
+          "enum": [
+            "known",
+            "toVerify",
+            "notApplicable"
+          ],
+          "description": "端点核实状态"
+        },
+        "reachability": {
+          "type": "string",
+          "description": "运行期可达性状态"
+        },
+        "series_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "关联规范序列 ID"
+        },
+        "last_success_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "最后一次成功抓取时刻"
+        },
+        "last_error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "最近一次失败原因摘要"
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "备注"
+        }
+      },
+      "required": [
+        "id",
+        "modality",
+        "subject",
+        "source_name",
+        "tier",
+        "access_mode",
+        "authorization_status",
+        "endpoint_status",
+        "reachability",
+        "series_ids"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

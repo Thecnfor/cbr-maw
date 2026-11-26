@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "32",
+  "method": "pit.ingest",
+  "params": {
+    "source": "intermediate-file",
+    "path": "/tmp/cbr-workspace/data-home/intermediate/market.cn_equity.csi300.csv",
+    "declared": {
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "tz_offset": "+08:00"
+    },
+    "idempotency_key": "idem_pit_20261125_0001"
+  }
+}

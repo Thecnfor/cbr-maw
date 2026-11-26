@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/kb.index.request.schema.json",
+  "title": "kb.index 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 kb.index。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "kb.index"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "corpus_dir": {
+          "type": "string",
+          "description": "语料目录绝对路径"
+        },
+        "force": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false,
+          "description": "强制重建索引"
+        }
+      },
+      "required": [
+        "corpus_dir"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

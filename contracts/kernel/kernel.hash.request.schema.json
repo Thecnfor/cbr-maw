@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/kernel.hash.request.schema.json",
+  "title": "kernel.hash 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 kernel.hash。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "kernel.hash"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "payload": {
+          "type": "object",
+          "description": "待哈希载荷"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "inputs_hash",
+            "evidence_id",
+            "evidence_hash"
+          ],
+          "description": "哈希种类"
+        }
+      },
+      "required": [
+        "payload",
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

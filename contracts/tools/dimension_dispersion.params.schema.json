@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/dimension_dispersion.params.schema.json",
+  "title": "dimension_dispersion 参数",
+  "type": "object",
+  "properties": {
+    "as_of": {
+      "type": "string",
+      "description": "时点（YYYY-MM-DD 或 ISO 8601）；只用该时点及之前的数据"
+    }
+  },
+  "additionalProperties": false
+}

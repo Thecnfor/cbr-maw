@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/forecast.params.schema.json",
+  "title": "forecast 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/forecast.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "horizon": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 250,
+      "default": 5,
+      "description": "预测步长（日）"
+    },
+    "include_drivers": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "default": true,
+      "description": "是否输出驱动因子分解"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/sources.list.request.schema.json",
+  "title": "sources.list 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 sources.list。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "sources.list"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "include_disabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false,
+          "description": "是否包含不可自动抓取的条目"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "SourceLedgerEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "台账条目 ID（XL-xx / REG-xx）"
+        },
+        "modality": {
+          "type": "string",
+          "description": "模态（text/speech/image/video/numeric）"
+        },
+        "subject": {
+          "type": "string",
+          "description": "采集对象"
+        },
+        "source_name": {
+          "type": "string",
+          "description": "数据来源名称"
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "t1Public",
+            "t2Credentialed",
+            "t3Terminal",
+            "t4NotAllowed"
+          ],
+          "description": "可达性分档"
+        },
+        "access_mode": {
+          "type": "string",
+          "description": "访问方式"
+        },
+        "authorization_status": {
+          "type": "string",
+          "description": "授权状态"
+        },
+        "endpoint_status": {
+          "type": "string",
+          "enum": [
+            "known",
+            "toVerify",
+            "notApplicable"
+          ],
+          "description": "端点核实状态"
+        },
+        "reachability": {
+          "type": "string",
+          "description": "运行期可达性状态"
+        },
+        "series_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "关联规范序列 ID"
+        },
+        "last_success_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "最后一次成功抓取时刻"
+        },
+        "last_error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "最近一次失败原因摘要"
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "备注"
+        }
+      },
+      "required": [
+        "id",
+        "modality",
+        "subject",
+        "source_name",
+        "tier",
+        "access_mode",
+        "authorization_status",
+        "endpoint_status",
+        "reachability",
+        "series_ids"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

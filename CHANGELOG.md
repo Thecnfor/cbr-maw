@@ -4,6 +4,55 @@
 
 ## [Unreleased]
 
+### fix · 内核派生序列重算性能（真实缺陷）
+
+- `services/kernel/src/ingest.rs` 的 `recompute_derived` 原本**每行一次 SELECT + 每行一次 INSERT**：
+  2615 行 × 4 条派生序列 ≈ 1 万次查询 + 1 万次 WAL fsync，在 NTFS 上退化到 **8 分钟以上**。
+- 改为**批量读入内存 + 批量多值 INSERT**（每 512 行一批），`derived_recompute_matches_legacy_values`
+  从 **480 秒+ 未跑完 → 60 秒通过**，11230 行数值与旧版逐行一致（容差 1e-9）。
+
+### chore · 构建环境收口
+
+- 统一只维护仓库内 `services/kernel/target/`，弃用 `~/.cache/cbr-kernel-target`（曾累积 48G，
+  清理后触发 DuckDB 全量 C++ 重编 8–10 分钟；复用仓库 target 时增量编译仅 **11 秒**）。
+- `packaging/{verify_all,e2e_smoke}.sh` 的 kernel 路径统一指向 `services/kernel/target/debug/cbr-kernel`。
+- `verify_all.sh` 黄金步骤快/慢分离：默认跑 `dispersion_golden` + `linkage_golden`（各约 60s），
+  CFSI 逐日 + 派生重算需 `CBR_FULL_GOLDEN=1`。
+- `docs/09` 新增「Rust 构建环境陷阱」与「构建目录约定」两节（磁盘满表现为 `ld signal 7 Bus error`，
+  不是 OOM；`GOROOT` 必须与 go 二进制匹配；clang 需匹配版本的 C++ 头；勿并发跑同 target 的 cargo test）。
+
+
+## [0.1.0] · v1 主体落地
+
+### feat · 研究增强：两个新确定性工具（实证驱动）
+
+- **`dimension_dispersion`**（风险来源结构）：六维压力分极差 + 主导维度 + 阶段判读。真实数据实证：样本外 z>1.0 时 precision **0.6514** / lift **1.7084**，**walk-forward 6/7 年有效**（唯一跨期稳健指标）；与黄金向量逐点一致（2358 行、0 偏差）。
+- **`capital_linkage`**（双序列联动性）：滚动 Kendall tau，**变化率口径**（水平口径实测失效：3.4412 vs 1.0501）。单一切分 lift 2.0828，但**逐年 walk-forward 平均仅 0.7288**，2024 后因北向数据停更触发 0 次——已按 `docs/23 §4.5` 与 headline 并列披露。
+- 工具注册表三语言（`contracts/tools/tools.json` / Dart / Rust）同步至 **9 个**。
+
+### feat · 实验统计与防自欺
+
+- `lib/experiments/`：扩展窗口 OOS R²、Diebold-Mariano、嵌套 F、Holm、置换检验、Kendall tau-b、bootstrap CI、领先期剖面、增量检验。
+- **两条防自欺规则内置**：API 层不提供 A−B 差值背离形状；"有预测力"的判定必须过安慰剂。
+
+### feat · 采集器数据新鲜度
+
+- `sources.health` 新增 `freshness`（fresh/stale/dead/unknown）与每依赖序列的 `latest_available` / `nan_rate`。
+- **修复 PIT 泄漏**：无时区发布列此前被当 UTC 解析（等于提前 8 小时可用）。
+
+### feat · 契约与内核
+
+- 黄金向量扩至 4 份；CFSI 与黄金表**逐日严格一致**（L2/L3 换序对 0）；`contracts/README §5.1` 明确分位 tie-break 与三层回归判据。
+
+### chore · 门禁清理
+
+- `cargo clippy -D warnings` 归零（数值代码的 `needless_range_loop` 用局部 `#[allow]` 并注明理由，不硬改迭代器）；`cargo fmt --check` 干净；`dart format` 全仓统一（31 个文件）。
+- 补写一直缺失的 `docs/adr/ADR-006`（多语言内核分层）、`ADR-007`（新手岛）、`ADR-008`（CFSI 缺维降级）；`ADR-001` 标记为已修订；`docs/11` 状态转「已采纳」。
+
+### docs
+
+- 新增 `docs/13`（真实基准，A/C 组 blocked 如实标注）、`docs/17`（文本维实证含负结果）、`docs/18`（北向联动性，含 walk-forward 推翻 headline）、`docs/20`（角色分歧与风险结构）、`docs/21`（LLM 通道实测）、`docs/22`（五分钟上手）、`docs/23`（基准协议）、`docs/adr/ADR-009`（研究增强准入标准）。
+
 ### 设计期基线（尚未发布任何可运行产物）
 
 #### 新增

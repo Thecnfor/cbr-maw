@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/pit.ingest.request.schema.json",
+  "title": "pit.ingest 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 pit.ingest。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "pit.ingest"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "中间文件来源描述"
+        },
+        "path": {
+          "type": "string",
+          "description": "中间文件绝对路径"
+        },
+        "declared": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "声明的时点与映射信息"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "description": "幂等键"
+        }
+      },
+      "required": [
+        "source",
+        "path",
+        "idempotency_key"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "PitSeries": {
+      "type": "object",
+      "properties": {
+        "series_id": {
+          "type": "string",
+          "description": "规范序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "写入行数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则"
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage",
+          "description": "覆盖区间"
+        }
+      },
+      "required": [
+        "series_id",
+        "rows",
+        "release_time_rule",
+        "coverage"
+      ],
+      "additionalProperties": true
+    },
+    "Coverage": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "description": "起始日"
+        },
+        "end": {
+          "type": "string",
+          "description": "结束日"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": true
+    },
+    "CoverageGate": {
+      "type": "object",
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "是否通过守门"
+        },
+        "baseline": {
+          "type": "number",
+          "description": "基线覆盖率"
+        },
+        "current": {
+          "type": "number",
+          "description": "本次覆盖率"
+        }
+      },
+      "required": [
+        "passed",
+        "baseline",
+        "current"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

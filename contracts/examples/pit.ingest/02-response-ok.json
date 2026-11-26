@@ -1,0 +1,23 @@
+{
+  "jsonrpc": "2.0",
+  "id": "32",
+  "result": {
+    "series": [
+      {
+        "series_id": "market.cn_equity.csi300",
+        "rows": 18,
+        "release_time_rule": "obs_date 18:00 +08:00",
+        "coverage": {
+          "start": "2026-11-01",
+          "end": "2026-11-24"
+        }
+      }
+    ],
+    "derived_recomputed": [],
+    "coverage_gate": {
+      "passed": true,
+      "baseline": 0.82,
+      "current": 0.86
+    }
+  }
+}

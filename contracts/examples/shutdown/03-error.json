@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "9",
+  "error": {
+    "code": -32603,
+    "message": "退出流程异常",
+    "data": {
+      "kind": "E_INTERNAL",
+      "retryable": false,
+      "detail": {
+        "reason": "关闭工作区句柄失败",
+        "stack": "RuntimeError: close failed"
+      }
+    }
+  }
+}

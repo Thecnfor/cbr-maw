@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "41",
+  "method": "kernel.hash",
+  "params": {
+    "payload": {
+      "tool": "risk_measure",
+      "version": "1.0.0",
+      "as_of": "2026-11-25",
+      "params": {
+        "lookback": 252
+      }
+    },
+    "kind": "inputs_hash"
+  }
+}

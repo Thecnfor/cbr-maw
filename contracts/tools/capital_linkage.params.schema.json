@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/capital_linkage.params.schema.json",
+  "title": "capital_linkage 参数",
+  "description": "双序列滚动 Kendall tau 联动性（变化率口径）。口径见 docs/18；黄金向量 contracts/golden-vectors/capital_linkage_reference.json。",
+  "type": "object",
+  "properties": {
+    "series_a": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "序列 A 的 series_id；与 preset 二选一，显式值优先"
+    },
+    "series_b": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "序列 B 的 series_id；与 preset 二选一，显式值优先"
+    },
+    "preset": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "csi300_x_northbound",
+        "usdcny_x_vix",
+        "csi300_x_sp500",
+        null
+      ],
+      "default": "csi300_x_northbound",
+      "description": "内置三组配对（docs/18 §3.7）"
+    },
+    "window": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 10,
+      "maximum": 500,
+      "default": 90,
+      "description": "滚动窗口（交易日）"
+    },
+    "threshold_z": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "default": 0.5,
+      "description": "level=elevated 的 z 阈值（训练期冻结口径，不在运行时估计）"
+    },
+    "as_of": {
+      "type": "string",
+      "description": "时点（YYYY-MM-DD 或 ISO 8601）；只用该时点及之前的数据"
+    }
+  },
+  "additionalProperties": false
+}

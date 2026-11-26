@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "31",
+  "method": "db.write",
+  "params": {
+    "table": "pit_observations",
+    "rows": [
+      {
+        "series_id": "market.cn_equity.csi300",
+        "obs_date": "2026-11-24",
+        "value": 4025.11,
+        "release_time": "2026-11-24T18:00:00+08:00"
+      }
+    ],
+    "idempotency_key": "idem_20261125_0001"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "24",
+  "error": {
+    "code": -32004,
+    "message": "必需数据缺失",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "文件不存在：/tmp/cbr-workspace/data-home/inbox/missing.csv"
+      }
+    }
+  }
+}

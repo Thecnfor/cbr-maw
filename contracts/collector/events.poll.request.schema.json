@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/events.poll.request.schema.json",
+  "title": "events.poll 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 events.poll。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "events.poll"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "只看某个任务的事件"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "CollectEvent": {
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string",
+          "description": "事件时刻（ISO 8601）"
+        },
+        "type": {
+          "type": "string",
+          "description": "事件类型（started/progress/succeeded/failed）"
+        },
+        "job_id": {
+          "type": "string",
+          "description": "任务 ID"
+        },
+        "payload": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "事件负载"
+        }
+      },
+      "required": [
+        "ts",
+        "type",
+        "job_id"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

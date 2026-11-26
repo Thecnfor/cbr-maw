@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "23",
+  "error": {
+    "code": -32002,
+    "message": "来源需授权",
+    "data": {
+      "kind": "E_NOT_AUTHORIZED",
+      "retryable": false,
+      "detail": {
+        "reason": "该来源为 T2 终端来源，需用户先在设置页配置凭证",
+        "source_id": "REG-09"
+      }
+    }
+  }
+}

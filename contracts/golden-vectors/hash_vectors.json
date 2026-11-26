@@ -1,0 +1,248 @@
+{
+  "vector_version": "1.0.0",
+  "contract_version": "1.0.0",
+  "generator": {
+    "source": "commorcial/src/cbr/tools/base.py",
+    "functions": [
+      "canonical_json",
+      "compute_inputs_hash",
+      "sha256_text",
+      "to_native"
+    ],
+    "python": "3.14.4",
+    "command": "CBR_LEGACY_SRC=<commorcial>/src python3 packages/contracts_dart/tool/generate_golden_vectors.py"
+  },
+  "rules": {
+    "canonical_json": "json.dumps(obj, sort_keys=True, separators=(\",\",\":\"), ensure_ascii=False)",
+    "to_native": "NaN/Inf -> null；date/datetime -> isoformat；numpy -> 原生",
+    "inputs_hash": "sha256(canonical_json({tool, version, as_of, params}))，64 位小写 hex",
+    "evidence_id": "\"ev_\" + sha256(canonical_json({tool, version, inputs_hash}))[:16]",
+    "evidence_hash": "sha256(canonical_json(evidence_payload))，64 位小写 hex",
+    "legacy_evidence_id": "旧版 ev_tool_<tool>_<YYYYMMDD>_<inputs_hash[:12]>，仅作历史对照，非 v1 规范值",
+    "nan_inf": "输入的 NaN / Infinity 经 to_native 归一为 null（写入 params 前已完成）"
+  },
+  "vectors": [
+    {
+      "name": "flat-int-params",
+      "note": "基线：纯整数参数（工具默认 lookback/annualization）",
+      "tool": "risk_measure",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "lookback": 252,
+        "annualization": 252,
+        "horizon_days": 1
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"annualization\":252,\"horizon_days\":1,\"lookback\":252},\"tool\":\"risk_measure\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "d8ad6a182af5883b956b1a74fd7aafd98d446783b99136c01ee142543c7a8343",
+      "evidence_id": "ev_e1128f885701a3aa",
+      "evidence_payload": {
+        "value": 0.0231,
+        "unit": "loss_ratio",
+        "as_of": "2026-06-30"
+      },
+      "evidence_hash": "28ecaadadb8aa8df6b0cdb00658fd2f7dc8732a7617900cd2da1d81ec931b2b5",
+      "legacy_evidence_id": "ev_tool_risk_measure_20260630_d8ad6a182af5"
+    },
+    {
+      "name": "float-small-0.1",
+      "note": "浮点边界：0.1（须输出 0.1，不得 0.10000000000000001）",
+      "tool": "risk_measure",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "confidence": 0.1,
+        "ratio": 0.1
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"confidence\":0.1,\"ratio\":0.1},\"tool\":\"risk_measure\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "3bdbbafb7fc8e32bd336b94a56ff71ccdba2f47255af1961da370cdf6ad5778e",
+      "evidence_id": "ev_17ff06c64df3be11",
+      "evidence_payload": {
+        "value": 0.1,
+        "unit": "loss_ratio"
+      },
+      "evidence_hash": "f3ebe55c23bef39159fe30f77b2dddc2dfde42eb50b6344b6e79efcb1801400b",
+      "legacy_evidence_id": "ev_tool_risk_measure_20260630_3bdbbafb7fc8"
+    },
+    {
+      "name": "float-large-1e16",
+      "note": "浮点边界：1e16 → Python 字面量 1e+16",
+      "tool": "risk_measure",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "big": 1e+16,
+        "threshold": 1e+16
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"big\":1e+16,\"threshold\":1e+16},\"tool\":\"risk_measure\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "df2e310c7336c32c419482b7d414d5b034c119628dd781f3b4b41393f1d8e4dc",
+      "evidence_id": "ev_11cb09db0b77de64",
+      "evidence_payload": {
+        "value": 1e+16
+      },
+      "evidence_hash": "f6b1d8095563fb7f57c554825c9d5402bfc8f69255edfaed38587394a2252515",
+      "legacy_evidence_id": "ev_tool_risk_measure_20260630_df2e310c7336"
+    },
+    {
+      "name": "float-tiny-1e-05",
+      "note": "浮点边界：1e-05 → Python 字面量 1e-05",
+      "tool": "funding_cost",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "cost_jump_bp": 1e-05,
+        "cost_medium_bp": 1e-05
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"cost_jump_bp\":1e-05,\"cost_medium_bp\":1e-05},\"tool\":\"funding_cost\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "4a7325a1b5df1140fa80168960d60fec8c70a53fb55e517992f0a0693388e5cb",
+      "evidence_id": "ev_fac998ba314783f6",
+      "evidence_payload": {
+        "value": 1e-05,
+        "unit": "bp"
+      },
+      "evidence_hash": "e6e67ee7fd38fcee0bdc20f17cb114194cbf3f8612ce08229b87f8df3f774ee0",
+      "legacy_evidence_id": "ev_tool_funding_cost_20260630_4a7325a1b5df"
+    },
+    {
+      "name": "float-negative-zero",
+      "note": "浮点边界：-0.0 → Python 字面量 -0.0（不得折叠为 0.0）",
+      "tool": "scenario",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "us_equity_drop_pct": -0.0,
+        "fx_depreciation_pct": -0.0
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"fx_depreciation_pct\":-0.0,\"us_equity_drop_pct\":-0.0},\"tool\":\"scenario\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "d1b6ca77b99c3b6db3429977a38914631f66753dcce4416c5500505254eddfd7",
+      "evidence_id": "ev_5e557653a99ffa95",
+      "evidence_payload": {
+        "value": -0.0
+      },
+      "evidence_hash": "c848a4efa987f46ba3bfd46242333afcb1c68c3240e0f35ae9d269b1c980648b",
+      "legacy_evidence_id": "ev_tool_scenario_20260630_d1b6ca77b99c"
+    },
+    {
+      "name": "float-nan-inf-to-null",
+      "note": "浮点边界：NaN / Inf 经 to_native 归一为 null（缺失 ≠ 零值）",
+      "tool": "capital_flow",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "nan": null,
+        "inf": null,
+        "ninf": null
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"inf\":null,\"nan\":null,\"ninf\":null},\"tool\":\"capital_flow\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "66535e9800380357811a2fa9a5fdc4b62eb08db5a9cec153326516b6b4239a1c",
+      "evidence_id": "ev_c96568b2dab37fb2",
+      "evidence_payload": {
+        "value": null,
+        "missing": true
+      },
+      "evidence_hash": "703af184b2856bc2f7984bc961750e75ecf320e57c7df750b3053ec88625d7a5",
+      "legacy_evidence_id": "ev_tool_capital_flow_20260630_66535e980038"
+    },
+    {
+      "name": "chinese-strings",
+      "note": "中文字符串：ensure_ascii=False，逐字节保持 UTF-8",
+      "tool": "knowledge_search",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "query": "跨境资金异常流动与同步撤离",
+        "tags": [
+          "监管",
+          "外溢"
+        ]
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"query\":\"跨境资金异常流动与同步撤离\",\"tags\":[\"监管\",\"外溢\"]},\"tool\":\"knowledge_search\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "3c472defe1e92950e1a49f773627e048da388384f1e73717a53c8fdc17d03629",
+      "evidence_id": "ev_feb4da9fb19cead2",
+      "evidence_payload": {
+        "summary": "跨境资金异常流动的监管口径",
+        "unit": "亿元"
+      },
+      "evidence_hash": "ff9aafcb14cb42d8426ed5d8c8315fde19527d033b62e1cb7582c7be4b5ef754",
+      "legacy_evidence_id": "ev_tool_knowledge_search_20260630_3c472defe1e9"
+    },
+    {
+      "name": "empty-collections",
+      "note": "空列表与空字典",
+      "tool": "forecast",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "series_ids": [],
+        "dims": {}
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"dims\":{},\"series_ids\":[]},\"tool\":\"forecast\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "8c91dcbd9836b9140e243f2d84bb85b0b057a0d64a09681810ff1a47bc977306",
+      "evidence_id": "ev_1be657198500825b",
+      "evidence_payload": {
+        "drivers": [],
+        "dims": {}
+      },
+      "evidence_hash": "a77a899602d4cfb74ce3d6a1a8bffee86d534500fb0c8cd43511f008208d0704",
+      "legacy_evidence_id": "ev_tool_forecast_20260630_8c91dcbd9836"
+    },
+    {
+      "name": "nested-dict",
+      "note": "嵌套字典：键排序按字典序，深度不限",
+      "tool": "signal.compute",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "dims": {
+          "equity": {
+            "weight": 0.2,
+            "value": 0.35
+          },
+          "fx": {
+            "value": 0.21,
+            "weight": 0.15
+          }
+        },
+        "missing_dims": [
+          "credit"
+        ]
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"dims\":{\"equity\":{\"value\":0.35,\"weight\":0.2},\"fx\":{\"value\":0.21,\"weight\":0.15}},\"missing_dims\":[\"credit\"]},\"tool\":\"signal.compute\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "b330dc8eb7d482ca3ad326e04b6291098c44d08009d90281ad5903e65bc00320",
+      "evidence_id": "ev_90b42763b7b4a2ea",
+      "evidence_payload": {
+        "dims": {
+          "equity": {
+            "value": 0.35
+          }
+        },
+        "limitations": []
+      },
+      "evidence_hash": "2babf72d0a238936789517142777df2333487e1a99a79a733f134d0ad2b61853",
+      "legacy_evidence_id": "ev_tool_signal.compute_20260630_b330dc8eb7d4"
+    },
+    {
+      "name": "mixed-scalars",
+      "note": "混合标量：bool / null / int / float 同层",
+      "tool": "kb.search",
+      "version": "1.0.0",
+      "as_of": "2026-06-30",
+      "params": {
+        "top_k": 5,
+        "include": true,
+        "score": 8.42,
+        "note": null
+      },
+      "canonical_json": "{\"as_of\":\"2026-06-30\",\"params\":{\"include\":true,\"note\":null,\"score\":8.42,\"top_k\":5},\"tool\":\"kb.search\",\"version\":\"1.0.0\"}",
+      "inputs_hash": "9adf7044526c2fc6de9ce3ce20561438e943ac6caeda11ef15b3cbd430ba8b86",
+      "evidence_id": "ev_8eceb4f0b60ee11f",
+      "evidence_payload": {
+        "score": 8.42,
+        "published_at": null,
+        "ok": true
+      },
+      "evidence_hash": "f6e769174f6363daaf5738afb6108966a049c4c34475516180e129be095cf90a",
+      "legacy_evidence_id": "ev_tool_kb.search_20260630_9adf7044526c"
+    }
+  ]
+}

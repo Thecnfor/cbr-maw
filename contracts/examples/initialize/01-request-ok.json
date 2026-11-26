@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "initialize",
+  "params": {
+    "contract_version": "1.0.0",
+    "client_version": "0.1.0",
+    "workspace": "/tmp/cbr-workspace",
+    "data_home": "/tmp/cbr-workspace/data-home",
+    "resource_home": "/opt/cbr/resource-home",
+    "capabilities": [
+      "sources.list",
+      "collect.run"
+    ]
+  }
+}

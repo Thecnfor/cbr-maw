@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": "31",
+  "result": {
+    "written": 1,
+    "idempotency_key": "idem_20261125_0001"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "id": "38",
+  "result": {
+    "signal_id": "sig_20261125",
+    "value": 0.42,
+    "dims": {
+      "equity": 0.31,
+      "fx": 0.18
+    },
+    "missing_dims": [
+      "credit"
+    ],
+    "limitations": [
+      "信用维度数据不可得（需商业授权），未参与计算"
+    ]
+  }
+}

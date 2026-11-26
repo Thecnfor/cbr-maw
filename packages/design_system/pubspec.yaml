@@ -1,0 +1,22 @@
+name: cbr_maw_design_system
+description: CBR-MAW 设计系统：token、主题、共享组件与响应式断点（见 docs/06、docs/07）。
+publish_to: none
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cbr_maw_contracts: ^0.1.0
+  lucide_icons_flutter: ^4.0.3
+  fl_chart: ^1.3.1
+  material_ui: ^1.11.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

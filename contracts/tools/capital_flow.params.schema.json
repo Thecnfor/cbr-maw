@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/capital_flow.params.schema.json",
+  "title": "capital_flow 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/capital.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "inflow_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "crossborder.flows.northbound_net",
+      "description": "流入序列（北向净流入）"
+    },
+    "outflow_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "crossborder.flows.southbound_net",
+      "description": "流出序列（南向净流入；缺失时工具降级）"
+    },
+    "ah_premium_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "crossborder.flows.ah_premium",
+      "description": "AH 溢价序列"
+    },
+    "lookback": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 500,
+      "default": 60,
+      "description": "回看交易日数"
+    },
+    "z_window": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 10,
+      "maximum": 500,
+      "default": 60,
+      "description": "z-score 估计窗口"
+    },
+    "anomaly_z": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0.0,
+      "default": 1.5,
+      "description": "异常阈值（z）"
+    },
+    "top_n": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 20,
+      "default": 5,
+      "description": "集中度统计前 N 条"
+    },
+    "flow_unit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "亿元",
+      "description": "流量单位"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": "33",
+  "result": {
+    "documents": 128,
+    "chunks": 940,
+    "index_version": "kb-bm25-v1"
+  }
+}

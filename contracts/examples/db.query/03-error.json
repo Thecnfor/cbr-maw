@@ -1,0 +1,28 @@
+{
+  "jsonrpc": "2.0",
+  "id": "30",
+  "error": {
+    "code": -32602,
+    "message": "参数不合法",
+    "data": {
+      "kind": "E_INVALID_PARAMS",
+      "retryable": false,
+      "detail": {
+        "reason": "view 不在白名单内",
+        "field": "view",
+        "allowed": [
+          "market_daily",
+          "macro_monthly",
+          "pit_observations",
+          "data_cards",
+          "documents",
+          "signals",
+          "cfsi_history",
+          "series_catalog",
+          "ingest_batches",
+          "audit_events"
+        ]
+      }
+    }
+  }
+}

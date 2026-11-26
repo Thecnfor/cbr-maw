@@ -1,0 +1,14 @@
+{
+  "jsonrpc": "2.0",
+  "id": "21",
+  "result": {
+    "source_id": "REG-01",
+    "state": "need_login",
+    "detail": {
+      "reason": "端点返回 302 跳转登录页，需人工登录后重试",
+      "checked_at": "2026-11-25T09:01:00+08:00",
+      "http_status": 302,
+      "latency_ms": 412
+    }
+  }
+}

@@ -1,17 +1,16 @@
-# 贡献指南 · CBR-MAW（Flutter）
+# 贡献指南 · CBR-MAW（多语言 Monorepo）
 
-> 本仓库当前处于**设计期**。本文说明如何参与，从「提设计」到「写实现」的流程。
-> 协作约定见 [AGENTS.md](AGENTS.md)，架构决策见 [docs/adr/](docs/adr/README.md)。
+> 协作约定与写入范围见 [AGENTS.md](AGENTS.md)，工程标准与门禁细节见 [docs/09-工程化规范.md](docs/09-工程化规范.md)，架构决策见 [docs/adr/](docs/adr/README.md)。
 
 ---
 
 ## 1. 三条不可让步的线
 
-在提交任何改动前，请确认没有违反：
+提交任何改动前，请确认没有违反：
 
-1. **绝不内嵌来源数据，绝不为任何来源写 mock。** 界面永不出现伪造数值；拿不到就标注「需授权 / 不可达」。
-2. **零 Mock 严格模式。** 模型不可用必须失败并引导到设置页，不得用规则模板冒充模型结论。
-3. **结论必须可溯源。** claim 绑定证据，证据可重算，所有读取带 `as_of`，四级过滤杜绝未来信息泄漏。
+1. **绝不内嵌来源数据，绝不为任何来源写 mock**：界面永不出现伪造数值；拿不到即标注「需授权 / 需登录 / 反爬受限 / 不可达 / 已过期」。
+2. **零 Mock 严格模式**：模型不可用必须显式失败并引导到设置页，不得用规则模板冒充模型结论。
+3. **结论必须可溯源**：Claim 强制绑定证据，数值由工具重算覆盖，所有读取带 `as_of`，四级 PIT 过滤杜绝未来信息泄漏。
 
 ---
 
@@ -19,69 +18,57 @@
 
 | 改动类型 | 需要什么 |
 |---|---|
-| **设计变更**（架构、功能、交互、文案口径） | 先改 [docs/00-设计基线.md](docs/00-设计基线.md) 或新增 [ADR](docs/adr/README.md) → 再改实现 |
+| **设计/架构变更**（拓扑、选型、口径、功能边界） | 先改 [docs/00-设计基线.md](docs/00-设计基线.md) 或新增/修订 [ADR](docs/adr/README.md) → 再改代码 |
 | 新增/修改功能 | 同步更新 [docs/02-功能清单.md](docs/02-功能清单.md)（含验收标准） |
-| 行为/命令/配置变更 | 同步 README 与 `docs/` |
+| 行为/命令/配置变更 | 同步 [README.md](README.md) 与对应 `docs/` 文档 |
 | 用户可见变更 | 同步 [CHANGELOG.md](CHANGELOG.md) |
 | 依赖新增或升级 | 需说明理由；**引入商业许可组件必须走 ADR** |
-| 数据口径变更 | 必须说明是否影响已发布结论（`label_version` 等口径变更 = 换实验结论） |
-
-> **设计期特殊约定**：当前任何「我打算这么实现」的讨论都应先落在文档，再落代码。实现与文档不一致时，以文档为准并补改。
+| 数据与指标口径变更 | 遵循 [ADR-008](docs/adr/ADR-008-CFSI缺维降级口径.md) 与 [ADR-009](docs/adr/ADR-009-研究增强准入标准与当前裁决.md)，标注 `label_version` 并重跑验证 |
 
 ---
 
-## 3. 本地开发
+## 3. 本地开发与验证
 
-### 前置
+### 前置工具链（桌面三端）
 
-- Flutter 3.50 / Dart 3.14（推荐用 **FVM**：`.fvmrc` 已入库）
-- Windows 端发布还需：Inno Setup 6；Android 端还需：JDK 17 + Android SDK（cmdline-tools / platform-tools / build-tools / platform 34+）
+- **Flutter 3.50.x / Dart 3.14.x**（用 **FVM** 固定，`.fvmrc` 已入库）
+- **Go 1.27+**（`services/collector`）
+- **Rust stable**（`services/kernel`；Windows 主交付面必须使用原生 **MSVC** 工具链）
+- **Windows 发布打包还需**：VS2022 Build Tools（C++ 桌面工作负载）+ Inno Setup 6（本代不含 Android/iOS，无需 JDK/Android SDK）
 
-### 常用命令
+### 常用验证命令（详见 [docs/09 §7](docs/09-工程化规范.md)）
 
-```powershell
-dart format .
+```bash
+# 一键全门禁（Linux/macOS；Windows 使用对等 PowerShell 脚本）
+bash packaging/verify_all.sh
+
+# 分项检查
+dart format --set-exit-if-changed .
 flutter analyze
-flutter test
-flutter test integration_test -d windows
-flutter build windows --release
-flutter build apk --release
+(cd apps/desktop && flutter test)
+flutter test packages/design_system packages/a2ui_catalog
+dart test packages/contracts_dart
+(cd services/kernel && cargo fmt --check && cargo clippy -- -D warnings && cargo test)
+(cd services/collector && go vet ./... && go test ./...)
+dart run tools/validate_contract.dart
+dart run tools/check_layers.dart
+dart run tools/check_version.dart
+
+# 桌面端构建（Windows 必须原生 MSVC，禁止 Linux 交叉编译发布包）
+(cd apps/desktop && flutter build linux --release)
 ```
 
-详见 [AGENTS.md §6](AGENTS.md) 与 [docs/09-工程化规范.md](docs/09-工程化规范.md)。
-
-### 凭证
+### 凭证配置
 
 ```bash
 cp .env.example .env
 ```
 
-或用应用内设置页填写（Windows 优先 DPAPI 加密落盘）。**不要提交任何密钥。**
+或在应用设置页填写（由 `flutter_secure_storage` 走 OS 原生安全存储：Windows DPAPI / macOS Keychain / Linux libsecret）。**严禁提交任何密钥。**
 
 ---
 
-## 4. 提交规范
+## 4. 提交与实验红线
 
-- 分支：`feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`
-- 提交信息：Conventional Commits（`feat:` / `fix:` / `docs:` / `test:` / `chore:`），一次提交聚焦一件事
-- 由 Lead 统一 `git add` / `commit`；不直接 push 到 `main`
-- 不使用 `git add -A`；不夹带无关文件
-
----
-
-## 5. 实验与结论纪律
-
-这是本项目的**学术红线**，写代码与写报告都适用：
-
-- 默认数据集是 **SYNTHETIC 仿真数据**。任何结论都不得把仿真表述为真实市场结论。
-- 不显著不得写成显著；必须给区间与检验结果，不只给点估计。
-- pilot 结果与正式结果分开报告。
-- 导出物若基于仿真数据，**必须携带 SYNTHETIC 标记**。
-- 换标签口径（如 `stress_pca_q90` → 其它）= 换实验结论，必须重跑并标注。
-
----
-
-## 6. 报告问题
-
-发现问题请附：复现步骤、实际行为、期望行为、环境（Flutter/Dart/平台/版本）。
-设计层面的分歧请直接改文档提 PR，或在任务卡里提出——**不要在实现里夹带未讨论的设计变更**。
+- 分支：`feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`；由 Lead 统一 `git add/commit`（Conventional Commits），不使用 `git add -A`，不直接 push `main`。
+- 实验与结论纪律：区分真实工作区外生回放与 `SIMULATION` 沙盒；默认测试/教程合成数据集不得表述为真实市场结论；不显著不得写成显著；所有导出物若含仿真或合成数据**必须携带 `SYNTHETIC` / `SIMULATION` 标记**。

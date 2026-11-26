@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/collect.run.response.schema.json",
+  "title": "collect.run 响应信封",
+  "description": "collect.run 的成功或失败响应。失败时 error.data.kind 取 contracts/README.md §2 错误码表；detail.reason 必填（中文短句）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "job_id": {
+              "type": "string",
+              "description": "抓取任务 ID"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "partial",
+                "failed",
+                "skipped"
+              ],
+              "description": "任务结论"
+            },
+            "written_files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "落盘的规范化中间文件"
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CollectEvidence"
+              },
+              "description": "来源证据"
+            }
+          },
+          "required": [
+            "job_id",
+            "status",
+            "written_files",
+            "evidence"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_REQUEST",
+                    "E_METHOD_NOT_FOUND",
+                    "E_INVALID_PARAMS",
+                    "E_INTERNAL",
+                    "E_PLATFORM_UNSUPPORTED",
+                    "E_NOT_AUTHORIZED",
+                    "E_SOURCE_UNAVAILABLE",
+                    "E_DATA_MISSING",
+                    "E_CONTRACT_MISMATCH",
+                    "E_RATE_LIMITED",
+                    "E_TIMEOUT",
+                    "E_NOT_INITIALIZED",
+                    "E_PERMISSION_DENIED"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "stack": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "DateRange": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "起始日（YYYY-MM-DD）"
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "结束日（YYYY-MM-DD）"
+        }
+      },
+      "additionalProperties": true
+    },
+    "CollectEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "证据 ID"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "台账条目 ID"
+        },
+        "series_id": {
+          "type": "string",
+          "description": "关联序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "观测条数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则（可查）"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "产出文件相对路径"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_id",
+        "series_id",
+        "rows",
+        "release_time_rule"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "jsonrpc": "2.0",
+  "id": "36",
+  "error": {
+    "code": -32005,
+    "message": "schema 版本不匹配",
+    "data": {
+      "kind": "E_CONTRACT_MISMATCH",
+      "retryable": false,
+      "detail": {
+        "reason": "目标版本 9 不存在",
+        "target_version": 9,
+        "available": [
+          1,
+          2,
+          3
+        ]
+      }
+    }
+  }
+}

@@ -1,109 +1,77 @@
-# CBR-MAW
+# CBR-MAW（`X-AlertAgent` v3.0）
 
-**跨境金融风险多智能体协同预警研究工作台** · Flutter 重写版
+**跨境金融风险多模态多智能体协同预警研究工作台**
 
-> 一个安装包 + 一个 API 密钥即可使用。没有中央服务器，没有 BFF，不需要部署任何后端。
+> 一个安装包 + 一个默认兼容 API 密钥即可开箱即用。没有中央服务器，没有 BFF，不需要部署任何后端。
 
 ---
 
 ## 这是什么
 
-CBR-MAW 是一个面向跨境金融风险研究的**本地优先**工作台：四个研究角色（融资方 / 投资方 / 监管方）在同一份风险信号上给出各自视角的判断，系统负责交叉验证、识别分歧、仲裁冲突、核验证据链，并把整个过程记录成可回看的审计轨迹。
+CBR-MAW 是一个面向跨境金融风险研究的**纯客户端本地优先**工作台：三大研究主体（**监管智能体 / 机构智能体 / 投资者智能体**）在同一份多模态风险信号与时点知识库上运行 **`X-AlertAgent` 外环认知闭环 × `R0–R5` 内环可审计协同核验**，通过双路径测度、冲突仲裁、JEV 裁判语义核验与全链路审计轨迹，交付可逐条回溯到原文与工具计算结果的研判结论。
 
-界面上的一切——图表、结论、证据卡、交互面板——由 **Agent 在对话流中现场生成**（A2UI 协议），而不是由服务端推送页面描述。
-
----
-
-## 当前状态：**设计期**
-
-本仓库目前**只有设计与参考材料，没有可运行的应用**。
-
-| 已完成 | 内容 |
-|---|---|
-| ✅ 决策基线 | [docs/00-设计基线.md](docs/00-设计基线.md) —— 所有已拍板的技术与产品决策 |
-| ✅ 架构设计 | [docs/01-架构设计.md](docs/01-架构设计.md) |
-| ✅ 功能清单 | [docs/02-功能清单.md](docs/02-功能清单.md) —— F1–F10 共 100+ 条功能，含优先级与验收标准 |
-| ✅ 多智能体架构 | [docs/03-多智能体架构.md](docs/03-多智能体架构.md) |
-| ✅ 动态 UI 与 Agent-Native | [docs/04-动态UI与Agent-Native设计.md](docs/04-动态UI与Agent-Native设计.md) |
-| ✅ 数据抓取与时点 | [docs/05-数据抓取与时点设计.md](docs/05-数据抓取与时点设计.md) |
-| ✅ 设计系统与美学 | [docs/06-设计系统与美学规范.md](docs/06-设计系统与美学规范.md) |
-| ✅ 交互与响应式 | [docs/07-交互与响应式规范.md](docs/07-交互与响应式规范.md) |
-| ✅ 文案标准与术语表 | [docs/08-文案标准与术语表.md](docs/08-文案标准与术语表.md) |
-| ✅ 工程化规范 | [docs/09-工程化规范.md](docs/09-工程化规范.md) |
-| ✅ 研究域设计 | [docs/10-研究域设计/](docs/10-研究域设计/) —— R1 MediaTone / R2 多模态 / R3 时空 / R4 Agent-Native |
-| ✅ 架构决策记录 | [docs/adr/](docs/adr/) —— 5 条 ADR |
-| ✅ 旧系统语义清单 | [docs/research/旧系统语义清单-迁移依据.md](docs/research/旧系统语义清单-迁移依据.md) —— 62 项迁移合同 |
-| ⬜ 工具链安装 | Flutter SDK / Android SDK / JDK / Inno Setup 尚未安装 |
-| ⬜ 工程骨架 | `flutter create` 与 CI 尚未建立 |
-| ⬜ 功能实现 | 见 [功能清单附录 B](docs/02-功能清单.md#附录-b--里程碑) 的 M0–M7 |
+界面与动态分析面板采用 **A2UI 协议 + Flutter 官方 `genui`** 渲染，由本地 Agent 在对话流中按白名单组件目录现场生成。
 
 ---
 
-## 技术栈
+## 当前状态与演进路线
 
-| 领域 | 选型 |
-|---|---|
-| 框架 | Flutter 3.50 / Dart 3.14（Windows 桌面为主，兼顾 macOS / Linux / Android） |
-| Agent 运行时 | Google Genkit for Dart（`genkit`） |
-| 动态 UI | A2UI 协议 + Flutter 官方 `genui` SDK |
-| 状态 / 路由 / 网络 | Riverpod · go_router · dio |
-| 本地库 / 图表 | DuckDB（或 drift）· fl_chart |
-| LLM | DeepSeek（OpenAI 兼容）· JEV / TypeSafe System One（裁判） |
+- **v1 主体已落地**：24 方法跨语言契约（`contracts/` `1.0.0`）、9 工具注册表、4 份黄金向量、Flutter 桌面端、Go `collector`（12 包测试绿）、Rust `kernel`（43 单测 + 3 黄金向量测试全绿）、真实 `daily_series.csv` 入库与 JEV 裁判通道实测通过（DeepSeek 生成侧待换新密钥复验）。
+- **v3.0 / `X-AlertAgent` 架构已升级拍板**：确立外环认知闭环（`MI/LLR/HLR` 记忆 + 浅深双层反思）、Rust 内置 DuckDB + 嵌入式 LanceDB 双引擎、桌面三端收敛（Windows 原生 MSVC 主交付 + Linux 开发验证 + macOS 可编译）、激进现成库路线与计算插件槽。
+- **下一步**：先按 [v1 收口清单](docs/12-v1架构与工程收口清单.md) 清零安全/版本/现成库/门禁技术债（v1.5），再推进 v2（`genui` 全量、LanceDB 三库记忆与反思、时空内核、新手岛）与 v3（5 模态完整归并、双边媒体基调三渠道、计算实验沙盒与发布）。
 
-**原则：现成库优先，不自造轮子。** 只有真正没有现成方案的部分（领域证据链语义、PIT 时点纪律、来源台账与清洗规则）才自己实现。
+> 实证披露：当前公开数据中唯一跨期稳健指标为 `dimension_dispersion`（6/7 年有效、lift 1.708×），详细边界与 G1–G4 准入标准见 [docs/13](docs/13-基准测试报告.md) 与 [ADR-009](docs/adr/ADR-009-研究增强准入标准与当前裁决.md)。
 
 ---
 
-## 目录
+## 三进程架构与技术栈
 
 ```
-docs/        设计文档、ADR、研究笔记
-ref/         只读研究材料（论文、原始材料）—— 不入库
-data/        数据集（samples 为 SYNTHETIC 夹具 / knowledge 语料 / inbox 运行时可写）
-configs/     运行配置（JSON）
-secrets/     凭证（不入库）
-tools/       Dart 工具脚本
-packaging/   Inno Setup / Android 构建
-lib/ test/ integration_test/   ← 待建立
+CBR-MAW.exe (Flutter 3.50 / Dart 3.14 · 桌面三端)
+   ├─ UI / A2UI / 状态 / 密钥：design_system + a2ui_catalog + genui + flutter_riverpod + flutter_secure_storage
+   ├─ 编排 / 门卫 / 槽位路由：Genkit 1.x + X-AlertAgent×R0–R5 + JEV (dio)
+   ├─ stdio JSON-RPC 2.0 ──► collector.exe (Go)   ← 35源台账/抓取/Inbox清洗/4条铁律/自更新
+   └─ stdio JSON-RPC 2.0 ──► kernel.exe (Rust)    ← DuckDB + 嵌入式 LanceDB + 确定性工具 + 黄金哈希 + [可选计算插件槽]
+```
+
+---
+
+## 仓库目录（多语言 Monorepo）
+
+```
+apps/desktop/        Flutter 桌面主应用（Dart pub workspace 成员）
+packages/            contracts_dart（契约生成） / design_system（唯一UI真源） / a2ui_catalog（A2UI白名单）
+services/            collector（Go 采集与清洗 sidecar） / kernel（Rust DuckDB+LanceDB 内核 sidecar）
+contracts/           跨语言 JSON Schema、样例、工具注册表、黄金向量与契约版本
+configs/             JSON 运行配置、JSON Schema 与唯一 Prompt 真源（configs/prompts/）
+data/                samples（测试夹具）/ knowledge / tutorial（v2）/ inbox（运行时可写）
+docs/                00–13 设计与基准文档、ADR（001–011）、research/（只读）
+tools/               validate_contract / check_layers / check_version / bench
+packaging/           verify_all / build / Windows Inno Setup 脚本
+ref/                 只读研究材料（不入库、不参与构建）
 ```
 
 ---
 
 ## 三条不可让步的线
 
-1. **绝不内嵌来源数据，绝不为任何来源写 mock。** 35 个登记来源里有很多是持牌付费终端，拿不到就**显式标注「需授权 / 不可达」**，界面永不出现伪造数值。
-2. **零 Mock 严格模式。** 模型不可用时必须失败并引导到设置页，不得用规则模板冒充模型结论。
-3. **结论必须可溯源。** 每条 claim 绑定证据，证据可重算（`inputs_hash` / `evidence.hash`），所有读取带 `as_of` 时点，四级过滤杜绝未来信息泄漏。
+1. **绝不内嵌来源数据，绝不为任何来源写 mock**：拿不到即显式标注五态，永不出现伪造数值。
+2. **零 Mock 严格模式**：模型不可用必须显式失败并引导设置；禁止规则模板冒充模型结论。
+3. **结论必须可溯源**：Claim 强制绑定证据，工具重算覆盖 LLM 数值，四级 PIT 强制 `available_at <= as_of`，所有新研究指标须过 G1–G4 检验。
 
 ---
 
-## 凭证配置
+## 快速导航与验证
+
+- 产品边界与基线：[docs/00-设计基线.md](docs/00-设计基线.md)
+- 架构设计（`X-AlertAgent` v3.0）：[docs/01-架构设计.md](docs/01-架构设计.md)
+- 工程化规范与门禁：[docs/09-工程化规范.md](docs/09-工程化规范.md)
+- 实施路线与契约：[docs/11-实施设计.md](docs/11-实施设计.md)
+- v1 收口整改台账：[docs/12-v1架构与工程收口清单.md](docs/12-v1架构与工程收口清单.md)
+- 协作协议与贡献指南：[AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
+
+运行全量门禁：
 
 ```bash
-cp .env.example .env      # 填入 DEEPSEEK_API_KEY（必填）与 TYPESAFE_API_KEY（可选）
+bash packaging/verify_all.sh
 ```
-
-或使用应用内设置页填写（Windows 优先 DPAPI 加密落盘）。
-
----
-
-## 参与协作
-
-见 [AGENTS.md](AGENTS.md) —— 仓库结构、写入范围、任务看板用法、验证命令、禁止事项。
-
-设计变更请先更新 [设计基线](docs/00-设计基线.md) 或新增 [ADR](docs/adr/README.md)。
-
----
-
-## 与旧版的关系
-
-旧版（CBR-MAW v2.0.0，Python FastAPI + Next.js/SDUI）保留在 `D:\recently\commorcial`，作为**语义参考**而非迁移源。Flutter 版**不迁移 Python 代码**，只迁移其领域语义——完整清单见 [旧系统语义清单](docs/research/旧系统语义清单-迁移依据.md)。
-
-旧版中最容易被「重写成通用 Agent 框架」时丢掉的六件事：
-
-1. Claim→Evidence 的强制绑定与确定性回填
-2. 三级 PIT 时点纪律
-3. 工具可重算哈希
-4. 偏好差异不算错误的善意冲突分类
-5. JEV 门卫的诚实降级
-6. 时空四视图类比 + 扩展窗口样本外评估

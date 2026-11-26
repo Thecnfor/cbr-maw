@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": "23",
+  "method": "collect.run",
+  "params": {
+    "source_id": "REG-01",
+    "range": {
+      "start": "2026-11-01",
+      "end": "2026-11-24"
+    },
+    "dry_run": false
+  }
+}

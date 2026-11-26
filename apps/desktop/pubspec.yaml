@@ -1,0 +1,62 @@
+name: cbr_maw
+description: CBR-MAW 桌面端（Flutter）：跨境金融风险多智能体协同预警研究工作台。
+publish_to: none
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 契约与设计系统（workspace 内）
+  cbr_maw_contracts: ^0.1.0
+  cbr_maw_design_system: ^0.1.0
+  cbr_maw_a2ui_catalog: ^0.1.0
+
+  # Agent 运行时与动态 UI
+  genkit: ^1.0.3
+  genui: ^0.10.4
+
+  # 路由 / 状态 / 网络 / 图表
+  go_router: ^18.1.4
+  riverpod: ^3.5.0
+  dio: ^5.11.1
+  fl_chart: ^1.3.1
+
+  # Material 入口（Flutter 3.50 起 material.dart 弃用；design_system/a2ui_catalog 已依赖）
+  material_ui: ^1.11.1
+
+  # 平台能力：窗口、偏好、文件投递、拖拽
+  window_manager: ^0.7.1
+  shared_preferences: ^2.5.6
+  file_picker: ^13.4.1
+  desktop_drop: ^0.8.4
+  path_provider: ^2.1.6
+  cross_file: ^0.3.5+4
+
+  # 工具
+  archive: ^4.7.1
+  csv: ^8.0.0
+  crypto: ^3.0.8
+  http: ^1.6.0
+  intl: ^0.20.3
+  path: ^1.9.0
+  uuid: ^4.6.0
+  collection: ^1.19.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/agents/roles/roles.json
+    - lib/agents/prompts/

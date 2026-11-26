@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/systemic_risk.params.schema.json",
+  "title": "systemic_risk 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/systemic.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "market_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "market.cn_equity.csi300",
+      "description": "市场侧序列（资产端基准）"
+    },
+    "asset_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "market.cn_bond.cgb_index",
+      "description": "资产端序列（CoVaR 资产）"
+    },
+    "series_ids": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "market.cn_equity.csi300",
+        "market.global.sp500",
+        "market.fx.usdcny",
+        "market.global.vix"
+      ],
+      "description": "DY 溢出指数使用的跨市场序列集合"
+    },
+    "lookback": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 60,
+      "maximum": 2000,
+      "default": 252,
+      "description": "回看交易日数"
+    },
+    "tail_q": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 0.5,
+      "default": 0.05,
+      "description": "尾部分位"
+    },
+    "dy_window": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 2000,
+      "default": 120,
+      "description": "DY 溢出估计窗口"
+    },
+    "dy_lag": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 5,
+      "default": 1,
+      "description": "DY 领先阶数"
+    },
+    "dy_horizon": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10,
+      "description": "DY 预测步长"
+    },
+    "values_are": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "price",
+        "return",
+        null
+      ],
+      "default": "price",
+      "description": "输入序列是价格还是收益率"
+    }
+  },
+  "additionalProperties": true
+}

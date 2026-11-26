@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "25",
+  "result": {
+    "events": [
+      {
+        "ts": "2026-11-25T09:02:00+08:00",
+        "type": "progress",
+        "job_id": "job_20261125_0001",
+        "payload": {
+          "written": 12,
+          "total": 18
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": {
+    "sidecar": "kernel",
+    "version": "0.1.0",
+    "contract_version": "1.0.0",
+    "schema_version": 3,
+    "capabilities": [
+      "db.query",
+      "tools.invoke"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "20",
+  "error": {
+    "code": -32001,
+    "message": "平台不支持本地计算",
+    "data": {
+      "kind": "E_PLATFORM_UNSUPPORTED",
+      "retryable": false,
+      "detail": {
+        "reason": "当前平台不提供 collector sidecar",
+        "platform": "android"
+      }
+    }
+  }
+}

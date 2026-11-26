@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/initialize.request.schema.json",
+  "title": "initialize 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 initialize。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "initialize"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "description": "契约版本（契约/VERSION）"
+        },
+        "client_version": {
+          "type": "string",
+          "description": "客户端版本"
+        },
+        "workspace": {
+          "type": "string",
+          "description": "工作区绝对路径"
+        },
+        "data_home": {
+          "type": "string",
+          "description": "可写根绝对路径"
+        },
+        "resource_home": {
+          "type": "string",
+          "description": "只读资源根绝对路径"
+        },
+        "capabilities": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "客户端能力清单"
+        }
+      },
+      "required": [
+        "contract_version",
+        "client_version",
+        "workspace",
+        "data_home",
+        "resource_home"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

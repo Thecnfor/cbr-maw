@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": "20",
+  "method": "sources.list",
+  "params": {
+    "include_disabled": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": "21",
+  "method": "sources.probe",
+  "params": {
+    "source_id": "REG-01",
+    "timeout_s": 20
+  }
+}

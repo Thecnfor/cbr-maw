@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "33",
+  "error": {
+    "code": -32003,
+    "message": "语料不可达",
+    "data": {
+      "kind": "E_SOURCE_UNAVAILABLE",
+      "retryable": true,
+      "detail": {
+        "reason": "语料目录不存在或不可读",
+        "path": "/opt/cbr/resource-home/data/knowledge/corpus"
+      }
+    }
+  }
+}

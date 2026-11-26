@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": "24",
+  "method": "inbox.ingest",
+  "params": {
+    "path": "/tmp/cbr-workspace/data-home/inbox/user_batch_20261125.csv",
+    "declared_source": "REG-01",
+    "as_of": "2026-11-25T09:00:00+08:00"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/funding_cost.params.schema.json",
+  "title": "funding_cost 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/funding.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "spread_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "rates.credit.aa_spread",
+      "description": "信用利差序列"
+    },
+    "lookback": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 60,
+      "maximum": 2000,
+      "default": 252,
+      "description": "回看交易日数"
+    },
+    "momentum_window": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 120,
+      "default": 20,
+      "description": "利差动量窗口"
+    },
+    "spread_unit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "pct",
+        "bp",
+        null
+      ],
+      "default": "bp",
+      "description": "利差单位"
+    },
+    "cost_jump_bp": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0.0,
+      "default": 50.0,
+      "description": "融资成本跳升阈值（bp）"
+    },
+    "cost_medium_bp": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.0,
+      "default": 25.0,
+      "description": "融资成本中度抬升阈值（bp）"
+    },
+    "refinancing_horizon_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 365,
+      "default": 90,
+      "description": "再融资窗口（日）"
+    }
+  },
+  "additionalProperties": true
+}

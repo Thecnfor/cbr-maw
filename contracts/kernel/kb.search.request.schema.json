@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/kb.search.request.schema.json",
+  "title": "kb.search 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 kb.search。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "kb.search"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "检索式（1..500 字符）"
+        },
+        "top_k": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 50,
+          "default": 5,
+          "description": "返回条数"
+        },
+        "filters": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "过滤条件（来源/时间等）"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "KbHit": {
+      "type": "object",
+      "properties": {
+        "chunk_id": {
+          "type": "string",
+          "description": "分块 ID"
+        },
+        "score": {
+          "type": "number",
+          "description": "打分"
+        },
+        "text": {
+          "type": "string",
+          "description": "分块原文"
+        },
+        "document_id": {
+          "type": "string",
+          "description": "文档 ID"
+        },
+        "locator": {
+          "type": "string",
+          "description": "文档内定位"
+        },
+        "published_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "文档发布时间"
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "来源 ID"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "score",
+        "text",
+        "document_id",
+        "locator"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

@@ -64,3 +64,25 @@ ref/
 .scratch/
 .playwright-mcp/
 *.log
+
+# ===== Rust / Go =====
+target/
+services/collector/collector
+services/collector/collector.exe
+
+# ===== 运行时产物 =====
+artifacts/
+data/inbox/
+data/raw/
+data/processed/
+data/traces/
+*.duckdb
+*.duckdb.wal
+
+# 真实数据导出（大文件，由 data/seed/export_real_pit.py 重建，不入库）
+data/seed/pit_real_obs.jsonl
+data/seed/documents.jsonl
+
+# ===== 生成与缓存（不入库）=====
+apps/desktop/linux/flutter/ephemeral/
+*.iml

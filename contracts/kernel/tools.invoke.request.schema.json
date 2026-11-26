@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/tools.invoke.request.schema.json",
+  "title": "tools.invoke 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 tools.invoke。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "tools.invoke"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": [
+            "risk_measure",
+            "systemic_risk",
+            "capital_flow",
+            "funding_cost",
+            "scenario",
+            "forecast",
+            "knowledge_search",
+            "dimension_dispersion",
+            "capital_linkage"
+          ],
+          "description": "工具名（须在 tools.json 注册表内）"
+        },
+        "params": {
+          "type": "object",
+          "description": "工具参数（按 `tools/<tool>.params.schema.json`）"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "description": "幂等键"
+        }
+      },
+      "required": [
+        "tool",
+        "params",
+        "idempotency_key"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "ToolEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "证据 ID"
+        },
+        "tool": {
+          "type": "string",
+          "description": "工具名"
+        },
+        "version": {
+          "type": "string",
+          "description": "工具版本"
+        },
+        "inputs_hash": {
+          "type": "string",
+          "description": "入参哈希（64 位小写 hex）"
+        },
+        "hash": {
+          "type": "string",
+          "description": "证据载荷哈希（64 位小写 hex）"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "主数值"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "单位"
+        },
+        "as_of": {
+          "type": "string",
+          "description": "时点"
+        },
+        "params": {
+          "type": "object",
+          "description": "规范化后的入参"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "tool",
+        "version",
+        "inputs_hash",
+        "hash",
+        "as_of",
+        "params"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

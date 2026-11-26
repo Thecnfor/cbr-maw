@@ -1,0 +1,10 @@
+# tools/ 是纯 Dart 包（不依赖 Flutter），不继承根配置的 flutter_lints。
+include: package:lints/recommended.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    avoid_dynamic_calls: error

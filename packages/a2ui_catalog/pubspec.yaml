@@ -1,0 +1,23 @@
+name: cbr_maw_a2ui_catalog
+description: CBR-MAW 自有 A2UI 组件目录（安全边界：未登记组件一律拒绝渲染，见 docs/04）。
+publish_to: none
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  genui: ^0.10.4
+  json_schema_builder: ^0.1.7
+  material_ui: ^1.11.1
+  cbr_maw_contracts: ^0.1.0
+  cbr_maw_design_system: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

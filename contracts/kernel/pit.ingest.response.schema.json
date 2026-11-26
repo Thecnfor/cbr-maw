@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/pit.ingest.response.schema.json",
+  "title": "pit.ingest 响应信封",
+  "description": "pit.ingest 的成功或失败响应。失败时 error.data.kind 取 contracts/README.md §2 错误码表；detail.reason 必填（中文短句）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "series": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PitSeries"
+              },
+              "description": "写入的序列"
+            },
+            "derived_recomputed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "重算的派生序列 ID"
+            },
+            "coverage_gate": {
+              "$ref": "#/$defs/CoverageGate",
+              "description": "覆盖率守门结论"
+            }
+          },
+          "required": [
+            "series",
+            "derived_recomputed",
+            "coverage_gate"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_REQUEST",
+                    "E_METHOD_NOT_FOUND",
+                    "E_INVALID_PARAMS",
+                    "E_INTERNAL",
+                    "E_PLATFORM_UNSUPPORTED",
+                    "E_NOT_AUTHORIZED",
+                    "E_SOURCE_UNAVAILABLE",
+                    "E_DATA_MISSING",
+                    "E_CONTRACT_MISMATCH",
+                    "E_RATE_LIMITED",
+                    "E_TIMEOUT",
+                    "E_NOT_INITIALIZED",
+                    "E_PERMISSION_DENIED"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "stack": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "PitSeries": {
+      "type": "object",
+      "properties": {
+        "series_id": {
+          "type": "string",
+          "description": "规范序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "写入行数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则"
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage",
+          "description": "覆盖区间"
+        }
+      },
+      "required": [
+        "series_id",
+        "rows",
+        "release_time_rule",
+        "coverage"
+      ],
+      "additionalProperties": true
+    },
+    "Coverage": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "description": "起始日"
+        },
+        "end": {
+          "type": "string",
+          "description": "结束日"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": true
+    },
+    "CoverageGate": {
+      "type": "object",
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "是否通过守门"
+        },
+        "baseline": {
+          "type": "number",
+          "description": "基线覆盖率"
+        },
+        "current": {
+          "type": "number",
+          "description": "本次覆盖率"
+        }
+      },
+      "required": [
+        "passed",
+        "baseline",
+        "current"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

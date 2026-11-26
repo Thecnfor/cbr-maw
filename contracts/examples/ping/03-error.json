@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "10",
+  "error": {
+    "code": -32008,
+    "message": "未握手",
+    "data": {
+      "kind": "E_NOT_INITIALIZED",
+      "retryable": false,
+      "detail": {
+        "reason": "收到业务方法前必须先完成 initialize 握手"
+      }
+    }
+  }
+}

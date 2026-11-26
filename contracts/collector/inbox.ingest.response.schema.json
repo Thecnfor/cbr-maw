@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/inbox.ingest.response.schema.json",
+  "title": "inbox.ingest 响应信封",
+  "description": "inbox.ingest 的成功或失败响应。失败时 error.data.kind 取 contracts/README.md §2 错误码表；detail.reason 必填（中文短句）。",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "batch_id": {
+              "type": "string",
+              "description": "清洗批次 ID"
+            },
+            "accepted": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AcceptedFile"
+              },
+              "description": "接受的文件"
+            },
+            "rejected": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/RejectedFile"
+              },
+              "description": "拒绝的文件"
+            }
+          },
+          "required": [
+            "batch_id",
+            "accepted",
+            "rejected"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "data"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "kind",
+                "retryable",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "E_PARSE",
+                    "E_INVALID_REQUEST",
+                    "E_METHOD_NOT_FOUND",
+                    "E_INVALID_PARAMS",
+                    "E_INTERNAL",
+                    "E_PLATFORM_UNSUPPORTED",
+                    "E_NOT_AUTHORIZED",
+                    "E_SOURCE_UNAVAILABLE",
+                    "E_DATA_MISSING",
+                    "E_CONTRACT_MISMATCH",
+                    "E_RATE_LIMITED",
+                    "E_TIMEOUT",
+                    "E_NOT_INITIALIZED",
+                    "E_PERMISSION_DENIED"
+                  ]
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "object",
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "retry_after_seconds": {
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "stack": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "AcceptedFile": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "series_id": {
+          "type": "string",
+          "description": "解析出的规范序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "有效行数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则"
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/InboxEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "文件级证据"
+        }
+      },
+      "required": [
+        "file",
+        "series_id",
+        "rows",
+        "release_time_rule"
+      ],
+      "additionalProperties": true
+    },
+    "RejectedFile": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "reason": {
+          "type": "string",
+          "description": "拒绝原因（中文短句）"
+        },
+        "error_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "错误明细文件路径"
+        }
+      },
+      "required": [
+        "file",
+        "reason"
+      ],
+      "additionalProperties": true
+    },
+    "InboxEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "证据 ID"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "来源 ID（未知时为 null）"
+        },
+        "declared_source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "用户声明的来源 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "有效行数"
+        },
+        "dropped_rows": {
+          "type": "integer",
+          "description": "剔除的脏行数"
+        },
+        "hash": {
+          "type": "string",
+          "description": "内容哈希（64 位小写 hex）"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_id",
+        "rows",
+        "dropped_rows",
+        "hash"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

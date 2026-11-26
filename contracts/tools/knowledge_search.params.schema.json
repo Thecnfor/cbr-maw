@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/knowledge_search.params.schema.json",
+  "title": "knowledge_search 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/kb_search.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "检索式（1..500 字符）"
+    },
+    "top_k": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 20,
+      "default": 5,
+      "description": "返回条数"
+    },
+    "tags": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "default": null,
+      "description": "标签过滤"
+    }
+  },
+  "required": [
+    "query"
+  ],
+  "additionalProperties": true
+}

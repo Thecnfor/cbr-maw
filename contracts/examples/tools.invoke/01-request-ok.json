@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": "40",
+  "method": "tools.invoke",
+  "params": {
+    "tool": "risk_measure",
+    "params": {
+      "series_id": "market.cn_equity.csi300",
+      "lookback": 252
+    },
+    "idempotency_key": "idem_tool_20261125_0001"
+  }
+}

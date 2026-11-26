@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": "33",
+  "method": "kb.index",
+  "params": {
+    "corpus_dir": "/opt/cbr/resource-home/data/knowledge/corpus",
+    "force": false
+  }
+}

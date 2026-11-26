@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/tools/scenario.params.schema.json",
+  "title": "scenario 工具入参",
+  "description": "工具入参 schema。默认值与 docs/legacy-configs/tools.yaml 一致；旧版实现见 commorcial/src/cbr/tools/scenario.py。additionalProperties=false 对齐旧版 pydantic extra='forbid'。",
+  "type": "object",
+  "properties": {
+    "target_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "market.cn_equity.csi300",
+      "description": "情景目标序列"
+    },
+    "us_equity_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "market.global.sp500",
+      "description": "美股冲击序列"
+    },
+    "fx_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "market.fx.usdcny",
+      "description": "汇率冲击序列"
+    },
+    "spread_series_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "rates.credit.aa_spread",
+      "description": "利差冲击序列"
+    },
+    "lookback": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 60,
+      "maximum": 2000,
+      "default": 252,
+      "description": "回看交易日数"
+    },
+    "us_equity_drop_pct": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.0,
+      "maximum": 100.0,
+      "default": 10.0,
+      "description": "美股下跌冲击（%）"
+    },
+    "fx_depreciation_pct": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.0,
+      "maximum": 100.0,
+      "default": 5.0,
+      "description": "人民币贬值冲击（%）"
+    },
+    "spread_widening_bp": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.0,
+      "maximum": 1000.0,
+      "default": 100.0,
+      "description": "信用利差走阔冲击（bp）"
+    },
+    "method": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "linear",
+        "historical",
+        "both",
+        null
+      ],
+      "default": "both",
+      "description": "情景方法"
+    },
+    "analog_k": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10,
+      "description": "历史类比样本数"
+    },
+    "spread_unit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "pct",
+        "bp",
+        null
+      ],
+      "default": "bp",
+      "description": "利差单位"
+    },
+    "min_observations": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 2000,
+      "default": 60,
+      "description": "最少观测数"
+    },
+    "values_are": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "price",
+        "return",
+        null
+      ],
+      "default": "price",
+      "description": "输入序列是价格还是收益率"
+    }
+  },
+  "additionalProperties": true
+}

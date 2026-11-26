@@ -1,0 +1,23 @@
+[package]
+name = "cbr-kernel"
+version = "0.1.0"
+edition = "2021"
+description = "CBR-MAW 内核 sidecar（DuckDB + 确定性数值工具 + 知识库检索）"
+license = "MIT"
+
+# 单包 workspace：仓库根暂无 Cargo.toml，此处自成一个 workspace 根，避免被上层 workspace 吞并。
+[workspace]
+
+[dependencies]
+duckdb = { version = "1", features = ["bundled", "chrono"] }
+serde = { version = "1", features = ["derive"] }
+# float_roundtrip：与 Python/旧版一致地解析高精度浮点（默认实现会丢末位，
+# 例如 38.050000000000004 → 38.05，直接破坏哈希与分位并列判定）。
+serde_json = { version = "1", features = ["float_roundtrip"] }
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+csv = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"

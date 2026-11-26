@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "30",
+  "method": "db.query",
+  "params": {
+    "view": "market_daily",
+    "filters": {
+      "series_id": "market.cn_equity.csi300",
+      "start": "2026-01-01",
+      "end": "2026-06-30"
+    },
+    "as_of": "2026-06-30T18:00:00+08:00",
+    "limit": 1000
+  }
+}

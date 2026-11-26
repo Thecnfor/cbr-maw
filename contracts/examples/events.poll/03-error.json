@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "25",
+  "error": {
+    "code": -32007,
+    "message": "超时",
+    "data": {
+      "kind": "E_TIMEOUT",
+      "retryable": true,
+      "detail": {
+        "reason": "等待事件超过 timeout_ms",
+        "timeout_ms": 30000
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "38",
+  "error": {
+    "code": -32004,
+    "message": "信号所需观测不足",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "as_of 之前可用观测不足模型热身期要求",
+        "as_of": "2026-11-25"
+      }
+    }
+  }
+}

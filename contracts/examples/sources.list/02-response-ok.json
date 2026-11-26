@@ -1,0 +1,25 @@
+{
+  "jsonrpc": "2.0",
+  "id": "20",
+  "result": {
+    "sources": [
+      {
+        "id": "REG-01",
+        "modality": "numeric",
+        "subject": "沪深300指数",
+        "source_name": "交易所公开行情",
+        "tier": "t1Public",
+        "access_mode": "publicHttp",
+        "authorization_status": "notRequired",
+        "endpoint_status": "known",
+        "reachability": "reachable",
+        "series_ids": [
+          "market.cn_equity.csi300"
+        ],
+        "last_success_at": "2026-11-24T18:05:00+08:00",
+        "last_error": null,
+        "notes": null
+      }
+    ]
+  }
+}

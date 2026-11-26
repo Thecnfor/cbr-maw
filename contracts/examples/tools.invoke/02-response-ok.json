@@ -1,0 +1,20 @@
+{
+  "jsonrpc": "2.0",
+  "id": "40",
+  "result": {
+    "evidence": {
+      "evidence_id": "ev_0123456789abcdef",
+      "tool": "risk_measure",
+      "version": "1.0.0",
+      "inputs_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "value": 0.0231,
+      "unit": "loss_ratio",
+      "as_of": "2026-11-25",
+      "params": {
+        "lookback": 252,
+        "series_id": "market.cn_equity.csi300"
+      }
+    }
+  }
+}

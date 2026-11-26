@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "34",
+  "result": {
+    "hits": [
+      {
+        "chunk_id": "doc_0042#007",
+        "score": 8.42,
+        "text": "跨境资金异常流动的监测口径以净额 z-score 与同步撤离为主……",
+        "document_id": "doc_0042",
+        "locator": "第 3 页 第 2 段",
+        "published_at": "2024-05-11",
+        "source_id": "REG-01"
+      }
+    ]
+  }
+}

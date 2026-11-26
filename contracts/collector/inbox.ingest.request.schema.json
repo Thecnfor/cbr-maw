@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/inbox.ingest.request.schema.json",
+  "title": "inbox.ingest 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 inbox.ingest。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "inbox.ingest"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "投递文件绝对路径"
+        },
+        "declared_source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "用户声明的来源 ID"
+        },
+        "as_of": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "时点（ISO 8601 或 YYYY-MM-DD）"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "AcceptedFile": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "series_id": {
+          "type": "string",
+          "description": "解析出的规范序列 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "有效行数"
+        },
+        "release_time_rule": {
+          "type": "string",
+          "description": "release_time 推导规则"
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/InboxEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "文件级证据"
+        }
+      },
+      "required": [
+        "file",
+        "series_id",
+        "rows",
+        "release_time_rule"
+      ],
+      "additionalProperties": true
+    },
+    "RejectedFile": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "reason": {
+          "type": "string",
+          "description": "拒绝原因（中文短句）"
+        },
+        "error_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "错误明细文件路径"
+        }
+      },
+      "required": [
+        "file",
+        "reason"
+      ],
+      "additionalProperties": true
+    },
+    "InboxEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "证据 ID"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "来源 ID（未知时为 null）"
+        },
+        "declared_source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "用户声明的来源 ID"
+        },
+        "rows": {
+          "type": "integer",
+          "description": "有效行数"
+        },
+        "dropped_rows": {
+          "type": "integer",
+          "description": "剔除的脏行数"
+        },
+        "hash": {
+          "type": "string",
+          "description": "内容哈希（64 位小写 hex）"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_id",
+        "rows",
+        "dropped_rows",
+        "hash"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

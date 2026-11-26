@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "error": {
+    "code": -32005,
+    "message": "契约版本不匹配",
+    "data": {
+      "kind": "E_CONTRACT_MISMATCH",
+      "retryable": false,
+      "detail": {
+        "reason": "客户端契约版本 0.9.0 与 sidecar 1.0.0 不匹配",
+        "expected": "1.0.0",
+        "actual": "0.9.0"
+      }
+    }
+  }
+}

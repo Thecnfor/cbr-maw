@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": "39",
+  "result": {
+    "cfsi": 1.24,
+    "level": "medium",
+    "tau": 1.5,
+    "dims": {
+      "equity": {
+        "value": 0.35,
+        "weight": 0.2
+      },
+      "fx": {
+        "value": 0.21,
+        "weight": 0.15
+      }
+    },
+    "missing_dims": [
+      "credit",
+      "crossborder",
+      "global"
+    ],
+    "limitations": [
+      "信用/跨境资金/全球维度数据不可得，未参与计算，结论口径待六维齐备后复核"
+    ],
+    "provenance": {
+      "label_version": "stress_pca_q90",
+      "index_version": "cfsi-v1"
+    }
+  }
+}

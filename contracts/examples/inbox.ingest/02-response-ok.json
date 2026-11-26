@@ -1,0 +1,30 @@
+{
+  "jsonrpc": "2.0",
+  "id": "24",
+  "result": {
+    "batch_id": "batch_20261125_0001",
+    "accepted": [
+      {
+        "file": "user_batch_20261125.csv",
+        "series_id": "market.cn_equity.csi300",
+        "rows": 20,
+        "release_time_rule": "obs_date 18:00 +08:00",
+        "evidence": {
+          "evidence_id": "ev_inbox_batch_20261125_0001",
+          "source_id": "REG-01",
+          "declared_source": "REG-01",
+          "rows": 20,
+          "dropped_rows": 2,
+          "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    ],
+    "rejected": [
+      {
+        "file": "broken_batch.csv",
+        "reason": "表头无法识别为任何规范序列",
+        "error_file": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,490 @@
+{
+  "version": 1,
+  "user_agent": "cbr-maw-collector/0.1.0 (+https://github.com/Thecnfor/cbr-maw)",
+  "defaults": {
+    "timeout_seconds": 20,
+    "retries": 2,
+    "stale_threshold_days": 3,
+    "monthly_stale_threshold_days": 40,
+    "min_interval_seconds": 2
+  },
+  "sources": [
+    {
+      "id": "em_csi300",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.cn_equity.csi300"
+      ],
+      "interval_seconds": 1800,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+        "query": {
+          "secid": "1.000300",
+          "klt": "101",
+          "fqt": "0",
+          "lmt": "10000",
+          "end": "20500000",
+          "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+          "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64"
+        },
+        "rows_path": "data.klines",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "eastmoney",
+        "headers": {
+          "Referer": "https://quote.eastmoney.com/"
+        },
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "eastmoney",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "em_csi500",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.cn_equity.csi500"
+      ],
+      "interval_seconds": 1800,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+        "query": {
+          "secid": "1.000905",
+          "klt": "101",
+          "fqt": "0",
+          "lmt": "10000",
+          "end": "20500000",
+          "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+          "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64"
+        },
+        "rows_path": "data.klines",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "eastmoney",
+        "headers": {
+          "Referer": "https://quote.eastmoney.com/"
+        },
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "eastmoney",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "em_ah_premium",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "crossborder.flows.ah_premium"
+      ],
+      "interval_seconds": 1800,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+        "query": {
+          "secid": "100.HSAHP",
+          "klt": "101",
+          "fqt": "0",
+          "lmt": "10000",
+          "end": "20500000",
+          "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+          "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64"
+        },
+        "rows_path": "data.klines",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "eastmoney",
+        "headers": {
+          "Referer": "https://quote.eastmoney.com/"
+        },
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "eastmoney",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "em_sp500",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.global.sp500"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 1,
+      "publish_hour": 9,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+        "query": {
+          "secid": "100.SPX",
+          "klt": "101",
+          "fqt": "0",
+          "lmt": "10000",
+          "end": "20500000",
+          "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+          "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64"
+        },
+        "rows_path": "data.klines",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "eastmoney",
+        "headers": {
+          "Referer": "https://quote.eastmoney.com/"
+        },
+        "release_lag_days": 1,
+        "publish_hour": 9,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "eastmoney",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "cboe_vix",
+      "kind": "http_csv",
+      "enabled": true,
+      "series": [
+        "market.global.vix"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 1,
+      "publish_hour": 9,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+        "date_column": "DATE",
+        "value_column": "CLOSE",
+        "date_format": "%m/%d/%Y",
+        "unit": "点",
+        "source": "cboe",
+        "release_lag_days": 1,
+        "publish_hour": 9,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "cboe",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "akshare_cgb_2y",
+      "kind": "akshare",
+      "enabled": true,
+      "series": [
+        "market.cn_bond.cgb_2y"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "func": "bond_zh_us_yield_em",
+        "kwargs": {
+          "start_date": "2015-01-01"
+        },
+        "date_column": "日期",
+        "value_column": "中国国债收益率2年",
+        "unit": "%",
+        "source": "akshare/bond_zh_us_yield_em",
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "akshare/bond_zh_us_yield_em",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "toVerify",
+      "notes": "由 akshare 等价公开 HTTP 端点复刻（不引入 Python）；端点变更风险见 adapter_version"
+    },
+    {
+      "id": "akshare_cgb_10y",
+      "kind": "akshare",
+      "enabled": true,
+      "series": [
+        "market.cn_bond.cgb_10y"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "func": "bond_zh_us_yield_em",
+        "kwargs": {
+          "start_date": "2015-01-01"
+        },
+        "date_column": "日期",
+        "value_column": "中国国债收益率10年",
+        "unit": "%",
+        "source": "akshare/bond_zh_us_yield_em",
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "akshare/bond_zh_us_yield_em",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "toVerify",
+      "notes": "由 akshare 等价公开 HTTP 端点复刻（不引入 Python）；端点变更风险见 adapter_version"
+    },
+    {
+      "id": "akshare_us10y",
+      "kind": "akshare",
+      "enabled": true,
+      "series": [
+        "market.global.us10y"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 1,
+      "publish_hour": 9,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "func": "bond_zh_us_yield_em",
+        "kwargs": {
+          "start_date": "2015-01-01"
+        },
+        "date_column": "日期",
+        "value_column": "美国国债收益率10年",
+        "unit": "%",
+        "source": "akshare/bond_zh_us_yield_em",
+        "release_lag_days": 1,
+        "publish_hour": 9,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "akshare/bond_zh_us_yield_em",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "toVerify",
+      "notes": "由 akshare 等价公开 HTTP 端点复刻（不引入 Python）；端点变更风险见 adapter_version"
+    },
+    {
+      "id": "rss_fed_press",
+      "kind": "rss",
+      "enabled": true,
+      "series": [],
+      "documents": true,
+      "interval_seconds": 3600,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+        "encoding": "utf-8",
+        "source": "federal_reserve",
+        "limit": 100
+      },
+      "subject": "",
+      "source_name": "federal_reserve",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "rss_wsj_markets",
+      "kind": "rss",
+      "enabled": true,
+      "series": [],
+      "documents": true,
+      "interval_seconds": 3600,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
+        "encoding": "utf-8",
+        "source": "wsj_markets",
+        "limit": 100
+      },
+      "subject": "",
+      "source_name": "wsj_markets",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": ""
+    },
+    {
+      "id": "tencent_csi300",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.cn_equity.csi300"
+      ],
+      "interval_seconds": 1800,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+        "query": {
+          "param": "sh000300,day,,,640,qfq"
+        },
+        "rows_path": "data.sh000300.day",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "tencent",
+        "headers": {
+          "Referer": "https://gu.qq.com/"
+        },
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "tencent",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": "备源：em_csi300 不可用时自动接替",
+      "backup_for": "em_csi300"
+    },
+    {
+      "id": "tencent_csi500",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.cn_equity.csi500"
+      ],
+      "interval_seconds": 1800,
+      "release_lag_days": 0,
+      "publish_hour": 18,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+        "query": {
+          "param": "sh000905,day,,,640,qfq"
+        },
+        "rows_path": "data.sh000905.day",
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "tencent",
+        "headers": {
+          "Referer": "https://gu.qq.com/"
+        },
+        "release_lag_days": 0,
+        "publish_hour": 18,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "tencent",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": "备源：em_csi500 不可用时自动接替",
+      "backup_for": "em_csi500"
+    },
+    {
+      "id": "tencent_sp500",
+      "kind": "http_json",
+      "enabled": true,
+      "series": [
+        "market.global.sp500"
+      ],
+      "interval_seconds": 3600,
+      "release_lag_days": 1,
+      "publish_hour": 9,
+      "publish_minute": 0,
+      "tz_offset": "+08:00",
+      "params": {
+        "url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+        "query": {
+          "param": "us.INX,day,,,640,qfq"
+        },
+        "rows_path": [
+          "data",
+          "us.INX",
+          "day"
+        ],
+        "row_split": ",",
+        "date_field": 0,
+        "value_field": 2,
+        "unit": "点",
+        "source": "tencent",
+        "headers": {
+          "Referer": "https://gu.qq.com/"
+        },
+        "release_lag_days": 1,
+        "publish_hour": 9,
+        "tz_offset": "+08:00"
+      },
+      "subject": "",
+      "source_name": "tencent",
+      "tier": "t1Public",
+      "access_mode": "publicHttp",
+      "authorization_status": "notRequired",
+      "endpoint_status": "known",
+      "notes": "备源：em_sp500 不可用时自动接替",
+      "backup_for": "em_sp500"
+    }
+  ]
+}

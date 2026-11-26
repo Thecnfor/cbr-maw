@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": "35",
+  "result": {
+    "path": "/tmp/cbr-workspace",
+    "size_bytes": 10485760,
+    "schema_version": 3,
+    "series_count": 27,
+    "obs_count": 128450,
+    "last_ingest_at": "2026-11-25T09:02:00+08:00"
+  }
+}

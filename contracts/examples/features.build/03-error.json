@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "37",
+  "error": {
+    "code": -32004,
+    "message": "必需数据缺失",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "序列 market.fx.usdcny 在该时点无观测",
+        "series_id": "market.fx.usdcny"
+      }
+    }
+  }
+}

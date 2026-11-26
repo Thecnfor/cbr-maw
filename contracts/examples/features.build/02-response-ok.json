@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": "37",
+  "result": {
+    "built": 12,
+    "feature_ids": [
+      "feat_csi300_ret_5",
+      "feat_usdcny_ret_5"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "jsonrpc": "2.0",
+  "id": "23",
+  "result": {
+    "job_id": "job_20261125_0001",
+    "status": "ok",
+    "written_files": [
+      "intermediate/market.cn_equity.csi300.csv"
+    ],
+    "evidence": [
+      {
+        "evidence_id": "ev_collect_REG-01_20261125_0001",
+        "source_id": "REG-01",
+        "series_id": "market.cn_equity.csi300",
+        "rows": 18,
+        "release_time_rule": "obs_date 18:00 +08:00",
+        "file": "intermediate/market.cn_equity.csi300.csv"
+      }
+    ]
+  }
+}

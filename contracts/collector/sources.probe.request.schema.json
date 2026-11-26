@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/collector/sources.probe.request.schema.json",
+  "title": "sources.probe 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 sources.probe。副作用等级与工具权限由 contracts/tools/tools.json 与 roles 矩阵决定。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "sources.probe"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "description": "台账条目 ID"
+        },
+        "timeout_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 300,
+          "default": 20,
+          "description": "探测超时（秒）"
+        }
+      },
+      "required": [
+        "source_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "ProbeDetail": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "中文短句说明"
+        },
+        "checked_at": {
+          "type": "string",
+          "description": "探测时刻"
+        },
+        "http_status": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "HTTP 状态码（如适用）"
+        },
+        "latency_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "探测耗时（毫秒）"
+        }
+      },
+      "required": [
+        "reason",
+        "checked_at"
+      ],
+      "additionalProperties": true
+    }
+  }
+}
