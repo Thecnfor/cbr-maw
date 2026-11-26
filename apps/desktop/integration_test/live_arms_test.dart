@@ -331,21 +331,6 @@ Future<Map<String, Object?>> _runArmA({
   }
 }
 
-/// A 组面板的序列集合（只取原始行情/资金序列，不含任何派生指标）。
-const List<String> _panelSeries = <String>[
-  'market.cn_equity.csi300',
-  'market.cn_equity.csi500',
-  'market.global.sp500',
-  'market.global.vix',
-  'market.global.us10y',
-  'market.cn_bond.cgb_10y',
-  'market.cn_bond.term_spread',
-  'market.global.cn_us_spread',
-  'market.fx.usdcny',
-  'crossborder.flows.northbound_net',
-  'crossborder.flows.ah_premium',
-];
-
 final class _GatedInvoker implements ToolInvoker {
   _GatedInvoker(this._invoker);
 
@@ -405,18 +390,56 @@ String _repoRoot() {
   }
 }
 
-/// 从黄金向量取真实交易日（默认取最近 [count] 个）。
+/// 取**压力/平静配对**的可评分时点（docs/23 §4、ADR-010 评估闭环）。
+///
+/// - 只取 `y_20 != null` 的日期：y_20 是「未来 20 交易日」标签，末尾 19 行
+///   天然为空；用末尾时点评分会把所有臂都算成负例，整张主表失去意义。
+/// - 压力/平静各半：只测平静期会让所有臂都「正确」，只测压力期会让所有臂
+///   都「过警」，都无法区分协同与不协同。
+/// - 配对后再按时间均匀抽取，保证两组的日历分布相近。
 List<String> _sampleDates(String goldenPath, int count) {
   final golden =
       jsonDecode(File(goldenPath).readAsStringSync()) as Map<String, Object?>;
-  final dates = [
-    for (final row in (golden['rows'] as List).cast<Map<String, Object?>>())
-      if (row['cfsi'] != null) row['date'] as String,
-  ];
-  if (count >= dates.length) {
-    return dates;
+  final stress = <String>[];
+  final calm = <String>[];
+  for (final row in (golden['rows'] as List).cast<Map<String, Object?>>()) {
+    if (row['cfsi'] == null || row['y_20'] == null) continue;
+    final date = row['date'] as String;
+    if (row['y_20'] == 1) {
+      stress.add(date);
+    } else {
+      calm.add(date);
+    }
   }
-  final offset = int.parse(Platform.environment['CBR_BENCH_OFFSET'] ?? '0');
-  final end = dates.length - offset;
-  return dates.sublist((end - count).clamp(0, dates.length), end);
+  final half = (count / 2).ceil();
+  return [
+    ..._evenly(stress, half),
+    ..._evenly(calm, count - half),
+  ]..sort();
 }
+
+/// 从升序列表里均匀取 [count] 个（取尾部：越近的样本越贴近当前市场结构）。
+List<String> _evenly(List<String> sorted, int count) {
+  if (count <= 0) return const [];
+  if (count >= sorted.length) return sorted;
+  final step = sorted.length / count;
+  return [
+    for (var i = 0; i < count; i++)
+      sorted[sorted.length - 1 - ((count - 1 - i) * step).round()],
+  ];
+}
+
+/// A 组面板的序列集合（只取原始行情/资金序列，不含任何派生指标）。
+const List<String> _panelSeries = <String>[
+  'market.cn_equity.csi300',
+  'market.cn_equity.csi500',
+  'market.global.sp500',
+  'market.global.vix',
+  'market.global.us10y',
+  'market.cn_bond.cgb_10y',
+  'market.cn_bond.term_spread',
+  'market.global.cn_us_spread',
+  'market.fx.usdcny',
+  'crossborder.flows.northbound_net',
+  'crossborder.flows.ah_premium',
+];
