@@ -401,7 +401,11 @@ final class _ConversationColumn extends StatelessWidget {
               : ListView.builder(
                   controller: scroll,
                   padding: const EdgeInsets.all(Tokens.space4),
-                  itemCount: messages.length + (failure == null ? 0 : 1),
+                  // 决策面板随对话滚动：固定高度会让窄屏溢出。
+                  itemCount:
+                      messages.length +
+                      (failure == null ? 0 : 1) +
+                      (summary == null ? 0 : 1),
                   itemBuilder: (context, index) {
                     if (failure != null && index == messages.length) {
                       return Padding(
@@ -430,12 +434,16 @@ final class _ConversationColumn extends StatelessWidget {
                         ),
                       );
                     }
+                    if (summary != null && index == messages.length) {
+                      return _DecisionPanel(
+                        summary: summary!,
+                        onOpenEvidence: () {},
+                      );
+                    }
                     return _Bubble(message: messages[index]);
                   },
                 ),
         ),
-        if (summary != null)
-          _DecisionPanel(summary: summary!, onOpenEvidence: () {}),
         if (summary != null && summary!.partial)
           Padding(
             padding: const EdgeInsets.fromLTRB(

@@ -233,6 +233,13 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       });
       await tester.pump();
+      // 决策面板在消息列表末尾，测试视口需要先滚到底。
+      await tester.dragUntilVisible(
+        find.text('研判结论'),
+        find.byType(ListView).first,
+        const Offset(0, -200),
+      );
+      await tester.pump();
       // 用设计系统的结论面板：标题「研判结论」+ 过程指标一行。
       expect(find.text('研判结论'), findsOneWidget);
       expect(find.textContaining('模式：'), findsWidgets);
