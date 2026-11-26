@@ -8,6 +8,7 @@ import 'package:cbr_maw/app/app_scope.dart';
 import 'package:cbr_maw/app/app_state.dart';
 import 'package:cbr_maw/app/preferences.dart';
 import 'package:cbr_maw/app/ui.dart';
+import 'package:cbr_maw/app/widgets/common.dart' show MetricTile;
 import 'package:cbr_maw/features/investigation/investigation_page.dart';
 import 'package:cbr_maw/features/investigation/investigation_rules.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -221,6 +222,30 @@ void main() {
       await tester.pump();
       expect(find.textContaining('已中断'), findsWidgets);
       expect(find.text('我'), findsOneWidget);
+    });
+
+
+    testWidgets('研判完成后展示决策面板：主张/证据/冲突/降级/局限', (tester) async {
+      await pump(tester);
+      await tester.enterText(find.byType(TextField).first, '评估跨境风险');
+      await tester.tap(find.text('发送'));
+      // 冷流 + 真实 I/O 的完成需要跑真实时钟。
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+      expect(find.text('本次研判'), findsOneWidget);
+      expect(find.text('主张'), findsOneWidget);
+      expect(find.text('证据'), findsOneWidget);
+      expect(find.text('冲突'), findsOneWidget);
+      // 结论卡必须绑定证据：证据数 > 0。
+      final evidenceTile = tester.widget<MetricTile>(
+        find.ancestor(
+          of: find.text('证据'),
+          matching: find.byType(MetricTile),
+        ),
+      );
+      expect(int.parse(evidenceTile.value), greaterThan(0));
     });
 
     testWidgets('只读模式：研判入口置灰并说明原因', (tester) async {
