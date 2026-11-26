@@ -6,7 +6,8 @@ library;
 import 'dart:convert';
 
 import '../claims/claim_materializer.dart';
-import '../signals/kernel_reflection.dart' show ReflectionEvidence;
+import '../signals/kernel_reflection.dart'
+    show ReflectionEvidence, ReflectionPerformance;
 import '../claims/risk_level.dart';
 import '../llm/llm_channel.dart';
 import '../models/domain.dart';
@@ -29,6 +30,7 @@ final class RoleRunInput {
     this.peerFacts = const [],
     this.round = 0,
     this.reflection,
+    this.performance,
     this.weakEvidence = false,
   });
 
@@ -64,6 +66,9 @@ final class RoleRunInput {
 
   /// 跨时点反思（相似历史案例与事后走势）；null = 无反思。
   final ReflectionEvidence? reflection;
+
+  /// 预警效能复盘（我们过去报得准不准）；null = 不复盘。
+  final ReflectionPerformance? performance;
 
   /// 弱证据消融（docs/01 §2.3）：证据包**减少**但不伪造。
   ///
@@ -122,9 +127,13 @@ final class RoleAgent {
       peerFacts: input.peerFacts,
     );
     // 反思作为「参考」而非「证据」注入：它没有 evidence_id，不得被引为 claim 依据。
-    final user = input.reflection == null
+    final references = [
+      if (input.reflection != null) input.reflection!.render(),
+      if (input.performance != null) input.performance!.render(),
+    ];
+    final user = references.isEmpty
         ? basePrompt
-        : '$basePrompt\n\n${input.reflection!.render()}'
+        : '$basePrompt\n\n${references.join('\n')}'
               '（以上仅为历史归因参考，不是本次证据，不得作为 claim 的 evidence_ids）';
 
     final LlmResponse response;

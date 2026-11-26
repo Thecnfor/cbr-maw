@@ -41,6 +41,7 @@ final class AgentBootstrapFactory {
       judge: JevJudge(secrets: secrets),
       signalSource: KernelSignalSource(state.supervisor).read,
       reflectionSource: KernelReflection(state.supervisor).read,
+      deepReflectionSource: KernelDeepReflection(state.supervisor).read,
     );
     return InvestigationController(
       runtime: AgentRuntime(settings),

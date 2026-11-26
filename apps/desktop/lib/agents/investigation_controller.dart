@@ -7,7 +7,8 @@ library;
 import 'dart:async';
 
 import 'blackboard/evidence_blackboard.dart';
-import 'signals/kernel_reflection.dart' show ReflectionEvidence;
+import 'signals/kernel_reflection.dart'
+    show ReflectionEvidence, ReflectionPerformance;
 import 'budget/budget.dart';
 import 'claims/risk_level.dart';
 import 'conflict/conflict_loss.dart';
@@ -36,6 +37,7 @@ final class AgentSettings {
     this.roles,
     this.signalSource,
     this.reflectionSource,
+    this.deepReflectionSource,
     this.runHooks,
     this.ablation = const AblationFlags(),
   });
@@ -69,6 +71,10 @@ final class AgentSettings {
 
   /// 浅层反思来源（`X-AlertAgent` 外环）；null = 不做跨时点归因。
   final Future<ReflectionEvidence?> Function(DateTime asOf)? reflectionSource;
+
+  /// 深层反思来源（预警效能复盘）；null = 不复盘。
+  final Future<ReflectionPerformance?> Function(DateTime asOf)?
+  deepReflectionSource;
 
   /// 每轮研判的生命周期钩子（基准 harness 用于落盘决策卡与审计）。
   final RunHooks? runHooks;
@@ -112,8 +118,11 @@ final class AgentRuntime {
     // 跨时点反思：失败不阻断（反思是增强，不是结论前提）。
     // 消融开关关掉时**根本不调用**——这是消融实验能成立的前提：
     // 对照组不能只是「忽略结果」，必须是「没有发生」。
-    final reflection = settings.ablation.usesReflection
+    final reflection = settings.ablation.llrReflection
         ? await settings.reflectionSource?.call(asOf)
+        : null;
+    final performance = settings.ablation.hlrReflection
+        ? await settings.deepReflectionSource?.call(asOf)
         : null;
     final roles = settings.roles ?? settings.catalog.analyticalRoles;
     final guard = BudgetGuard(
@@ -170,6 +179,7 @@ final class AgentRuntime {
         signal: signal,
         guard: guard,
         reflection: reflection,
+        performance: performance,
       );
       if (single == null) {
         yield RunFailed(
@@ -206,6 +216,7 @@ final class AgentRuntime {
             signal: signal,
             signalRef: signal?.evidenceId,
             reflection: reflection,
+            performance: performance,
             weakEvidence:
                 settings.ablation.evidenceStrength == EvidenceStrength.weak,
           ),
@@ -559,6 +570,7 @@ final class AgentRuntime {
     required RiskSignal? signal,
     required BudgetGuard guard,
     ReflectionEvidence? reflection,
+    ReflectionPerformance? performance,
   }) async {
     final generator = settings.generator;
     if (generator == null) {
@@ -584,6 +596,7 @@ final class AgentRuntime {
           signal: signal,
           signalRef: signal?.evidenceId,
           reflection: reflection,
+          performance: performance,
           weakEvidence:
               settings.ablation.evidenceStrength == EvidenceStrength.weak,
         ),

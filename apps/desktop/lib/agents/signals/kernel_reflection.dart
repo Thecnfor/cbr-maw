@@ -74,6 +74,134 @@ final class KernelReflection {
   }
 }
 
+/// 深层反思（HLR）：预警效能复盘的**真实来源**。
+///
+/// 浅层反思回答「现在像历史上哪天」，深层反思回答「我们过去报得准不准」。
+/// 两者都是**参考**而非证据：没有 evidence_id，不得作为 claim 依据。
+final class KernelDeepReflection {
+  /// 创建来源。
+  const KernelDeepReflection(this.client);
+
+  /// sidecar 客户端。
+  final SidecarClient client;
+
+  /// 取 [asOf] 时点的效能复盘。
+  Future<ReflectionPerformance?> read(
+    DateTime asOf, {
+    int lookbackDays = 120,
+    int horizon = 20,
+  }) async {
+    final day = asOf.toUtc().toIso8601String().substring(0, 10);
+    final results = await client
+        .send('reflection.deep', {
+          'as_of': day,
+          'lookback_days': lookbackDays,
+          'horizon': horizon,
+        })
+        .toList();
+    final result = results.single;
+    return switch (result) {
+      Success(:final value) => _parse(value),
+      Failure() => null,
+    };
+  }
+
+  static ReflectionPerformance? _parse(Object? payload) {
+    if (payload is! Map<String, Object?>) {
+      return null;
+    }
+    final perf = payload['performance'];
+    final window = payload['window'];
+    if (perf is! Map<String, Object?> || window is! Map<String, Object?>) {
+      return null;
+    }
+    double? d(Map<String, Object?> map, String key) =>
+        (map[key] as num?)?.toDouble();
+    int? i(Map<String, Object?> map, String key) =>
+        (map[key] as num?)?.toInt();
+    return ReflectionPerformance(
+      evaluableDays: i(window, 'evaluable_days') ?? 0,
+      horizon: i(window, 'horizon') ?? 0,
+      alarms: i(perf, 'alarms') ?? 0,
+      hits: i(perf, 'hits') ?? 0,
+      falseAlarms: i(perf, 'false_alarms') ?? 0,
+      missed: i(perf, 'missed') ?? 0,
+      precision: d(perf, 'precision'),
+      recall: d(perf, 'recall'),
+      baseRate: d(perf, 'base_rate'),
+      lift: d(perf, 'lift'),
+    );
+  }
+}
+
+/// 预警效能复盘结果。
+final class ReflectionPerformance {
+  /// 创建结果。
+  const ReflectionPerformance({
+    required this.evaluableDays,
+    required this.horizon,
+    required this.alarms,
+    required this.hits,
+    required this.falseAlarms,
+    required this.missed,
+    this.precision,
+    this.recall,
+    this.baseRate,
+    this.lift,
+  });
+
+  /// 可评估天数。
+  final int evaluableDays;
+
+  /// 事后窗口（交易日）。
+  final int horizon;
+
+  /// 报警次数。
+  final int alarms;
+
+  /// 命中次数。
+  final int hits;
+
+  /// 误报次数。
+  final int falseAlarms;
+
+  /// 漏报次数。
+  final int missed;
+
+  /// 精确率。
+  final double? precision;
+
+  /// 召回率。
+  final double? recall;
+
+  /// 基准发生率。
+  final double? baseRate;
+
+  /// 相对基准的增益。
+  final double? lift;
+
+  /// 渲染成角色可读的一段文本。
+  String render() {
+    final buffer = StringBuffer(
+      '历史预警效能（近 $evaluableDays 个可评估时点，事后 $horizon 交易日）：\n',
+    );
+    if (precision != null) {
+      buffer.write('- 精确率 ${precision!.toStringAsFixed(3)}');
+    }
+    if (recall != null) {
+      buffer.write('，召回率 ${recall!.toStringAsFixed(3)}');
+    }
+    if (lift != null) {
+      buffer.write('，相对基准增益 ${lift!.toStringAsFixed(3)}×');
+    }
+    buffer.write('\n- 报警 $alarms 次（命中 $hits / 误报 $falseAlarms），漏报 $missed 次\n');
+    if (baseRate != null) {
+      buffer.write('- 同期压力基准发生率 ${(baseRate! * 100).toStringAsFixed(1)}%\n');
+    }
+    return buffer.toString();
+  }
+}
+
 /// 一条历史相似案例。
 final class ReflectionCase {
   /// 创建案例。
