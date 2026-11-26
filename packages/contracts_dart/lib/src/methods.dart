@@ -169,6 +169,27 @@ enum DbView {
   }
 }
 
+/// 契约枚举 SortOrder（字面量与 JSON 一致）。
+enum SortOrder {
+  asc('asc'),
+  desc('desc');
+
+  const SortOrder(this.wire);
+
+  /// JSON 字面量。
+  final String wire;
+
+  /// 从 JSON 字面量解析（解析即校验）。
+  static SortOrder parse(String raw) {
+    for (final value in values) {
+      if (value.wire == raw) {
+        return value;
+      }
+    }
+    throw ContractFormatException('非法枚举取值：$raw');
+  }
+}
+
 /// 契约枚举 HashKind（字面量与 JSON 一致）。
 enum HashKind {
   inputsHash('inputs_hash'),
@@ -1528,6 +1549,7 @@ final class DbQueryParams extends RpcParams {
     this.filters,
     required this.asOf,
     this.limit,
+    this.order,
   });
 
   /// 从 JSON 对象解析（解析即校验）。
@@ -1538,6 +1560,10 @@ final class DbQueryParams extends RpcParams {
       filters: r.objOpt('filters'),
       asOf: r.str('as_of'),
       limit: r.integerOpt('limit'),
+      order: switch (r.strOpt('order')) {
+        null => null,
+        final v => SortOrder.parse(v),
+      },
     );
   }
 
@@ -1556,12 +1582,16 @@ final class DbQueryParams extends RpcParams {
   /// 返回行上限
   final int? limit;
 
+  /// 排序方向；默认升序。取「最近 N 条」时用 desc。
+  final SortOrder? order;
+
   @override
   Map<String, Object?> toJson() => {
     'view': view.wire,
     'filters': filters,
     'as_of': asOf,
     'limit': limit,
+    'order': order?.wire,
   };
 }
 

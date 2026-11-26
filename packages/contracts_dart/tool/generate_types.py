@@ -49,6 +49,7 @@ ENUM_NAMES = {
     ("price", "return"): "ToolValuesAre",
     ("pct", "bp"): "ToolSpreadUnit",
     ("linear", "historical", "both"): "ToolScenarioMethod",
+    ("asc", "desc"): "SortOrder",
 }
 
 
@@ -291,7 +292,8 @@ def gen_method_class(class_name, fields, reg, method, kind, base_class):
         decls.append("  final %s %s;" % (t, prop))
         args.append("      %s: %s," % (prop, expr))
         if is_enum:
-            tojson.append("    '%s': %s.wire," % (name, prop))
+            # 可选枚举要空安全：`order.wire` 在 null 时直接抛 NoSuchMethod。
+            tojson.append("    '%s': %s%s," % (name, prop, "?.wire" if nullable else ".wire"))
         else:
             tojson.append("    '%s': %s," % (name, prop))
     lines = ["/// `%s` %s。" % (method, kind)]

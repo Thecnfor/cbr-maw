@@ -295,7 +295,12 @@ impl Kernel {
             .unwrap_or(1000)
             .max(1) as usize;
         let filters = params.get("filters");
-        db::query(self.workspace()?, view, filters, as_of, limit)
+        let descending = params
+            .get("order")
+            .and_then(|v| v.as_str())
+            .map(|v| v == "desc")
+            .unwrap_or(false);
+        db::query_ordered(self.workspace()?, view, filters, as_of, limit, descending)
     }
 
     fn db_write(&mut self, params: &Value) -> Result<Value> {

@@ -276,13 +276,14 @@ Future<Map<String, Object?>> _runArmA({
   final panel = <String, Object?>{};
   final stale = <String, String>{};
   for (final series in _panelSeries) {
-    // 故意不带 as_of：取该序列「最新」读数。
+    // 故意不带 as_of 约束 + 降序：取该序列「最新」读数（A 组的定义性特征）。
     final results = await supervisor
         .send('db.query', {
           'view': 'pit_observations',
           'as_of': '2099-12-31',
           'filters': {'series_id': series},
           'limit': 1,
+          'order': 'desc',
         })
         .toList();
     final result = results.single;

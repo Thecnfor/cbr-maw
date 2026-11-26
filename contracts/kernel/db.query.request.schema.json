@@ -62,6 +62,15 @@
           "maximum": 100000,
           "default": 1000,
           "description": "返回行上限"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "asc",
+          "description": "排序方向；默认升序。取「最近 N 条」时用 desc。"
         }
       },
       "required": [

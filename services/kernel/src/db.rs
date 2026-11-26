@@ -169,6 +169,22 @@ pub fn query(
     as_of: &str,
     limit: usize,
 ) -> Result<Value> {
+    query_ordered(ws, view, filters, as_of, limit, false)
+}
+
+/// 同 [`query`]，可指定降序。
+///
+/// 默认升序 + LIMIT 只能拿到「最早的 N 条」——时间线、反思回看这类
+/// 「最近 N 条」的用法完全取不到数据。降序是既有视图的通用需求，
+/// 因此放在查询层而不是为每个视图另开一个 view。
+pub fn query_ordered(
+    ws: &Workspace,
+    view: &str,
+    filters: Option<&Value>,
+    as_of: &str,
+    limit: usize,
+    descending: bool,
+) -> Result<Value> {
     let spec = spec_for(view).ok_or_else(|| {
         KernelError::new(ErrorKind::InvalidParams, "参数不合法").with_detail(json!({
             "reason": "view 不在白名单内",
@@ -227,12 +243,20 @@ pub fn query(
         format!(" WHERE {}", clauses.join(" AND "))
     };
     let effective_limit = limit.clamp(1, 100_000);
+    let order = if descending {
+        spec.order_by
+            .strip_suffix(" ASC")
+            .map(|base| format!("{base} DESC"))
+            .unwrap_or_else(|| format!("{} DESC", spec.order_by))
+    } else {
+        spec.order_by.to_string()
+    };
     // 多取一行用于判断 truncated
     let sql = format!(
         "SELECT * FROM {} {} ORDER BY {} LIMIT {}",
         spec.source,
         where_clause,
-        spec.order_by,
+        order,
         effective_limit + 1
     );
 
@@ -483,6 +507,26 @@ mod tests {
         let end = json!({"end": "2026-06-30"});
         let result = query(&ws, "pit_observations", Some(&end), "2026-12-31", 100).unwrap();
         assert_eq!(result["rows"].as_array().unwrap().len(), 2);
+        drop(ws);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn query_descending_returns_latest_rows() {
+        // 默认升序 + LIMIT 只能拿最早的 N 条，「最近 N 条」的用法取不到数据。
+        let (ws, path) = temp_ws("desc");
+        ws.conn
+            .execute_batch(
+                "INSERT INTO series_obs VALUES \
+                 ('market.cn_equity.csi300', '2026-06-29', 4000.0, '2026-06-29 10:00:00', 't', '点'), \
+                 ('market.cn_equity.csi300', '2026-06-30', 4025.0, '2026-06-30 10:00:00', 't', '点'), \
+                 ('market.cn_equity.csi300', '2026-07-01', 4050.0, '2026-07-01 10:00:00', 't', '点');",
+            )
+            .unwrap();
+        let asc = query_ordered(&ws, "pit_observations", None, "2026-12-31", 1, false).unwrap();
+        assert_eq!(asc["rows"][0][1], "2026-06-29");
+        let desc = query_ordered(&ws, "pit_observations", None, "2026-12-31", 1, true).unwrap();
+        assert_eq!(desc["rows"][0][1], "2026-07-01", "降序必须给最新一条");
         drop(ws);
         let _ = std::fs::remove_file(path);
     }
