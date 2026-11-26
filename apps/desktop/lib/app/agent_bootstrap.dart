@@ -7,6 +7,7 @@ import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
 import '../core/clock.dart';
 import '../data/gate/tool_invoker.dart';
+import '../data/signal_source.dart';
 import 'app_state.dart';
 
 /// 研判控制器装配（外壳 → Agent 编排）。
@@ -37,6 +38,7 @@ final class AgentBootstrapFactory {
         timeout: Duration(seconds: state.config.llmTimeoutSeconds),
       ),
       judge: JevJudge(secrets: secrets),
+      signalSource: KernelSignalSource(state.supervisor).read,
     );
     return InvestigationController(
       runtime: AgentRuntime(settings),
@@ -86,6 +88,7 @@ final class _GatedToolInvoker implements ToolInvoker {
       role: role,
       tool: tool,
       params: params,
+      asOf: asOf,
       idempotencyKey:
           '${tool}_${asOf}_${DateTime.now().microsecondsSinceEpoch}',
     );

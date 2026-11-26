@@ -32,6 +32,8 @@ final class AgentSettings {
     this.judge,
     this.defaultMode = CollaborationMode.collaborative,
     this.roles,
+    this.signalSource,
+    this.runHooks,
   });
 
   /// 角色与编排配置。
@@ -54,6 +56,24 @@ final class AgentSettings {
 
   /// 参与角色（缺省 = 三主体）。
   final List<RoleId>? roles;
+
+  /// 共享风险信号来源（生产由 kernel `signal.compute` 提供；测试/基准可注入）。
+  ///
+  /// 返回 null 表示该时点无可用信号——按零 Mock 规则如实记为「信号缺失」，
+  /// **不得**用合成概率填充。
+  final Future<RiskSignal?> Function(DateTime asOf)? signalSource;
+
+  /// 每轮研判的生命周期钩子（基准 harness 用于落盘决策卡与审计）。
+  final RunHooks? runHooks;
+}
+
+/// 每轮研判的生命周期钩子。
+final class RunHooks {
+  /// 创建钩子。
+  const RunHooks({this.onDecision});
+
+  /// 拿到最终决策卡（在 `RunFinished` 之前调用）。
+  final void Function(DecisionCard decision)? onDecision;
 }
 
 /// Agent 运行时（编排器本体）。
@@ -78,6 +98,7 @@ final class AgentRuntime {
     bool cancelled() => isCancelled?.call(cancelToken ?? '') ?? false;
     final flags = ModeFlags.of(mode);
     final specs = settings.catalog.specs;
+    signal ??= await settings.signalSource?.call(asOf);
     final roles = settings.roles ?? settings.catalog.analyticalRoles;
     final guard = BudgetGuard(
       perRole: RoleBudget.fromSettings(settings.catalog.orchestration),
@@ -379,6 +400,8 @@ final class AgentRuntime {
       partial: partial,
     );
 
+    settings.runHooks?.onDecision?.call(decision);
+
     yield AgentActivity(runId, 'coordinator', 'verification', {
       'passed': report.passed,
       'numericErrorRate': report.numericErrorRate,
@@ -569,7 +592,7 @@ final class AgentRuntime {
           user: user,
           purpose: 'cross_validation:${role.wire}',
         );
-        guard.chargeTokens(0, response.usage.total);
+        guard.chargeTokens(null, response.usage.total);
         final peerIds = peers.map((p) => p.evidenceId).toSet();
         final findings = parseFindings(response.json['findings'])
             .where((f) => peerIds.contains(f.evidenceId))

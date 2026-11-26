@@ -168,13 +168,13 @@ final class BudgetGuard {
   }
 
   /// 记录 token（超出上限时截断，返回实际计入量）。
-  int chargeTokens(int slot, int raw) {
+  int chargeTokens(int? slot, int raw) {
     if (raw <= 0) {
       return 0;
     }
-    final budget = _remaining[slot];
+    final budget = slot == null ? null : _remaining[slot];
     final allowed = budget == null ? raw : raw.clamp(0, budget.maxTokens);
-    if (budget != null) {
+    if (budget != null && slot != null) {
       _remaining[slot] = budget.minus(tokens: allowed);
     }
     if (allowed < raw) {

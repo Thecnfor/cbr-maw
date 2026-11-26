@@ -79,6 +79,7 @@ final class GatedToolInvoker {
     required String tool,
     required Map<String, Object?> params,
     required String idempotencyKey,
+    String? asOf,
     bool confirmed = false,
   }) async {
     final decision = gate.authorize(role: role, tool: tool, params: params);
@@ -104,7 +105,8 @@ final class GatedToolInvoker {
           'tools.invoke',
           ToolsInvokeParams(
             tool: ToolName.parse(tool),
-            params: params,
+            // PIT：as_of 必须进 params，kernel 缺省会回落到「今天」。
+            params: asOf == null ? params : {...params, 'as_of': asOf},
             idempotencyKey: idempotencyKey,
           ).toJson(),
           ToolsInvokeResult.parse,
