@@ -6,6 +6,7 @@ library;
 import 'dart:convert';
 
 import '../claims/claim_materializer.dart';
+import '../signals/kernel_reflection.dart' show ReflectionEvidence;
 import '../claims/risk_level.dart';
 import '../llm/llm_channel.dart';
 import '../models/domain.dart';
@@ -27,6 +28,7 @@ final class RoleRunInput {
     required this.signalRef,
     this.peerFacts = const [],
     this.round = 0,
+    this.reflection,
   });
 
   /// run id。
@@ -58,6 +60,9 @@ final class RoleRunInput {
 
   /// 轮次。
   final int round;
+
+  /// 跨时点反思（相似历史案例与事后走势）；null = 无反思。
+  final ReflectionEvidence? reflection;
 }
 
 /// 角色智能体。
@@ -99,12 +104,17 @@ final class RoleAgent {
     }
 
     final system = prompts.renderRoleWithSpec(input.spec);
-    final user = buildEvidencePrompt(
+    final basePrompt = buildEvidencePrompt(
       asOf: input.asOf,
       task: input.task,
       evidence: input.evidence,
       peerFacts: input.peerFacts,
     );
+    // 反思作为「参考」而非「证据」注入：它没有 evidence_id，不得被引为 claim 依据。
+    final user = input.reflection == null
+        ? basePrompt
+        : '$basePrompt\n\n${input.reflection!.render()}'
+              '（以上仅为历史归因参考，不是本次证据，不得作为 claim 的 evidence_ids）';
 
     final LlmResponse response;
     try {

@@ -7,6 +7,7 @@ import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
 import '../core/clock.dart';
 import '../data/gate/tool_invoker.dart';
+import '../agents/signals/kernel_reflection.dart';
 import '../agents/signals/kernel_signal_source.dart';
 import 'app_state.dart';
 
@@ -39,6 +40,7 @@ final class AgentBootstrapFactory {
       ),
       judge: JevJudge(secrets: secrets),
       signalSource: KernelSignalSource(state.supervisor).read,
+      reflectionSource: KernelReflection(state.supervisor).read,
     );
     return InvestigationController(
       runtime: AgentRuntime(settings),

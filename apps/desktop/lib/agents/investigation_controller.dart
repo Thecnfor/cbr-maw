@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 
 import 'blackboard/evidence_blackboard.dart';
+import 'signals/kernel_reflection.dart' show ReflectionEvidence;
 import 'budget/budget.dart';
 import 'claims/risk_level.dart';
 import 'conflict/conflict_arbitrator.dart';
@@ -33,6 +34,7 @@ final class AgentSettings {
     this.defaultMode = CollaborationMode.collaborative,
     this.roles,
     this.signalSource,
+    this.reflectionSource,
     this.runHooks,
   });
 
@@ -62,6 +64,9 @@ final class AgentSettings {
   /// 返回 null 表示该时点无可用信号——按零 Mock 规则如实记为「信号缺失」，
   /// **不得**用合成概率填充。
   final Future<RiskSignal?> Function(DateTime asOf)? signalSource;
+
+  /// 浅层反思来源（`X-AlertAgent` 外环）；null = 不做跨时点归因。
+  final Future<ReflectionEvidence?> Function(DateTime asOf)? reflectionSource;
 
   /// 每轮研判的生命周期钩子（基准 harness 用于落盘决策卡与审计）。
   final RunHooks? runHooks;
@@ -99,6 +104,8 @@ final class AgentRuntime {
     final flags = ModeFlags.of(mode);
     final specs = settings.catalog.specs;
     signal ??= await settings.signalSource?.call(asOf);
+    // 跨时点反思：失败不阻断（反思是增强，不是结论前提）。
+    final reflection = await settings.reflectionSource?.call(asOf);
     final roles = settings.roles ?? settings.catalog.analyticalRoles;
     final guard = BudgetGuard(
       perRole: RoleBudget.fromSettings(settings.catalog.orchestration),
@@ -153,6 +160,7 @@ final class AgentRuntime {
         evidence: gathered.evidence,
         signal: signal,
         guard: guard,
+        reflection: reflection,
       );
       if (single == null) {
         yield RunFailed(
@@ -188,6 +196,7 @@ final class AgentRuntime {
             evidence: gathered.evidence,
             signal: signal,
             signalRef: signal?.evidenceId,
+            reflection: reflection,
           ),
         );
         // 角色自己的生成 token 必须计费：否则 single / independent 臂的
@@ -533,6 +542,7 @@ final class AgentRuntime {
     required List<Evidence> evidence,
     required RiskSignal? signal,
     required BudgetGuard guard,
+    ReflectionEvidence? reflection,
   }) async {
     final generator = settings.generator;
     if (generator == null) {
@@ -557,6 +567,7 @@ final class AgentRuntime {
           evidence: evidence,
           signal: signal,
           signalRef: signal?.evidenceId,
+          reflection: reflection,
         ),
       );
       guard.chargeTokens(roles.indexOf(role), output.tokens.total);
