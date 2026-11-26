@@ -8,7 +8,6 @@ import 'package:cbr_maw/app/app_scope.dart';
 import 'package:cbr_maw/app/app_state.dart';
 import 'package:cbr_maw/app/preferences.dart';
 import 'package:cbr_maw/app/ui.dart';
-import 'package:cbr_maw/app/widgets/common.dart' show MetricTile;
 import 'package:cbr_maw/features/investigation/investigation_page.dart';
 import 'package:cbr_maw/features/investigation/investigation_rules.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -234,18 +233,19 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       });
       await tester.pump();
-      expect(find.text('本次研判'), findsOneWidget);
-      expect(find.text('主张'), findsOneWidget);
-      expect(find.text('证据'), findsOneWidget);
-      expect(find.text('冲突'), findsOneWidget);
-      // 结论卡必须绑定证据：证据数 > 0。
-      final evidenceTile = tester.widget<MetricTile>(
-        find.ancestor(
-          of: find.text('证据'),
-          matching: find.byType(MetricTile),
-        ),
+      // 用设计系统的结论面板：标题「研判结论」+ 过程指标一行。
+      expect(find.text('研判结论'), findsOneWidget);
+      expect(find.textContaining('模式：'), findsWidgets);
+      // 结论卡必须绑定证据：过程指标里证据数 > 0。
+      expect(find.textContaining('证据 '), findsOneWidget);
+      final supports = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? '')
+          .firstWhere((d) => d.contains('证据 '));
+      final evidenceCount = int.parse(
+        RegExp(r'证据 (\d+) 条').firstMatch(supports)!.group(1)!,
       );
-      expect(int.parse(evidenceTile.value), greaterThan(0));
+      expect(evidenceCount, greaterThan(0));
     });
 
     testWidgets('只读模式：研判入口置灰并说明原因', (tester) async {

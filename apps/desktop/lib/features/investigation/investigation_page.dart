@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:cbr_maw_contracts/contracts_dart.dart' show ToolRiskLevel;
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrDecisionPanel, CbrRiskLevel, CbrSpace;
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart'
@@ -17,7 +19,7 @@ import '../../app/theme/theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/ui.dart';
 import '../../app/widgets/chips.dart';
-import '../../app/widgets/common.dart' show MetricTile;
+
 
 import '../../app/widgets/states.dart';
 import '../../app/widgets/synthetic.dart';
@@ -894,9 +896,8 @@ final class _ChatMessage {
 
 /// 本次研判的决策面板：把协同过程指标摆到台面上。
 ///
-/// 这些数字（主张/证据/冲突/降级/token/成本）此前只落审计、不上面，
-/// 用户看不到"这次研判花了多少、几方分歧、是否降级"——那正是本产品
-/// 相对单模型直答的可审计性所在（docs/02 F5、docs/08 §5）。
+/// 用设计系统的 `CbrDecisionPanel`（唯一视觉真源），而不是在这里再手搓一套
+/// 卡片——app 侧自绘会让同一产品出现两种「结论卡」外观（docs/12 P1-5）。
 final class _DecisionPanel extends StatelessWidget {
   const _DecisionPanel({required this.summary, required this.onOpenEvidence});
 
@@ -905,8 +906,6 @@ final class _DecisionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = SemanticColors.of(context);
     final modeLabel = switch (summary.mode) {
       'single' => '单智能体',
       'independent' => '独立分析',
@@ -914,96 +913,36 @@ final class _DecisionPanel extends StatelessWidget {
       'demo' => '演示',
       _ => summary.mode,
     };
+    final supports = <String>[
+      '模式：$modeLabel',
+      '主张 ${summary.claimIds.length} 条 · 证据 ${summary.evidenceIds.length} 条'
+          ' · 冲突 ${summary.conflictIds.length} 处',
+      '消耗 ${summary.tokensUsed} token'
+          '${summary.costUsd > 0 ? '（≈ \$${summary.costUsd.toStringAsFixed(4)}）' : ''}',
+      if (summary.degradedRoles.isNotEmpty)
+        '降级角色：${summary.degradedRoles.map(roleLabel).join('、')}（该角色本轮未出卡）',
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        Tokens.space4,
+        CbrSpace.s5,
         0,
-        Tokens.space4,
-        Tokens.space2,
+        CbrSpace.s5,
+        CbrSpace.s3,
       ),
-      child: Container(
-        padding: const EdgeInsets.all(Tokens.space3),
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(Tokens.radiusCard),
-          border: Border.all(
-            color: theme.dividerTheme.color ?? theme.colorScheme.outline,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('本次研判', style: theme.textTheme.titleSmall),
-                const SizedBox(width: Tokens.space2),
-                RiskLevelBadge(
-                  level: riskLevelFromWire(summary.riskLevel),
-                ),
-                const Spacer(),
-                Text(
-                  modeLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Tokens.space2),
-            Wrap(
-              spacing: Tokens.space2,
-              runSpacing: Tokens.space2,
-              children: [
-                MetricTile(label: '主张', value: '${summary.claimIds.length}'),
-                MetricTile(label: '证据', value: '${summary.evidenceIds.length}'),
-                MetricTile(
-                  label: '冲突',
-                  value: '${summary.conflictIds.length}',
-                  tone: summary.conflictIds.isEmpty ? null : BannerTone.warn,
-                ),
-                MetricTile(
-                  label: 'token',
-                  value: '${summary.tokensUsed}',
-                  hint: summary.costUsd > 0
-                      ? '≈ \$${summary.costUsd.toStringAsFixed(4)}'
-                      : null,
-                ),
-              ],
-            ),
-            if (summary.degradedRoles.isNotEmpty) ...[
-              const SizedBox(height: Tokens.space2),
-              Text(
-                '降级角色：${summary.degradedRoles.map(roleLabel).join('、')}'
-                '（该角色本轮未出卡，其余结论照常核验）',
-                style: TextStyle(fontSize: 12, color: colors.warnInk),
-              ),
-            ],
-            if (summary.limitations.isNotEmpty) ...[
-              const SizedBox(height: Tokens.space2),
-              Text(
-                '局限',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              for (final item in summary.limitations.take(3))
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '· $item',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-            ],
-          ],
-        ),
+      child: CbrDecisionPanel(
+        conclusion: '风险等级 ${RiskLevelBadge.labelOf(riskLevelFromWire(summary.riskLevel))}'
+            '${summary.partial ? '（部分结论）' : ''}',
+        riskLevel: _cbrLevel(summary.riskLevel),
+        supports: supports,
+        limitations: summary.limitations.take(3).toList(),
       ),
     );
   }
+
+  static CbrRiskLevel _cbrLevel(String wire) => switch (wire) {
+    'critical' => CbrRiskLevel.critical,
+    'high' => CbrRiskLevel.high,
+    'medium' => CbrRiskLevel.medium,
+    _ => CbrRiskLevel.low,
+  };
 }
