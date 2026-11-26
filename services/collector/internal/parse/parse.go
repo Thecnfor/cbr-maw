@@ -165,6 +165,13 @@ func Normalize(rows []RawRow, seriesID, unit, source, evidenceID string, dateFor
 			dropped++
 			continue
 		}
+		// 铁律 1（1 组 1028）：删周六复制行。
+		// 交易所周末休市，来源在周六重复周五收盘值是常见脏数据形态；
+		// 保留它会让周频统计把同一交易日算两次。
+		if obsDate.Weekday() == time.Saturday && weekendCopySeries(seriesID) {
+			dropped++
+			continue
+		}
 		key := obsDate.Format("2006-01-02")
 		obs := Observation{
 			SeriesID:    seriesID,
@@ -184,6 +191,16 @@ func Normalize(rows []RawRow, seriesID, unit, source, evidenceID string, dateFor
 		out = append(out, obs)
 	}
 	return out, dropped
+}
+
+// weekendCopySeries 判断该序列是否适用「删周六复制行」铁律。
+//
+// 只对交易日历类序列生效：宏观月频/政策文本本来就没有「交易日」概念，
+// 周六发布是正常现象，不能删。
+func weekendCopySeries(seriesID string) bool {
+	return strings.HasPrefix(seriesID, "market.") ||
+		strings.HasPrefix(seriesID, "crossborder.") ||
+		strings.HasPrefix(seriesID, "rates.")
 }
 
 // rssDoc 是 RSS 2.0 / Atom 的兼容结构。

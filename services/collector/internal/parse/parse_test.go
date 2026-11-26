@@ -73,6 +73,30 @@ func TestNormalizeDedupe(t *testing.T) {
 	}
 }
 
+// TestNormalizeDropsSaturdayCopy 铁律 1：删周六复制行。
+func TestNormalizeDropsSaturdayCopy(t *testing.T) {
+	rows := []RawRow{
+		{Date: "2026-11-06", Value: "100"}, // 周五
+		{Date: "2026-11-07", Value: "100"}, // 周六：复制周五收盘
+		{Date: "2026-11-09", Value: "101"}, // 周一
+	}
+	rel := func(d time.Time) (time.Time, error) { return d, nil }
+	obs, dropped := Normalize(rows, "market.cn_equity.csi300", "点", "t", "ev", "", 1, rel, "test")
+	if len(obs) != 2 || dropped != 1 {
+		t.Fatalf("obs=%d dropped=%d, want 2/1", len(obs), dropped)
+	}
+	for _, o := range obs {
+		if o.ObsDate == "2026-11-07" {
+			t.Fatal("周六复制行必须删除")
+		}
+	}
+	// 非交易日类序列（政策/月频）周六发布是正常的，不能删。
+	obs2, dropped2 := Normalize(rows, "policy.news", "条", "t", "ev", "", 1, rel, "test")
+	if len(obs2) != 3 || dropped2 != 0 {
+		t.Fatalf("policy 序列不得套用交易日铁律: obs=%d dropped=%d", len(obs2), dropped2)
+	}
+}
+
 // TestParseRSS 文档行。
 func TestParseRSS(t *testing.T) {
 	body := []byte(`<?xml version="1.0"?><rss version="2.0"><channel>
