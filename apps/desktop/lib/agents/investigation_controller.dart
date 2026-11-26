@@ -206,6 +206,8 @@ final class AgentRuntime {
             signal: signal,
             signalRef: signal?.evidenceId,
             reflection: reflection,
+            weakEvidence:
+                settings.ablation.evidenceStrength == EvidenceStrength.weak,
           ),
         );
         // 角色自己的生成 token 必须计费：否则 single / independent 臂的
@@ -582,6 +584,8 @@ final class AgentRuntime {
           signal: signal,
           signalRef: signal?.evidenceId,
           reflection: reflection,
+          weakEvidence:
+              settings.ablation.evidenceStrength == EvidenceStrength.weak,
         ),
       );
       guard.chargeTokens(roles.indexOf(role), output.tokens.total);

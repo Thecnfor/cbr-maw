@@ -29,6 +29,7 @@ final class RoleRunInput {
     this.peerFacts = const [],
     this.round = 0,
     this.reflection,
+    this.weakEvidence = false,
   });
 
   /// run id。
@@ -63,6 +64,13 @@ final class RoleRunInput {
 
   /// 跨时点反思（相似历史案例与事后走势）；null = 无反思。
   final ReflectionEvidence? reflection;
+
+  /// 弱证据消融（docs/01 §2.3）：证据包**减少**但不伪造。
+  ///
+  /// 只保留数值证据的前 2 条、去掉知识库证据，用来测量模型在证据不足时
+  /// 会不会编造数字——这是「幻觉率」唯一可测的方式。绝不删除证据后
+  /// 用占位值填充。
+  final bool weakEvidence;
 }
 
 /// 角色智能体。
@@ -104,10 +112,13 @@ final class RoleAgent {
     }
 
     final system = prompts.renderRoleWithSpec(input.spec);
+    final visibleEvidence = input.weakEvidence
+        ? _weaken(input.evidence)
+        : input.evidence;
     final basePrompt = buildEvidencePrompt(
       asOf: input.asOf,
       task: input.task,
-      evidence: input.evidence,
+      evidence: visibleEvidence,
       peerFacts: input.peerFacts,
     );
     // 反思作为「参考」而非「证据」注入：它没有 evidence_id，不得被引为 claim 依据。
@@ -208,6 +219,12 @@ final class RoleAgent {
       numericMismatches: materialized.numericMismatches,
       llmAssessment: _assessment(response.json['risk_level_assessment']),
     );
+  }
+
+  /// 弱证据：数值证据只留前 2 条、知识库证据全部移除。
+  static List<Evidence> _weaken(List<Evidence> evidence) {
+    final numeric = evidence.where((e) => e.value != null).take(2);
+    return numeric.toList(growable: false);
   }
 
   /// 解析 LLM 自评等级（非法值按 null 处理，不猜）。
