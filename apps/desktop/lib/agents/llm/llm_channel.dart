@@ -44,6 +44,7 @@ enum LlmFailureCode {
   timeout('timeout'),
   rateLimited('rateLimited'),
   invalidOutput('invalidOutput'),
+  truncated('truncated'),
   unavailable('unavailable');
 
   const LlmFailureCode(this.wire);
@@ -139,6 +140,7 @@ final class DeepSeekGenerator implements TextGenerator {
     this.timeout = const Duration(seconds: 60),
     this.maxRetries = 2,
     this.secretKey = 'DEEPSEEK_API_KEY',
+    this.extraBody = const {},
   }) : _secrets = secrets, // ignore: prefer_initializing_formals
        _dio =
            dio ??
@@ -173,6 +175,13 @@ final class DeepSeekGenerator implements TextGenerator {
   /// 密钥名。
   final String secretKey;
 
+  /// 厂商特有的附加请求字段（原样并入请求体）。
+  ///
+  /// 例如推理型模型的 `{'reasoning_effort': 'low'}`：思维链会挤占
+  /// `max_tokens`，在出结论前就耗尽预算。字段各家不同，故做成可注入的
+  /// 映射而不是硬编码（docs/09 §3：不猜厂商行为）。
+  final Map<String, Object?> extraBody;
+
   @override
   Future<LlmResponse> generateJson({
     required String system,
@@ -205,6 +214,7 @@ final class DeepSeekGenerator implements TextGenerator {
                 'temperature': temperature,
                 'max_tokens': maxTokens,
                 'response_format': {'type': 'json_object'},
+                ...extraBody,
                 'messages': [
                   {'role': 'system', 'content': system},
                   {'role': 'user', 'content': user},
@@ -290,10 +300,24 @@ final class DeepSeekGenerator implements TextGenerator {
         message: '模型返回空结果。',
       );
     }
-    final message =
-        (choices.first as Map<String, Object?>)['message']
-            as Map<String, Object?>?;
+    final choice = choices.first as Map<String, Object?>;
+    final message = choice['message'] as Map<String, Object?>?;
     final content = message?['content'] as String? ?? '';
+    // 推理型模型会先烧 reasoning tokens；撞 max_tokens 时 content 可能为空。
+    // 这不是「输出格式错」，重试也没用——必须显式报截断，让调用方提高预算。
+    if (choice['finish_reason'] == 'length' && content.trim().isEmpty) {
+      final completion =
+          ((data?['usage'] as Map<String, Object?>?)?['completion_tokens']
+                  as num?)
+              ?.toInt() ??
+          0;
+      throw LlmFailure(
+        code: LlmFailureCode.truncated,
+        message:
+            '模型在输出结论前耗尽 $completion token 预算（推理过程占满 max_tokens）。'
+            '请在设置页提高单次生成上限后重试。',
+      );
+    }
     final Object? decoded;
     try {
       decoded = jsonDecode(_stripFence(content));

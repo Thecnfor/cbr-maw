@@ -1,4 +1,4 @@
-import 'package:cbr_maw/agents/models/domain.dart';
+import '../models/domain.dart';
 import 'package:cbr_maw_contracts/contracts_dart.dart'
     show Failure, SidecarClient, Success;
 

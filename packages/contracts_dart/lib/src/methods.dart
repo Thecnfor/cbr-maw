@@ -199,7 +199,9 @@ enum ToolName {
   fundingCost('funding_cost'),
   scenario('scenario'),
   forecast('forecast'),
-  knowledgeSearch('knowledge_search');
+  knowledgeSearch('knowledge_search'),
+  dimensionDispersion('dimension_dispersion'),
+  capitalLinkage('capital_linkage');
 
   const ToolName(this.wire);
 

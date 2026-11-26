@@ -8,7 +8,7 @@
 // ignore_for_file: avoid_print
 import 'dart:io';
 
-import 'package:cbr_maw_contracts/contracts_dart.dart' show toolRegistry;
+import 'package:cbr_maw_contracts/contracts_dart.dart' show ToolSpec, toolRegistry;
 import 'package:json_schema/json_schema.dart';
 import 'package:path/path.dart' as p;
 
@@ -232,7 +232,35 @@ void main(List<String> args) {
     } else {
       errors.add('缺少 contracts/kernel/tools.invoke.request.schema.json');
     }
-    print('工具注册表 ${tools.length} 条，params schema 引用与 invoke 枚举已核对');
+    // Rust 侧工具登记表必须与契约一致（docs/12 P2-2：三方工具表一致）。
+    errors.addAll(_rustToolRegistryMismatches(root, tools));
+    print('工具注册表 ${tools.length} 条，params schema 引用、invoke 枚举与 Rust 登记表已核对');
+  }
+
+  section('[3b] 生成代码防漂移');
+  {
+    // packages/contracts_dart 是契约的生成物：真源改动后必须重跑生成器，
+    // 否则 Dart 侧常量会静默落后于契约（本次漂移就漏掉了两个新工具）。
+    final generated = File(
+      p.join(root.path, 'packages/contracts_dart/lib/src/methods.dart'),
+    );
+    final generator = File(
+      p.join(root.path, 'packages/contracts_dart/tool/generate_types.py'),
+    );
+    if (!generated.existsSync() || !generator.existsSync()) {
+      errors.add('缺少契约生成物或生成器（packages/contracts_dart）');
+    } else {
+      final stale = _staleGeneratedNames(generated, toolRegistry);
+      for (final item in stale) {
+        errors.add('生成物漂移：$item');
+      }
+      checked += stale.isEmpty ? 1 : 0;
+      print(
+        stale.isEmpty
+            ? '生成物与契约一致（工具枚举 ${toolRegistry.length} 项）'
+            : '生成物落后于契约：${stale.length} 项',
+      );
+    }
   }
 
   section('[4] 版本一致性');
@@ -257,4 +285,74 @@ void main(List<String> args) {
   }
 
   finish(errors, checked + exampleCount, 'contracts 校验');
+}
+
+/// Rust 侧 `TOOL_REGISTRY` 必须与契约工具表一致（docs/12 P2-2）。
+///
+/// 三方（contracts/tools/tools.json · Rust · Dart）任一漂移都会让新工具
+/// 在某一侧不可用——本次漂移就使 `dimension_dispersion` / `capital_linkage`
+/// 在 Dart 侧 `ToolName.parse` 直接抛错。
+List<String> _rustToolRegistryMismatches(Directory root, List<Map<String, Object?>> tools) {
+  final file = File(p.join(root.path, 'services/kernel/src/tools/mod.rs'));
+  if (!file.existsSync()) {
+    return const ['缺少 services/kernel/src/tools/mod.rs（Rust 工具登记表）'];
+  }
+  final source = file.readAsStringSync();
+  final block = RegExp(
+    r'pub const TOOL_REGISTRY: \[ToolMeta; (\d+)\] = \[(.*?)\n\];',
+    dotAll: true,
+  ).firstMatch(source);
+  if (block == null) {
+    return const ['Rust TOOL_REGISTRY 未解析到（格式变了？）'];
+  }
+  final declared = int.tryParse(block.group(1) ?? '') ?? -1;
+  final names = RegExp(r'name: "([^"]+)"')
+      .allMatches(block.group(2) ?? '')
+      .map((m) => m.group(1)!)
+      .toList();
+  final registered = tools.map((t) => t['tool'] as String? ?? '').toList();
+  final errors = <String>[];
+  if (declared != names.length) {
+    errors.add('Rust TOOL_REGISTRY 声明 $declared 项，实际 ${names.length} 项');
+  }
+  if (names.join(',') != registered.join(',')) {
+    errors.add(
+      'Rust 工具表与契约不一致：rust=${names.join("/")} contracts=${registered.join("/")}',
+    );
+  }
+  // 每个工具的版本必须与契约一致。
+  for (final entry in RegExp(
+    r'name: "([^"]+)",\s*\n\s*version: "([^"]+)"',
+    dotAll: true,
+  ).allMatches(block.group(2) ?? '')) {
+    final tool = entry.group(1)!;
+    final version = entry.group(2)!;
+    final contract = tools.firstWhere(
+      (t) => t['tool'] == tool,
+      orElse: () => const <String, Object?>{},
+    );
+    if (contract['version'] != version) {
+      errors.add('$tool: Rust 版本 $version，契约 ${contract['version']}');
+    }
+  }
+  return errors;
+}
+
+/// 生成物防漂移：契约里登记的工具必须都出现在生成的 `ToolName` 枚举。
+List<String> _staleGeneratedNames(File generated, List<ToolSpec> registry) {
+  final source = generated.readAsStringSync();
+  final block = RegExp(r'enum ToolName \{(.*?)\n\}', dotAll: true)
+      .firstMatch(source);
+  if (block == null) {
+    return const ['生成的 methods.dart 里找不到 ToolName 枚举'];
+  }
+  final wires = RegExp(r"'([^']+)'")
+      .allMatches(block.group(1) ?? '')
+      .map((m) => m.group(1)!)
+      .toSet();
+  return [
+    for (final spec in registry)
+      if (!wires.contains(spec.tool))
+        '${spec.tool}：契约已登记但生成物 ToolName 枚举缺失（重跑 packages/contracts_dart/tool/generate_types.py）',
+  ];
 }

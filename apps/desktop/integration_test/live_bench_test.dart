@@ -29,7 +29,7 @@ import 'package:cbr_maw/data/gate/permission_gate.dart';
 import 'package:cbr_maw/data/gate/tool_invoker.dart';
 import 'package:cbr_maw/data/sidecar/sidecar_supervisor.dart';
 import 'package:cbr_maw/data/sidecar/stdio_transport.dart';
-import 'package:cbr_maw/data/signal_source.dart';
+import 'package:cbr_maw/agents/signals/kernel_signal_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -146,7 +146,12 @@ void main() {
       baseUrl: baseUrl!,
       model:
           Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
-      maxTokens: 1200,
+      // 推理型模型先烧 reasoning tokens；1200 会在出结论前耗尽。
+      maxTokens: int.parse(
+        Platform.environment['CBR_BENCH_MAX_TOKENS'] ?? '4000',
+      ),
+      // 思维链预算由厂商参数控制（各家字段名不同，故做成可注入映射）。
+      extraBody: const {'reasoning_effort': 'low'},
     );
 
     final decisions = <DecisionCard>[];

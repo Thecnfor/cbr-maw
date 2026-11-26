@@ -7,7 +7,7 @@ import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
 import '../core/clock.dart';
 import '../data/gate/tool_invoker.dart';
-import '../data/signal_source.dart';
+import '../agents/signals/kernel_signal_source.dart';
 import 'app_state.dart';
 
 /// 研判控制器装配（外壳 → Agent 编排）。

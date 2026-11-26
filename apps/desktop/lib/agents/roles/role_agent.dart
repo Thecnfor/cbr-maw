@@ -237,7 +237,8 @@ final class RoleAgent {
     LlmFailureCode.missingKey ||
     LlmFailureCode.unauthorized => FailureCode.llmAuth,
     LlmFailureCode.timeout => FailureCode.llmTimeout,
-    LlmFailureCode.invalidOutput => FailureCode.llmInvalidOutput,
+    LlmFailureCode.invalidOutput ||
+    LlmFailureCode.truncated => FailureCode.llmInvalidOutput,
     LlmFailureCode.rateLimited => FailureCode.llmTimeout,
     LlmFailureCode.unavailable => FailureCode.llmTimeout,
   };
