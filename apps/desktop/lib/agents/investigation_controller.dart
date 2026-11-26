@@ -10,6 +10,7 @@ import 'blackboard/evidence_blackboard.dart';
 import 'signals/kernel_reflection.dart' show ReflectionEvidence;
 import 'budget/budget.dart';
 import 'claims/risk_level.dart';
+import 'conflict/conflict_loss.dart';
 import 'conflict/conflict_arbitrator.dart';
 import 'conflict/conflict_detector.dart';
 import 'llm/llm_channel.dart';
@@ -418,6 +419,10 @@ final class AgentRuntime {
           if (entry.value.llmAssessment != null)
             entry.key: entry.value.llmAssessment!,
       },
+      conflictLoss: conflictLossBreakdown(
+        conflicts: conflicts,
+        escalated: escalated,
+      ),
     );
 
     settings.runHooks?.onDecision?.call(decision);

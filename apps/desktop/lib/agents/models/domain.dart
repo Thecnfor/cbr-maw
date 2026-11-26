@@ -972,6 +972,7 @@ final class DecisionCard {
     this.humanOverrides = const [],
     this.numericMismatches = 0,
     this.llmAssessments = const {},
+    this.conflictLoss = const {},
   });
 
   /// run id。
@@ -1024,6 +1025,12 @@ final class DecisionCard {
   /// 系统定级是确定性规则的结果（docs/03 §1.8），这张表是「模型自己怎么看」
   /// 的唯一记录——评估协同是否带来增量，必须拿它与单模型对照。
   final Map<RoleId, RiskLevel> llmAssessments;
+
+  /// 冲突接入决策损失的分解（ADR-010 §1、docs/02 F5）。
+  ///
+  /// 未解决冲突本身就是风险：把它折进损失函数，才能让「协同没谈拢」
+  /// 反映在代价上，而不是只在 UI 上挂个红点。
+  final Map<String, double> conflictLoss;
 
   /// 人工覆盖（不进 evidenceIds）。
   final List<String> humanOverrides;
