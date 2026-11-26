@@ -65,6 +65,9 @@ class _EvidencePageState extends State<EvidencePage> {
           'unit': session.unit,
           'params': session.params,
           'source_id': '本次会话的工具调用',
+          // 工具读数明细（维度/窗口端点/新鲜度）：契约此前丢弃了它，
+          // 导致证据页只能看到主数值，看不到「数据截至哪天」。
+          if (session.data != null) 'data': session.data,
         },
       );
     }
@@ -220,6 +223,22 @@ class _EvidencePageState extends State<EvidencePage> {
                       ],
                     ),
                   ),
+                  if (fields['data'] is Map) ...[
+                    const SizedBox(height: Tokens.space4),
+                    SectionCard(
+                      title: '工具读数明细',
+                      child: Column(
+                        children: [
+                          for (final entry
+                              in (fields['data']! as Map).entries.take(12))
+                            KeyValueRow(
+                              label: '${entry.key}',
+                              value: _formatField(entry.value),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: Tokens.space4),
                   SectionCard(
                     title: '可重算哈希',
@@ -325,4 +344,26 @@ final class _HashRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 把工具读数里的值格式化为可读文本（嵌套结构折叠成一行 JSON）。
+String _formatField(Object? value) {
+  if (value == null) {
+    return '—（缺失）';
+  }
+  if (value is num) {
+    return value is double
+        ? value.toStringAsFixed(value.abs() < 1 ? 6 : 4)
+        : '$value';
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is List) {
+    return value.isEmpty ? '（空）' : value.map((e) => '$e').join('、');
+  }
+  if (value is Map) {
+    return jsonEncode(value);
+  }
+  return '$value';
 }
