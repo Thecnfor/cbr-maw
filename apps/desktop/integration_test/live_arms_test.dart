@@ -322,6 +322,9 @@ Future<Map<String, Object?>> _runArmA({
       'panel_series': panel.length,
       // A 组在历史时点上拿到晚于该时点的数据 = 结构性泄漏。
       'future_data_series': stale,
+      // 泄漏的严重度：拿到未来行情的序列占比。全部序列都泄漏说明该时点
+      // 对 A 组等价于「用今天的数据回答历史问题」，其成绩不能算预测能力。
+      'leak_ratio': panel.isEmpty ? 0.0 : stale.length / panel.length,
     };
   } on LlmFailure catch (failure) {
     return {

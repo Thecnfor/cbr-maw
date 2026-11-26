@@ -167,11 +167,18 @@ def main(argv: list[str]) -> int:
               else f'{base_arm} vs collaborative：无不一致对')
 
     # A 组结构性泄漏（论文里最硬的一条）。
-    leaks = [len(r['arms']['A'].get('future_data_series') or {})
-             for r in data['records'] if 'A' in r['arms']]
+    a_rows = [r['arms']['A'] for r in data['records'] if 'A' in r['arms']]
+    leaks = [len(r.get('future_data_series') or {}) for r in a_rows]
+    ratios = [r.get('leak_ratio') or 0.0 for r in a_rows]
     if leaks:
         print(f'\nA 组结构性泄漏：{sum(1 for v in leaks if v > 0)}/{len(leaks)} '
               f'个时点拿到了晚于评估日的行情（平均 {sum(leaks)/len(leaks):.1f} 条序列）')
+        full = sum(1 for v in ratios if v >= 0.99)
+        print(f'  其中 {full}/{len(ratios)} 个时点**全部**面板序列都晚于评估日'
+              f'（平均泄漏比例 {sum(ratios)/len(ratios):.2%}）')
+        if full:
+            print('  → 这些时点上 A 组等价于「用今天的数据回答历史问题」，'
+                  '其成绩不能算作预测能力')
 
     out = Path(argv[1]).with_suffix('.scored.json')
     out.write_text(json.dumps({'threshold': threshold, 'arms': results,
