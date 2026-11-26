@@ -178,6 +178,7 @@ final class RunSummary {
     required this.tokensUsed,
     required this.costUsd,
     required this.partial,
+    this.verification,
   });
 
   /// run id。
@@ -212,4 +213,7 @@ final class RunSummary {
 
   /// 是否部分结论。
   final bool partial;
+
+  /// 六类核验摘要（界面与导出都要能看见；null = 未核验）。
+  final Map<String, Object?>? verification;
 }

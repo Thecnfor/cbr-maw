@@ -921,6 +921,11 @@ final class _DecisionPanel extends StatelessWidget {
           '${summary.costUsd > 0 ? '（≈ \$${summary.costUsd.toStringAsFixed(4)}）' : ''}',
       if (summary.degradedRoles.isNotEmpty)
         '降级角色：${summary.degradedRoles.map(roleLabel).join('、')}（该角色本轮未出卡）',
+      if (summary.verification != null)
+        '核验：引文 ${summary.verification!['citation_ok']}/${summary.verification!['citation_total']}'
+            ' · 数值错误率 ${((summary.verification!['numeric_error_rate'] as num) * 100).toStringAsFixed(1)}%'
+            ' · 泄漏 ${summary.verification!['leakage_events']}'
+            ' · 越权 ${summary.verification!['permission_violations']}',
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(

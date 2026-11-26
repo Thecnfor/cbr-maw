@@ -498,6 +498,17 @@ final class AgentRuntime {
         tokensUsed: guard.totalTokens,
         costUsd: guard.jointCost,
         partial: decision.partial,
+        verification: {
+          'passed': report.passed,
+          'citation_ok': report.citationChecksPassed,
+          'citation_total': report.citationChecksTotal,
+          'numeric_error_rate': report.numericErrorRate,
+          'semantic_checked': report.semanticChecksTotal,
+          'semantic_unverified': report.semanticUnverified,
+          'leakage_events': report.leakageEvents,
+          'permission_violations': report.permissionViolations,
+          'unsupported_claims': report.unsupportedClaims,
+        },
       ),
     );
   }
