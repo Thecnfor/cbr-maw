@@ -21,6 +21,7 @@ import 'roles/role_agent.dart';
 import 'roles/role_config.dart';
 import 'run_events.dart';
 import 'tools/tool_registry.dart';
+import 'verification/semantic_verifier.dart';
 import 'verification/verifier.dart';
 import 'orchestrator/mode_flags.dart';
 
@@ -371,8 +372,15 @@ final class AgentRuntime {
     if (cancelled()) {
       return;
     }
-    // R5.1 六类核验。
-    final report = verify(
+    // R5.3 语义核验（JEV）：只核验带文本的主张，数值已由工具重算覆盖。
+    final semantic = await verifySemantics(
+      judge: settings.judge,
+      claims: [for (final card in updatedCards) ...card.claims],
+      evidenceById: board.evidenceById,
+    );
+
+    // R5.1 六类核验（确定性四类）。
+    final base = verify(
       VerificationContext(
         runId: runId,
         asOf: asOf,
@@ -383,6 +391,24 @@ final class AgentRuntime {
         absTol: settings.catalog.orchestration.numericToleranceAbs,
         relTol: settings.catalog.orchestration.numericToleranceRel,
       ),
+    );
+    // 语义核验结果并入同一份报告（R5 六类核验的第 5 类）。
+    // 裁判不可用时 available=false：passed 不因此判失败，但界面必须明示。
+    final report = VerificationReport(
+      runId: base.runId,
+      numericChecksTotal: base.numericChecksTotal,
+      numericChecksPassed: base.numericChecksPassed,
+      citationChecksTotal: base.citationChecksTotal,
+      citationChecksPassed: base.citationChecksPassed,
+      semanticChecksTotal: semantic.checks.length,
+      semanticChecksPassed: semantic.passed,
+      semanticUnverified: semantic.skipped,
+      unsupportedClaims: base.unsupportedClaims,
+      permissionViolations: base.permissionViolations,
+      leakageEvents: base.leakageEvents,
+      schemaErrors: base.schemaErrors,
+      issues: base.issues,
+      passed: base.passed && (semantic.available ? semantic.failed == 0 : true),
     );
 
     // R5.2 合成。
