@@ -2,7 +2,13 @@ import 'dart:async';
 
 import 'package:cbr_maw_contracts/contracts_dart.dart' show ToolRiskLevel;
 import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
-    show CbrDecisionPanel, CbrRiskLevel, CbrSpace;
+    show
+        CbrDecisionPanel,
+        CbrRiskLevel,
+        CbrSpace,
+        CbrStatusTone,
+        CbrTimeline,
+        CbrTimelineEntry;
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart'
@@ -775,11 +781,14 @@ final class _ActivityColumn extends StatelessWidget {
         Expanded(
           child: events.isEmpty
               ? const Center(child: Text('尚无活动。发起研判后会实时显示。'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(Tokens.space3),
-                  itemCount: events.length,
-                  itemBuilder: (context, index) =>
-                      _ActivityItem(event: events[index]),
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(CbrSpace.s4),
+                  child: CbrTimeline(
+                    entries: [
+                      for (final event in events.reversed)
+                        _timelineEntry(event),
+                    ],
+                  ),
                 ),
         ),
       ],
@@ -787,89 +796,52 @@ final class _ActivityColumn extends StatelessWidget {
   }
 }
 
-final class _ActivityItem extends StatelessWidget {
-  const _ActivityItem({required this.event});
+/// 活动动作的中文标签。
+String _actionLabel(String action) => switch (action) {
+  'role_start' => '开始分析',
+  'role_done' => '分析完成',
+  'peer_review' => '复核同行结论',
+  'evidence_share' => '共享证据',
+  'verification' => '核验完成',
+  _ => action,
+};
 
-  final RunEvent event;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final (String title, String detail, IconData icon) = switch (event) {
-      RunStarted(:final mode) => (
-        '研判开始',
-        '模式：$mode',
-        Icons.play_circle_outline,
-      ),
-      AgentActivity(:final agentRole, :final action, :final detail) => (
-        '${roleLabel(agentRole)} · ${_label(action)}',
-        detail.toString(),
-        Icons.circle_outlined,
-      ),
-      ToolInvoked(:final tool, :final denied, :final result) => (
-        '工具 $tool',
-        denied ? '越权，未执行' : (result?.toString() ?? '已执行'),
-        denied ? Icons.block : Icons.build_outlined,
-      ),
-      ClaimProduced(:final text, :final evidenceIds) => (
-        '结论',
-        '$text（证据 ${evidenceIds.length} 条）',
-        Icons.rule,
-      ),
-      ConflictFound(:final category, :final escalated) => (
-        '冲突 · $category',
-        escalated ? '已升级人工' : '已消解',
-        Icons.compare_arrows,
-      ),
-      RunFailed(:final message) => ('研判失败', message, Icons.error_outline),
-      RunFinished(:final summary) => (
-        '研判结束',
-        '风险等级：${summary.riskLevel}',
-        Icons.flag_outlined,
-      ),
-    };
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Tokens.space2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 12)),
-                Text(
-                  detail,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  Clock.relative(Clock.asOfNow()),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _label(String action) => switch (action) {
-    'role_start' => '开始分析',
-    'role_done' => '分析完成',
-    'peer_review' => '复核同行结论',
-    _ => action,
+/// 把 [RunEvent] 映射成设计系统的时间线条目。
+///
+/// 活动流此前是自绘列表；改用 `CbrTimeline` 后与设计系统同源，
+/// 状态色与间距不再有两套口径。
+CbrTimelineEntry _timelineEntry(RunEvent event) {
+  final (String title, String? detail, CbrStatusTone tone) = switch (event) {
+    RunStarted(:final mode) => ('研判开始', '模式：$mode', CbrStatusTone.info),
+    AgentActivity(:final agentRole, :final action, :final detail) => (
+      '${roleLabel(agentRole)} · ${_actionLabel(action)}',
+      detail.isEmpty ? null : detail.toString(),
+      CbrStatusTone.idle,
+    ),
+    ToolInvoked(:final tool, :final denied) => (
+      '工具调用：$tool',
+      denied ? '越权，未执行' : null,
+      denied ? CbrStatusTone.danger : CbrStatusTone.ok,
+    ),
+    ClaimProduced(:final kind) => ('结论：$kind', null, CbrStatusTone.ok),
+    ConflictFound(:final category) => (
+      '分歧：$category',
+      null,
+      CbrStatusTone.warn,
+    ),
+    RunFailed(:final message) => ('研判失败', message, CbrStatusTone.danger),
+    RunFinished(:final summary) => (
+      '研判完成 · ${summary.riskLevel}',
+      summary.partial ? '部分结论' : null,
+      CbrStatusTone.ok,
+    ),
   };
+  return CbrTimelineEntry(
+    title: title,
+    timestamp: Clock.asOfNow().substring(11, 19),
+    description: detail,
+    tone: tone,
+  );
 }
 
 final class _ChatMessage {
