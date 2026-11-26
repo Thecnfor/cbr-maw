@@ -508,6 +508,7 @@ final class AgentRuntime {
           'leakage_events': report.leakageEvents,
           'permission_violations': report.permissionViolations,
           'unsupported_claims': report.unsupportedClaims,
+          'tool_calls': guard.totalToolCalls,
         },
       ),
     );

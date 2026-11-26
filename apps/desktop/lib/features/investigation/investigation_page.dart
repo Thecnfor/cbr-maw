@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cbr_maw_contracts/contracts_dart.dart' show ToolRiskLevel;
 import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
     show
+        CbrCostMeter,
         CbrDecisionPanel,
         CbrRiskLevel,
         CbrSpace,
@@ -906,12 +907,24 @@ final class _DecisionPanel extends StatelessWidget {
         CbrSpace.s5,
         CbrSpace.s3,
       ),
-      child: CbrDecisionPanel(
-        conclusion: '风险等级 ${RiskLevelBadge.labelOf(riskLevelFromWire(summary.riskLevel))}'
-            '${summary.partial ? '（部分结论）' : ''}',
-        riskLevel: _cbrLevel(summary.riskLevel),
-        supports: supports,
-        limitations: summary.limitations.take(3).toList(),
+      child: Column(
+        children: [
+          CbrDecisionPanel(
+            conclusion: '风险等级 ${RiskLevelBadge.labelOf(riskLevelFromWire(summary.riskLevel))}'
+                '${summary.partial ? '（部分结论）' : ''}',
+            riskLevel: _cbrLevel(summary.riskLevel),
+            supports: supports,
+            limitations: summary.limitations.take(3).toList(),
+          ),
+          const SizedBox(height: CbrSpace.s3),
+          // 成本账（J = L + μC）：协同代价必须可见，否则「多主体更准」
+          // 的说法没有成本侧对照。
+          CbrCostMeter(
+            tokens: summary.tokensUsed,
+            toolCalls: summary.verification?['tool_calls'] as int?,
+            coordinationCost: summary.costUsd,
+          ),
+        ],
       ),
     );
   }
