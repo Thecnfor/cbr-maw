@@ -57,7 +57,7 @@ void main() {
 
   group('未登记组件显式拒绝', () {
     test('守卫拒绝未登记组件', () {
-      const guard = CbrVisualGuard(CbrCatalog.defaultCatalog);
+      final guard = CbrVisualGuard(CbrCatalog.defaultCatalog);
       final result = guard.validate(const [
         A2uiComponent(id: 'x', kind: 'EvilWidget'),
         A2uiComponent(id: 'y', kind: 'Text', props: {'text': 'ok'}),

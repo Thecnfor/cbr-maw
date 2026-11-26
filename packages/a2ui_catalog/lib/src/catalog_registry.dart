@@ -14,12 +14,26 @@ const String cbrCatalogVersion = '1.0.0';
 /// catalog id：反域名格式（genui 推荐）。
 const String cbrCatalogId = 'cn.cbrmaw.a2ui.catalog';
 
-/// 已登记组件的唯一名字集合。
+/// A2UI 协议基础布局组件（来自 `genui` 官方 basic catalog）。
+///
+/// 布局容器本身不带业务语义，也不接受 CBR 语义参数，因此不进入
+/// [cbrCatalogItems]（那套 schema 面向领域组件）；但它们是合法线路组件，
+/// 必须在安全边界里放行，否则任何含 Column/Row/Card 的 surface 都会被拒。
+Set<String> get cbrLayoutComponentNames => const <String>{
+  'Column',
+  'Row',
+  'Card',
+  'List',
+  'Tabs',
+};
+
+/// 已登记组件的唯一名字集合（领域 + 通用 + 协议布局）。
 ///
 /// 这是安全边界的唯一真源：不在集合内的组件一律拒绝（docs/02 F3-2、
 /// docs/06 §9 VC-5）。
 Set<String> get cbrRegisteredComponentNames => <String>{
   for (final item in cbrCatalogItems) item.name,
+  ...cbrLayoutComponentNames,
 };
 
 /// 组件名的 kebab-case 稳定 id（线路层 / 配置 / 遥测用）。
@@ -49,6 +63,12 @@ const Map<String, String> cbrComponentKebabIds = <String, String>{
   'ProgressBar': 'progress-bar',
   'DataTable': 'data-table',
   'ChartCard': 'chart-card',
+  // A2UI 协议布局容器（genui basic catalog）
+  'Column': 'column',
+  'Row': 'row',
+  'Card': 'card',
+  'List': 'list',
+  'Tabs': 'tabs',
 };
 
 /// 所有已登记 [CatalogItem]。
@@ -76,6 +96,12 @@ final List<CatalogItem> cbrCatalogItems = <CatalogItem>[
   basic.progressBar,
   basic.dataTable,
   basic.chartCard,
+  // A2UI 协议布局容器（genui 官方 basic catalog，schema 复用官方定义）
+  BasicCatalogItems.column,
+  BasicCatalogItems.row,
+  BasicCatalogItems.card,
+  BasicCatalogItems.list,
+  BasicCatalogItems.tabs,
 ];
 
 /// catalog 系统提示片段：告诉模型只能用什么、不能传什么。
@@ -165,8 +191,19 @@ final Map<String, Set<String>> _allowedPropsCache = <String, Set<String>>{
     },
 };
 
+/// 布局容器只放行结构性参数（子节点 / 标题等），业务参数仍被拒。
+const Map<String, Set<String>> _layoutAllowedProps = <String, Set<String>>{
+  'Column': <String>{'id', 'children'},
+  'Row': <String>{'id', 'children'},
+  'Card': <String>{'id', 'children'},
+  'List': <String>{'id', 'children'},
+  'Tabs': <String>{'id', 'children', 'tabs'},
+};
+
 Set<String> cbrAllowedPropsFor(String componentName) =>
-    _allowedPropsCache[componentName] ?? const <String>{};
+    _allowedPropsCache[componentName] ??
+    _layoutAllowedProps[componentName] ??
+    const <String>{};
 
 enum CbrStrictViolationKind {
   unknownComponent,

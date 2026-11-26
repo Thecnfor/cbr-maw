@@ -62,6 +62,12 @@ void main() {
           'EmptyState',
           'ErrorState',
           'AccessRequired',
+          // A2UI 协议布局容器：无业务状态，状态由子组件表达。
+          'Column',
+          'Row',
+          'Card',
+          'List',
+          'Tabs',
         };
         if (stateless.contains(item.name)) {
           continue;

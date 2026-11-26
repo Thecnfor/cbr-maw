@@ -1,33 +1,35 @@
 import '../ui.dart';
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart';
 
-/// 设计 token（docs/06 §2）。
+/// 设计 token（docs/06 §2）——**兼容层**。
 ///
-/// shortcut: `packages/design_system` 尚未落地（并行开发中），此处先内置最小
-/// 可用子集；它落地后整体替换为 `cbr_maw_design_system` 的导出，调用方不变。
+/// 真源是 `cbr_maw_design_system`；本类只把包里的 token 以旧名称导出，
+/// 让 `app/` 与 `features/` 的既有调用点无需改名即可完成单一真源收口
+/// （docs/12 P1-5）。新代码请直接使用 `CbrPalette` / `CbrSpace` / `CbrRadius`。
 abstract final class Tokens {
   // 中性灰阶（浅 / 深）。
-  static const n0 = Color(0xFFFFFFFF);
-  static const n0d = Color(0xFF0B0F17);
-  static const n1 = Color(0xFFF9FAFB);
-  static const n1d = Color(0xFF0E141D);
-  static const n2 = Color(0xFFF4F5F7);
-  static const n2d = Color(0xFF131A24);
-  static const n3 = Color(0xFFEDEEF1);
-  static const n3d = Color(0xFF182031);
-  static const n4 = Color(0xFFE5E7EB);
-  static const n4d = Color(0xFF1E2634);
-  static const n5 = Color(0xFFD1D5DB);
-  static const n5d = Color(0xFF232C39);
-  static const n6 = Color(0xFF9CA3AF);
-  static const n6d = Color(0xFF2E3947);
-  static const n7 = Color(0xFF6B7280);
-  static const n7d = Color(0xFF475364);
-  static const n8 = Color(0xFF4B5563);
-  static const n8d = Color(0xFF8B95A5);
-  static const n9 = Color(0xFF1F2937);
-  static const n9d = Color(0xFFA9B2C0);
-  static const n10 = Color(0xFF111827);
-  static const n10d = Color(0xFFE8ECF2);
+  static final n0 = CbrPalette.light.neutral[0];
+  static final n1 = CbrPalette.light.neutral[1];
+  static final n2 = CbrPalette.light.neutral[2];
+  static final n3 = CbrPalette.light.neutral[3];
+  static final n4 = CbrPalette.light.neutral[4];
+  static final n5 = CbrPalette.light.neutral[5];
+  static final n6 = CbrPalette.light.neutral[6];
+  static final n7 = CbrPalette.light.neutral[7];
+  static final n8 = CbrPalette.light.neutral[8];
+  static final n9 = CbrPalette.light.neutral[9];
+  static final n10 = CbrPalette.light.neutral[10];
+  static final n0d = CbrPalette.dark.neutral[0];
+  static final n1d = CbrPalette.dark.neutral[1];
+  static final n2d = CbrPalette.dark.neutral[2];
+  static final n3d = CbrPalette.dark.neutral[3];
+  static final n4d = CbrPalette.dark.neutral[4];
+  static final n5d = CbrPalette.dark.neutral[5];
+  static final n6d = CbrPalette.dark.neutral[6];
+  static final n7d = CbrPalette.dark.neutral[7];
+  static final n8d = CbrPalette.dark.neutral[8];
+  static final n9d = CbrPalette.dark.neutral[9];
+  static final n10d = CbrPalette.dark.neutral[10];
 
   // 语义色（solid / ink / tint），docs/06 §2.4。
   static const okSolid = Color(0xFF16A34A);
@@ -64,24 +66,24 @@ abstract final class Tokens {
   static const roleRegulator = Color(0xFF2563EB);
   static const roleCrossValidation = Color(0xFFD97706);
 
-  // 圆角与间距。
-  static const radiusCard = 12.0;
-  static const radiusControl = 8.0;
-  static const space1 = 4.0;
-  static const space2 = 8.0;
-  static const space3 = 12.0;
-  static const space4 = 16.0;
-  static const space5 = 20.0;
-  static const space6 = 24.0;
-  static const space8 = 32.0;
+  // 圆角与间距（docs/06 §4）。
+  static const radiusCard = CbrRadius.lg;
+  static const radiusControl = CbrRadius.md;
+  static const space1 = CbrSpace.s2;
+  static const space2 = CbrSpace.s3;
+  static const space3 = CbrSpace.s4;
+  static const space4 = CbrSpace.s5;
+  static const space5 = CbrSpace.s6;
+  static const space6 = CbrSpace.s7;
+  static const space8 = CbrSpace.s8;
 
   // 动效（docs/06 §7.1）。
-  static const motionFast = Duration(milliseconds: 120);
-  static const motionBase = Duration(milliseconds: 200);
-  static const motionSlow = Duration(milliseconds: 320);
+  static const motionFast = CbrMotion.fast;
+  static const motionBase = CbrMotion.base;
+  static const motionSlow = CbrMotion.slow;
 
   // 焦点环（docs/06 §5.2：2dp + 2dp offset，不依赖 hover）。
   static const focusRing = Color(0xFF2563EB);
   static const focusRingD = Color(0xFF60A5FA);
-  static const focusRingWidth = 2.0;
+  static const focusRingWidth = CbrBorder.focus;
 }

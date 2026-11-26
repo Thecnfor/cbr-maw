@@ -1,4 +1,10 @@
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrBreakpoint;
+
 /// 响应式断点（docs/07 §1.1，单位 dp，按内容宽度判定）。
+///
+/// 兼容层：档位与阈值全部取自 `cbr_maw_design_system` 的 [CbrBreakpoint]
+/// （单一真源，docs/12 P1-5）。新代码请直接用 [CbrBreakpoint]。
 enum Breakpoint {
   /// < 600。
   compact(0, '紧凑'),
@@ -26,16 +32,9 @@ enum Breakpoint {
   /// 中文标签。
   final String label;
 
-  /// 按内容宽度取档位。
-  static Breakpoint of(double width) {
-    var result = Breakpoint.compact;
-    for (final value in values) {
-      if (width >= value.minWidth) {
-        result = value;
-      }
-    }
-    return result;
-  }
+  /// 按内容宽度取档位（阈值委托给 [CbrBreakpoint]）。
+  static Breakpoint of(double width) =>
+      values[CbrBreakpoint.fromWidth(width).index];
 }
 
 /// 导航形态（由断点推导，不依赖设备类型）。
@@ -49,7 +48,7 @@ enum NavLayout {
   /// 侧栏展开 248dp，可折叠为 64–72dp。
   sidebar;
 
-  /// 由断点推导。
+  /// 由断点推导（与 [CbrBreakpoint.navMode] 同口径）。
   static NavLayout forBreakpoint(Breakpoint breakpoint) => switch (breakpoint) {
     Breakpoint.compact => NavLayout.bottomBar,
     Breakpoint.medium || Breakpoint.expanded => NavLayout.rail,

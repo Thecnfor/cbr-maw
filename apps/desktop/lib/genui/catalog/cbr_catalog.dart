@@ -2,7 +2,14 @@
 ///
 /// 组件 ID 用 UpperCamelCase（与 docs/06 §9.2 一致）；线路层节点 id 由适配层
 /// 生成 kebab-case，二者不混用。
+///
+/// **单一真源**：可渲染组件集合取自 `cbr_maw_a2ui_catalog`
+/// （`cbrRegisteredComponentNames`，docs/12 P1-5）。本文件只保留
+/// 「属性白名单 + 动作风险级」这类渲染守卫元数据，不再维护第二份组件名单。
 library;
+
+import 'package:cbr_maw_a2ui_catalog/cbr_maw_a2ui_catalog.dart'
+    show cbrRegisteredComponentNames;
 
 /// 组件风险声明（组件被点击时的默认动作风险级）。
 enum ActionRisk {
@@ -80,11 +87,18 @@ final class CbrCatalog {
   /// 是否已登记。
   bool contains(String kind) => find(kind) != null;
 
-  /// 默认目录：CBR 领域组件 + 基础布局组件。
-  static const CbrCatalog defaultCatalog = CbrCatalog(_components);
+  /// 默认目录：CBR 领域组件 + 基础布局组件（只保留包内已登记的名字）。
+  static CbrCatalog get defaultCatalog => CbrCatalog([
+    for (final component in _allComponents)
+      if (cbrRegisteredComponentNames.contains(component.kind)) component,
+  ]);
 }
 
-const List<CatalogComponent> _components = [
+/// 组件元数据（属性白名单与动作风险级）。
+///
+/// 名字必须出现在 `cbr_maw_a2ui_catalog` 的登记集合中，否则
+/// [CbrCatalog.defaultCatalog] 会把它过滤掉（防两处名单漂移）。
+const List<CatalogComponent> _allComponents = [
   CatalogComponent(
     kind: 'RoleCard',
     description: '单角色研判卡：风险等级、关键测度、主张、局限。',
