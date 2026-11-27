@@ -321,10 +321,20 @@ List<String> _rustToolRegistryMismatches(Directory root, List<Map<String, Object
     );
   }
   // 每个工具的版本必须与契约一致。
-  for (final entry in RegExp(
+  //
+  // 不能只依赖正则匹配数：字段顺序一变（version 写在 name 前面）正则就
+  // 一条都匹配不到，门禁会静默通过。这里显式核对「匹配数 == 工具数」。
+  final versionMatches = RegExp(
     r'name: "([^"]+)",\s*\n\s*version: "([^"]+)"',
     dotAll: true,
-  ).allMatches(block.group(2) ?? '')) {
+  ).allMatches(block.group(2) ?? '').toList();
+  if (versionMatches.length != names.length) {
+    errors.add(
+      'Rust 工具表版本核对不完整：匹配到 ${versionMatches.length} 项，'
+      '但登记了 ${names.length} 项（字段顺序变化会让本门禁失效）',
+    );
+  }
+  for (final entry in versionMatches) {
     final tool = entry.group(1)!;
     final version = entry.group(2)!;
     final contract = tools.firstWhere(
