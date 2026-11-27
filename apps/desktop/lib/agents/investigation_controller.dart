@@ -575,6 +575,16 @@ final class AgentRuntime {
           'unsupported_claims': report.unsupportedClaims,
           'tool_calls': guard.totalToolCalls,
         },
+        conflicts: [
+          for (final conflict in conflicts.take(6))
+            {
+              'type': conflict.type.wire,
+              'subject': conflict.subject,
+              'roles': [for (final r in conflict.roles) r.wire],
+              'resolved': conflict.resolved,
+              'resolution': conflict.resolution,
+            },
+        ],
         roles: [
           for (final card in updatedCards)
             {

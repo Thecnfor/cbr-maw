@@ -8,6 +8,8 @@ import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
         CbrRiskLevel,
         CbrRole,
         CbrRoleCard,
+        CbrConflictPanel,
+        CbrConflictSide,
         CbrVerificationSummary,
         CbrSpace,
         CbrStatusTone,
@@ -1020,6 +1022,38 @@ final class _DecisionPanel extends StatelessWidget {
                   ),
               ],
             ),
+          ],
+          if (summary.conflicts.isNotEmpty) ...[
+            const SizedBox(height: CbrSpace.s3),
+            // 冲突面板：谁和谁在什么问题上分歧、是否已裁决。
+            for (final conflict in summary.conflicts.take(3))
+              Padding(
+                padding: const EdgeInsets.only(bottom: CbrSpace.s2),
+                child: CbrConflictPanel(
+                  title:
+                      '${_conflictLabel(conflict['type']?.toString() ?? '')}'
+                      '：${conflict['subject'] ?? ''}',
+                  left: CbrConflictSide(
+                    role: _cbrRole(
+                      (conflict['roles'] as List?)?.firstOrNull?.toString(),
+                    ),
+                    view: (conflict['roles'] as List?)?.isEmpty ?? true
+                        ? '未登记立场'
+                        : '持不同判断',
+                    evidence: const [],
+                  ),
+                  right: CbrConflictSide(
+                    role: _cbrRole(
+                      (conflict['roles'] as List?)?.lastOrNull?.toString(),
+                    ),
+                    view: '持不同判断',
+                    evidence: const [],
+                  ),
+                  resolution: conflict['resolved'] == true
+                      ? (conflict['resolution']?.toString() ?? '已裁决')
+                      : null,
+                ),
+              ),
           ],
           if (summary.verification != null) ...[
             const SizedBox(height: CbrSpace.s3),

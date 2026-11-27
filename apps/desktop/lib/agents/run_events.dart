@@ -180,6 +180,7 @@ final class RunSummary {
     required this.partial,
     this.verification,
     this.roles = const [],
+    this.conflicts = const [],
   });
 
   /// run id。
@@ -217,6 +218,12 @@ final class RunSummary {
 
   /// 六类核验摘要（界面与导出都要能看见；null = 未核验）。
   final Map<String, Object?>? verification;
+
+  /// 冲突明细（类型 / 对象 / 双方角色 / 是否已裁决）。
+  ///
+  /// 界面只显示「有 N 处冲突」是不够的：用户需要知道**谁和谁在什么问题上
+  /// 分歧**，以及仲裁结果。
+  final List<Map<String, Object?>> conflicts;
 
   /// 三主体子卡摘要（角色 / 等级 / 标题 / 证据数 / 是否降级 / 离散行动）。
   ///
