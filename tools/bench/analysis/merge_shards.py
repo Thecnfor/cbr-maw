@@ -63,8 +63,12 @@ def main() -> int:
     }
     out = Path(args.out)
     out.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    n_pressure = sum(1 for d in dates.values() if d.get('pressure'))
-    print(f'合并 {len(shards)} 个分片：{len(records)} 个时点（压力 {n_pressure} / 平静 {len(dates) - n_pressure}）')
+    # 按**已跑记录**的 y20 统计，而不是抽样清单（抽样清单是计划，不是实际）
+    done_pressure = sum(1 for r in records.values() if r.get('y20') == 1)
+    done_calm = sum(1 for r in records.values() if r.get('y20') == 0)
+    planned = len(dates)
+    print(f'合并 {len(shards)} 个分片：已跑 {len(records)}/{planned} 个时点'
+          f'（压力 {done_pressure} / 平静 {done_calm}；未跑 {planned - len(records)}）')
     return 0
 
 
