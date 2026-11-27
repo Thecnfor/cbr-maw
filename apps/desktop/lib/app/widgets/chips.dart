@@ -97,7 +97,10 @@ Color roleColor(String role) => switch (role) {
   'financing' => Tokens.roleFinancing,
   'investor' => Tokens.roleInvestor,
   'regulator' => Tokens.roleRegulator,
-  'cross_validation' => Tokens.roleCrossValidation,
+  // RoleId.crossValidator.wire 是 'crossValidator'（驼峰），不是
+  // 'cross_validation'——按后者匹配会让该角色在界面上显示英文并掉成灰点。
+  'crossValidator' || 'cross_validation' => Tokens.roleCrossValidation,
+  'coordinator' => Tokens.infoSolid,
   _ => Tokens.idleSolid,
 };
 
@@ -106,7 +109,8 @@ String roleLabel(String role) => switch (role) {
   'financing' => '融资方',
   'investor' => '投资方',
   'regulator' => '监管方',
-  'cross_validation' => '交叉验证',
+  'crossValidator' || 'cross_validation' => '交叉验证',
+  'coordinator' => '编排器',
   _ => role,
 };
 

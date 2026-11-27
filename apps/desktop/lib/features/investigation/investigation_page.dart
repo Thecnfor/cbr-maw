@@ -805,6 +805,70 @@ final class _ActivityColumn extends StatelessWidget {
   }
 }
 
+/// 模式中文名（界面不出现英文 wire 值）。
+String _modeLabel(String mode) => switch (mode) {
+  'single' => '单智能体',
+  'independent' => '独立分析',
+  'collaborative' => '协同核验',
+  'demo' => '演示',
+  _ => mode,
+};
+
+/// claim 类型中文名。
+String _claimKindLabel(String kind) => switch (kind) {
+  'numeric' => '数值',
+  'text' => '文本',
+  'directional' => '方向',
+  _ => kind,
+};
+
+/// 冲突分类中文名。
+String _conflictLabel(String category) => switch (category) {
+  'fact' => '事实分歧',
+  'directional' => '方向分歧',
+  'preference' => '偏好差异',
+  _ => category,
+};
+
+/// 活动详情：只显示用户能读懂的字段，不直接倾倒 Dart Map 的 toString。
+String? _detailText(Map<String, Object?> detail) {
+  if (detail.isEmpty) {
+    return null;
+  }
+  final parts = <String>[];
+  for (final entry in detail.entries) {
+    final value = entry.value;
+    if (value == null || value == '' || (value is List && value.isEmpty)) {
+      continue;
+    }
+    final label = switch (entry.key) {
+      'round' => '轮次',
+      'status' => '状态',
+      'toolCalls' => '工具调用',
+      'tokens' => 'token',
+      'error' => '错误',
+      'shared' => '共享证据',
+      'duplicate' => '重复',
+      'passed' => '核验通过',
+      'findings' => '复核结论',
+      'subject' => '对象',
+      'severity' => '严重度',
+      'claimIds' => '涉及主张',
+      'resolvedBy' => '仲裁方式',
+      'resolution' => '仲裁结果',
+      _ => entry.key,
+    };
+    final text = switch (value) {
+      final List<Object?> list => '${list.length} 项',
+      final Map<Object?, Object?> _ => '${(value).length} 字段',
+      final bool b => b ? '是' : '否',
+      _ => '$value',
+    };
+    parts.add('$label：$text');
+  }
+  return parts.isEmpty ? null : parts.join(' · ');
+}
+
 /// 活动动作的中文标签。
 String _actionLabel(String action) => switch (action) {
   'role_start' => '开始分析',
@@ -821,10 +885,14 @@ String _actionLabel(String action) => switch (action) {
 /// 状态色与间距不再有两套口径。
 CbrTimelineEntry _timelineEntry(RunEvent event) {
   final (String title, String? detail, CbrStatusTone tone) = switch (event) {
-    RunStarted(:final mode) => ('研判开始', '模式：$mode', CbrStatusTone.info),
+    RunStarted(:final mode) => (
+      '研判开始',
+      '模式：${_modeLabel(mode)}',
+      CbrStatusTone.info,
+    ),
     AgentActivity(:final agentRole, :final action, :final detail) => (
       '${roleLabel(agentRole)} · ${_actionLabel(action)}',
-      detail.isEmpty ? null : detail.toString(),
+      _detailText(detail),
       CbrStatusTone.idle,
     ),
     ToolInvoked(:final tool, :final denied) => (
@@ -832,9 +900,13 @@ CbrTimelineEntry _timelineEntry(RunEvent event) {
       denied ? '越权，未执行' : null,
       denied ? CbrStatusTone.danger : CbrStatusTone.ok,
     ),
-    ClaimProduced(:final kind) => ('结论：$kind', null, CbrStatusTone.ok),
+    ClaimProduced(:final kind) => (
+      '结论：${_claimKindLabel(kind)}',
+      null,
+      CbrStatusTone.ok,
+    ),
     ConflictFound(:final category) => (
-      '分歧：$category',
+      '分歧：${_conflictLabel(category)}',
       null,
       CbrStatusTone.warn,
     ),
