@@ -1014,6 +1014,7 @@ final class _DecisionPanel extends StatelessWidget {
                       riskLevel: _cbrLevel(role['level']?.toString()),
                       evidenceCount: (role['evidence'] as num?)?.toInt(),
                       degraded: role['degraded'] == true,
+                      action: role['action_label']?.toString(),
                     ),
                   ),
               ],

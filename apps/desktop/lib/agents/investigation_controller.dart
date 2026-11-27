@@ -566,6 +566,8 @@ final class AgentRuntime {
               'headline': card.headline,
               'evidence': card.evidenceIds.length,
               'degraded': degraded.contains(card.role),
+              'action': card.action?.wire,
+              'action_label': card.action?.label,
             },
         ],
       ),

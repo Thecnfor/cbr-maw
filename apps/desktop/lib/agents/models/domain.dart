@@ -136,6 +136,54 @@ enum ClaimStatus {
   final String wire;
 }
 
+/// 三主体的离散行动空间（ADR-011 §3.1）。
+///
+/// 每个主体只有三个动作，且**互不重叠**——这是「预警三件套」的第三件：
+/// 风险值 + 预警等级 + 主体行动。没有它，结论只有「有多危险」而没有
+/// 「该做什么」，对决策者不可用。
+enum SubjectAction {
+  // regulator：系统性风险最小化
+  in_('In', '准入', 'regulator'),
+  watch('Watch', '监测', 'regulator'),
+  out('Out', '处罚与出清', 'regulator'),
+  // institution（兼容别名 financing）：风险–收益均衡定价
+  discount('Discount', '贴现', 'financing'),
+  hedge('Hedge', '对冲', 'financing'),
+  equilibrium('Equilibrium', '均衡', 'financing'),
+  // investor：收益最大化 / 风险最小化
+  buy('Buy', '买入', 'investor'),
+  hold('Hold', '持有', 'investor'),
+  sell('Sell', '卖出', 'investor');
+
+  const SubjectAction(this.wire, this.label, this.roleWire);
+
+  /// JSON 字面量。
+  final String wire;
+
+  /// 中文标签。
+  final String label;
+
+  /// 归属主体的 wire。
+  final String roleWire;
+
+  /// 某主体可用的动作。
+  static List<SubjectAction> forRole(RoleId role) =>
+      [for (final a in values) if (a.roleWire == role.wire) a];
+
+  /// 从字面量解析；不属于该角色时返回 null（不猜）。
+  static SubjectAction? parseFor(RoleId role, Object? raw) {
+    if (raw is! String) {
+      return null;
+    }
+    for (final action in forRole(role)) {
+      if (action.wire == raw) {
+        return action;
+      }
+    }
+    return null;
+  }
+}
+
 /// 方向。
 enum Direction {
   up('up'),
@@ -539,10 +587,14 @@ final class RiskCard {
     this.tokens = 0,
     this.latencyMs = 0,
     this.round = 0,
+    this.action,
   });
 
   /// 角色。
   final RoleId role;
+
+  /// 该主体的离散行动（预警三件套的第三件）；null = 模型未给出合法动作。
+  final SubjectAction? action;
 
   /// 时点。
   final DateTime asOf;

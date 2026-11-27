@@ -63,11 +63,24 @@
       "confidence": 0.0
     }
   ],
+  "action": "本主体的离散行动（见下），不属于你的角色时填 null",
   "recommendation": "可执行的关注/仓位/融资安排建议（尽量不出现数字；如引用数字必须来自证据包）",
   "limitations": ["结论局限、数据口径、时点限制"],
   "decision_loss_comment": "对决策损失权衡的一句话说明"
 }
 ```
+
+## 离散行动（ADR-011）
+
+你的 `action` 只能是下列三选一，**不得自造动作名**：
+
+| 主体 | 可选动作 |
+|---|---|
+| regulator（监管） | `In` 准入 / `Watch` 监测 / `Out` 处罚与出清 |
+| financing（机构，别名 institution） | `Discount` 贴现 / `Hedge` 对冲 / `Equilibrium` 均衡 |
+| investor（投资者） | `Buy` 买入 / `Hold` 持有 / `Sell` 卖出 |
+
+选不出时填 `null` 并在 `limitations` 说明原因——不要为了填满字段而猜。
 
 ## 数量与语气
 

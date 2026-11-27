@@ -478,6 +478,7 @@ class CbrRoleCard extends StatelessWidget {
     this.horizonDays,
     this.evidenceCount,
     this.degraded = false,
+    this.action,
   });
 
   final CbrRole role;
@@ -488,6 +489,9 @@ class CbrRoleCard extends StatelessWidget {
 
   /// 降级运行必须明示（零 Mock 严格模式）。
   final bool degraded;
+
+  /// 该主体的离散行动（预警三件套的第三件）；null = 模型未给出。
+  final String? action;
 
   @override
   Widget build(BuildContext context) {
@@ -535,6 +539,19 @@ class CbrRoleCard extends StatelessWidget {
             headline,
             style: CbrType.body.copyWith(color: palette.textPrimary),
           ),
+          if (action != null && action!.isNotEmpty) ...<Widget>[
+            const SizedBox(height: CbrSpace.s2),
+            Row(
+              children: <Widget>[
+                Text(
+                  '建议行动',
+                  style: CbrType.caption.copyWith(color: palette.textTertiary),
+                ),
+                const SizedBox(width: CbrSpace.s2),
+                CbrTag(text: action!, tone: CbrStatusTone.info),
+              ],
+            ),
+          ],
           if (evidenceCount != null || degraded) ...<Widget>[
             const SizedBox(height: CbrSpace.s3),
             Row(
