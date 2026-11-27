@@ -171,6 +171,11 @@ final class AgentRuntime {
       try {
         final hits = await memory.search(store: 'mi', asOf: asOf, query: question);
         priorContext.addAll(hits.map((hit) => hit.render()));
+        // 消融的操作检查：命中数必须可见，否则「记忆无效」可能是「没检索到」。
+        yield AgentActivity(runId, 'coordinator', 'memory_search', {
+          'store': 'mi',
+          'hits': hits.length,
+        });
       } on Object {
         // 记忆不可用不得阻断研判；原因由 RunSummary.limitations 说明。
         priorContext.clear();
