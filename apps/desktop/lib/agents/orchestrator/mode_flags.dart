@@ -112,6 +112,9 @@ final class AblationFlags {
   );
 
   /// MI 库（市场情报记忆）。
+  ///
+  /// **未接线**：MI 库（LanceDB 三库之一）尚未实现，本开关当前只记录不改变
+  /// 执行路径。标出来是为了不让消融表把「没做的事」算成「做了但无效果」。
   final bool miMemory;
 
   /// 浅层反思（LLR：相似历史案例）。
@@ -121,12 +124,14 @@ final class AblationFlags {
   final bool hlrReflection;
 
   /// 多模态辅助证据。
+  ///
+  /// **未接线**：音视频/图像模态解析尚未实现，当前只记录。
   final bool multimodalAux;
 
   /// 证据强度：`weak` 用于在不触发权限拦截的前提下测量幻觉率。
   final EvidenceStrength evidenceStrength;
 
-  /// 额外启用的工具（消融臂 D 用：去掉某些工具后看增量）。
+  /// 从工具计划中**排除**的工具（消融臂 D：去掉新工具后看增量）。
   final Set<String> extraTools;
 
   /// 是否需要跨时点反思（任一反思开关打开）。

@@ -649,6 +649,11 @@ final class AgentRuntime {
         plan.putIfAbsent(tool, () => roles[i]);
       }
     }
+    // extraTools 是**排除**清单：消融臂 D（去掉新工具）靠它生效。
+    // 此前只记录不生效，消融实验等于没做。
+    if (settings.ablation.extraTools.isNotEmpty) {
+      plan.removeWhere((tool, _) => settings.ablation.extraTools.contains(tool));
+    }
     for (final entry in plan.entries) {
       final tool = entry.key;
       final slot = roles.indexOf(entry.value);
