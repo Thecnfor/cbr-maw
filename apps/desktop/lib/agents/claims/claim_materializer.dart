@@ -53,7 +53,11 @@ final class DraftClaim {
 /// 回填结果：保留的 claim、被拒记录与数值不一致计数。
 final class MaterializeResult {
   /// 创建结果。
-  const MaterializeResult(this.claims, this.rejected, {this.numericMismatches = 0});
+  const MaterializeResult(
+    this.claims,
+    this.rejected, {
+    this.numericMismatches = 0,
+  });
 
   /// 通过回填的 claim。
   final List<Claim> claims;
@@ -166,14 +170,23 @@ MaterializeResult materializeClaims({
     if (type == ClaimType.numeric &&
         draft.value != null &&
         claim.value != null &&
-        !_numbersMatch(draft.value!, claim.value!, absTol: 1e-6, relTol: 1e-3)) {
+        !_numbersMatch(
+          draft.value!,
+          claim.value!,
+          absTol: 1e-6,
+          relTol: 1e-3,
+        )) {
       numericMismatches++;
     }
 
     claims.add(claim);
   }
 
-  return MaterializeResult(claims, rejected, numericMismatches: numericMismatches);
+  return MaterializeResult(
+    claims,
+    rejected,
+    numericMismatches: numericMismatches,
+  );
 }
 
 Claim? _numericClaim(
@@ -281,7 +294,12 @@ double _clamp(double? value, double fallback) =>
     (value ?? fallback).clamp(0.0, 1.0).toDouble();
 
 /// 数值一致（容差与核验层一致）。
-bool _numbersMatch(double a, double b, {required double absTol, required double relTol}) {
+bool _numbersMatch(
+  double a,
+  double b, {
+  required double absTol,
+  required double relTol,
+}) {
   final diff = (a - b).abs();
   if (diff <= absTol) {
     return true;

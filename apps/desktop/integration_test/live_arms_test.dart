@@ -83,7 +83,10 @@ void main() {
   }
 
   test('多臂对照：$days 个真实时点 × {A, S, I, C}', () async {
-    final workspace = p.join(Directory.systemTemp.path, 'cbr_arms_bench.duckdb');
+    final workspace = p.join(
+      Directory.systemTemp.path,
+      'cbr_arms_bench.duckdb',
+    );
     final ws = File(workspace);
     if (ws.existsSync()) ws.deleteSync();
     File(pitDb).copySync(workspace);
@@ -97,9 +100,8 @@ void main() {
         'cross_validation',
         'single_agent',
       ])
-        name: File(
-          p.join(root, 'apps/desktop/lib/agents/prompts/$name.md'),
-        ).readAsStringSync(),
+        name: File(p.join(root, 'apps/desktop/lib/agents/prompts/$name.md'))
+            .readAsStringSync(),
     });
     final catalog = RoleCatalog.parse(
       File(p.join(root, 'apps/desktop/lib/agents/roles/roles.json'))
@@ -210,11 +212,8 @@ void main() {
           'failure': failure,
           'ms': DateTime.now().difference(started).inMilliseconds,
           'tokens': summary?.tokensUsed ?? 0,
-          'claims': decision?.cards.fold<int>(
-                0,
-                (a, c) => a + c.claims.length,
-              ) ??
-              0,
+          'claims':
+              decision?.cards.fold<int>(0, (a, c) => a + c.claims.length) ?? 0,
           'conflicts': conflicts,
           'degraded': summary?.degradedRoles ?? const <String>[],
           'partial': summary?.partial ?? true,
@@ -225,12 +224,10 @@ void main() {
                   for (final entry in decision.llmAssessments.entries)
                     entry.key.wire: entry.value.wire,
                 },
-          'leakage_events':
-              decision?.verification.leakageEvents ?? 0,
+          'leakage_events': decision?.verification.leakageEvents ?? 0,
           'permission_violations':
               decision?.verification.permissionViolations ?? 0,
-          'unsupported_claims':
-              decision?.verification.unsupportedClaims ?? 0,
+          'unsupported_claims': decision?.verification.unsupportedClaims ?? 0,
         };
       }
       records.add({'as_of': date, 'arms': arms});
@@ -247,7 +244,8 @@ void main() {
     file.writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert({
         'generated_at': DateTime.now().toUtc().toIso8601String(),
-        'model': Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
+        'model':
+            Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
         'kernel': kernelBin,
         'pit_db': pitDb,
         'n_days': records.length,
@@ -277,15 +275,13 @@ Future<Map<String, Object?>> _runArmA({
   final stale = <String, String>{};
   for (final series in _panelSeries) {
     // 故意不带 as_of 约束 + 降序：取该序列「最新」读数（A 组的定义性特征）。
-    final results = await supervisor
-        .send('db.query', {
-          'view': 'pit_observations',
-          'as_of': '2099-12-31',
-          'filters': {'series_id': series},
-          'limit': 1,
-          'order': 'desc',
-        })
-        .toList();
+    final results = await supervisor.send('db.query', {
+      'view': 'pit_observations',
+      'as_of': '2099-12-31',
+      'filters': {'series_id': series},
+      'limit': 1,
+      'order': 'desc',
+    }).toList();
     final result = results.single;
     if (result case Success(:final value)) {
       if (value is! Map<String, Object?>) continue;
@@ -421,10 +417,7 @@ List<String> _sampleDates(String goldenPath, int count) {
     }
   }
   final half = (count / 2).ceil();
-  return [
-    ..._evenly(stress, half),
-    ..._evenly(calm, count - half),
-  ]..sort();
+  return [..._evenly(stress, half), ..._evenly(calm, count - half)]..sort();
 }
 
 /// 从升序列表里均匀取 [count] 个（取尾部：越近的样本越贴近当前市场结构）。

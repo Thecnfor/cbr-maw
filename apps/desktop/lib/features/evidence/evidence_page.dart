@@ -191,8 +191,7 @@ class _EvidencePageState extends State<EvidencePage> {
                         // 原文片段用证据卡（长文本可展开），而不是塞进
                         // KeyValueRow 的一行里。
                         CbrEvidenceCard(
-                          excerpt:
-                              fields['text']?.toString() ?? '该证据不含原文片段',
+                          excerpt: fields['text']?.toString() ?? '该证据不含原文片段',
                           sourceName:
                               fields['source_id']?.toString() ?? '未登记来源',
                           timestamp: Clock.display(

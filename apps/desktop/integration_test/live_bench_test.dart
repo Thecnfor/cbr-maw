@@ -33,7 +33,6 @@ import 'package:cbr_maw/agents/signals/kernel_signal_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-
 /// 环境变量密钥源（bench 专用；产品内走 OS 安全存储）。
 final class _EnvSecrets implements SecretProvider {
   _EnvSecrets(this.values);
@@ -86,7 +85,10 @@ void main() {
   }
 
   test('真实链路：kernel 工具 + LLM 三角色 + R0–R5，$days 个时点（$mode）', () async {
-    final workspace = p.join(Directory.systemTemp.path, 'cbr_live_bench.duckdb');
+    final workspace = p.join(
+      Directory.systemTemp.path,
+      'cbr_live_bench.duckdb',
+    );
     final ws = File(workspace);
     if (ws.existsSync()) ws.deleteSync();
     File(pitDb).copySync(workspace);
@@ -100,14 +102,12 @@ void main() {
         'cross_validation',
         'single_agent',
       ])
-        name: File(
-          p.join(root, 'apps/desktop/lib/agents/prompts/$name.md'),
-        ).readAsStringSync(),
+        name: File(p.join(root, 'apps/desktop/lib/agents/prompts/$name.md'))
+            .readAsStringSync(),
     });
     final catalog = RoleCatalog.parse(
-      File(
-        p.join(root, 'apps/desktop/lib/agents/roles/roles.json'),
-      ).readAsStringSync(),
+      File(p.join(root, 'apps/desktop/lib/agents/roles/roles.json'))
+          .readAsStringSync(),
     );
 
     final supervisor = SidecarSupervisor(
@@ -144,8 +144,7 @@ void main() {
     final generator = DeepSeekGenerator(
       secrets: _EnvSecrets({'DEEPSEEK_API_KEY': token!}),
       baseUrl: baseUrl!,
-      model:
-          Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
+      model: Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
       // 推理型模型先烧 reasoning tokens；1200 会在出结论前耗尽。
       maxTokens: int.parse(
         Platform.environment['CBR_BENCH_MAX_TOKENS'] ?? '4000',
@@ -167,7 +166,10 @@ void main() {
     final runtime = AgentRuntime(settings);
 
     final dates = _sampleDates(
-      p.join(root, 'contracts/golden-vectors/cfsi_stress_pca_q90_reference.json'),
+      p.join(
+        root,
+        'contracts/golden-vectors/cfsi_stress_pca_q90_reference.json',
+      ),
       days,
     );
     final records = <Map<String, Object?>>[];
@@ -188,11 +190,7 @@ void main() {
             summary = finished;
           case RunFailed(:final code, :final message):
             failure = '$code: $message';
-          case ClaimProduced(
-            :final kind,
-            :final evidenceIds,
-            :final claimId,
-          ):
+          case ClaimProduced(:final kind, :final evidenceIds, :final claimId):
             claims.add({
               'claim_id': claimId,
               'kind': kind,
@@ -234,7 +232,13 @@ void main() {
             ? const <String>[]
             : [
                 for (final e in decision.evidence)
-                  {'id': e.evidenceId, 'kind': e.kind.wire, 'as_of': e.asOf.toIso8601String().substring(0, 10), 'value': e.value, 'tool': e.tool?.name},
+                  {
+                    'id': e.evidenceId,
+                    'kind': e.kind.wire,
+                    'as_of': e.asOf.toIso8601String().substring(0, 10),
+                    'value': e.value,
+                    'tool': e.tool?.name,
+                  },
               ],
         'final_advice': decision?.finalAdvice,
       });
@@ -256,7 +260,8 @@ void main() {
       const JsonEncoder.withIndent('  ').convert({
         'generated_at': DateTime.now().toUtc().toIso8601String(),
         'mode': mode.wire,
-        'model': Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
+        'model':
+            Platform.environment['CBR_BENCH_MODEL'] ?? 'deepseek-v4.1-flash',
         'kernel': kernelBin,
         'pit_db': pitDb,
         'n_runs': records.length,

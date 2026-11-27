@@ -277,18 +277,18 @@ class _LegendItem extends StatelessWidget {
             vertical: CbrSpace.s1,
           ),
           child: Opacity(
-          opacity: hidden ? 0.4 : 1,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(width: 12, height: 2, color: color),
-              const SizedBox(width: CbrSpace.s2),
-              Text(
-                series.name,
-                style: CbrType.caption.copyWith(color: palette.textSecondary),
-              ),
-            ],
-          ),
+            opacity: hidden ? 0.4 : 1,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(width: 12, height: 2, color: color),
+                const SizedBox(width: CbrSpace.s2),
+                Text(
+                  series.name,
+                  style: CbrType.caption.copyWith(color: palette.textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
       ),

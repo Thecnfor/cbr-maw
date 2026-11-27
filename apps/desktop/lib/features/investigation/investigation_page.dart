@@ -32,7 +32,6 @@ import '../../app/theme/tokens.dart';
 import '../../app/ui.dart';
 import '../../app/widgets/chips.dart';
 
-
 import '../../app/widgets/states.dart';
 import '../../app/widgets/synthetic.dart';
 import 'investigation_rules.dart';
@@ -995,7 +994,8 @@ final class _DecisionPanel extends StatelessWidget {
       child: Column(
         children: [
           CbrDecisionPanel(
-            conclusion: '风险等级 ${RiskLevelBadge.labelOf(riskLevelFromWire(summary.riskLevel))}'
+            conclusion:
+                '风险等级 ${RiskLevelBadge.labelOf(riskLevelFromWire(summary.riskLevel))}'
                 '${summary.partial ? '（部分结论）' : ''}',
             riskLevel: _cbrLevel(summary.riskLevel),
             supports: supports,
@@ -1059,13 +1059,14 @@ final class _DecisionPanel extends StatelessWidget {
             const SizedBox(height: CbrSpace.s3),
             // 六类核验可视化：此前只有一行文本，用户看不出「哪类没过」。
             CbrVerificationSummary(
-              confirmed: (summary.verification!['citation_ok'] as num?)
+              confirmed:
+                  (summary.verification!['citation_ok'] as num?)?.toInt() ?? 0,
+              refuted:
+                  (summary.verification!['unsupported_claims'] as num?)
                       ?.toInt() ??
                   0,
-              refuted: (summary.verification!['unsupported_claims'] as num?)
-                      ?.toInt() ??
-                  0,
-              uncertain: (summary.verification!['semantic_unverified'] as num?)
+              uncertain:
+                  (summary.verification!['semantic_unverified'] as num?)
                       ?.toInt() ??
                   0,
               coverage: _coverage(summary.verification!),

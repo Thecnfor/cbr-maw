@@ -7,7 +7,6 @@ import 'package:cbr_maw/app/theme/theme.dart';
 import 'package:cbr_maw/app/ui.dart';
 import 'package:cbr_maw/features/settings/settings_page.dart';
 
-
 import 'package:flutter/services.dart' show ByteData, FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

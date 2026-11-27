@@ -22,13 +22,11 @@ final class KernelReflection {
     int horizon = 20,
   }) async {
     final day = asOf.toUtc().toIso8601String().substring(0, 10);
-    final results = await client
-        .send('reflection.shallow', {
-          'as_of': day,
-          'top_k': topK,
-          'horizon': horizon,
-        })
-        .toList();
+    final results = await client.send('reflection.shallow', {
+      'as_of': day,
+      'top_k': topK,
+      'horizon': horizon,
+    }).toList();
     final result = results.single;
     return switch (result) {
       Success(:final value) => _parse(day, value),
@@ -92,13 +90,11 @@ final class KernelDeepReflection {
     int horizon = 20,
   }) async {
     final day = asOf.toUtc().toIso8601String().substring(0, 10);
-    final results = await client
-        .send('reflection.deep', {
-          'as_of': day,
-          'lookback_days': lookbackDays,
-          'horizon': horizon,
-        })
-        .toList();
+    final results = await client.send('reflection.deep', {
+      'as_of': day,
+      'lookback_days': lookbackDays,
+      'horizon': horizon,
+    }).toList();
     final result = results.single;
     return switch (result) {
       Success(:final value) => _parse(value),
@@ -117,8 +113,7 @@ final class KernelDeepReflection {
     }
     double? d(Map<String, Object?> map, String key) =>
         (map[key] as num?)?.toDouble();
-    int? i(Map<String, Object?> map, String key) =>
-        (map[key] as num?)?.toInt();
+    int? i(Map<String, Object?> map, String key) => (map[key] as num?)?.toInt();
     return ReflectionPerformance(
       evaluableDays: i(window, 'evaluable_days') ?? 0,
       horizon: i(window, 'horizon') ?? 0,

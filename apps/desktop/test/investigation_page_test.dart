@@ -223,7 +223,6 @@ void main() {
       expect(find.text('我'), findsOneWidget);
     });
 
-
     testWidgets('研判完成后展示决策面板：主张/证据/冲突/降级/局限', (tester) async {
       await pump(tester);
       await tester.enterText(find.byType(TextField).first, '评估跨境风险');

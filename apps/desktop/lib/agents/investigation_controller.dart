@@ -169,7 +169,11 @@ final class AgentRuntime {
     final memory = settings.memory;
     if (settings.ablation.miMemory && memory != null && memory.available) {
       try {
-        final hits = await memory.search(store: 'mi', asOf: asOf, query: question);
+        final hits = await memory.search(
+          store: 'mi',
+          asOf: asOf,
+          query: question,
+        );
         priorContext.addAll(hits.map((hit) => hit.render()));
         // 消融的操作检查：命中数必须可见，否则「记忆无效」可能是「没检索到」。
         yield AgentActivity(runId, 'coordinator', 'memory_search', {
@@ -587,7 +591,8 @@ final class AgentRuntime {
             asOf: day,
             availableAt: availableAt,
             kind: 'run_summary',
-            text: '本期信号分位 ${signal?.percentile?.toStringAsFixed(4) ?? "无"}'
+            text:
+                '本期信号分位 ${signal?.percentile?.toStringAsFixed(4) ?? "无"}'
                 '（${signal?.level.wire ?? "-"}），最终定级 ${finalLevel.wire}；'
                 '${conflicts.isEmpty ? "无冲突" : "冲突 ${conflicts.length} 条"}；'
                 '证据 ${board.items.length} 条。',
@@ -595,8 +600,10 @@ final class AgentRuntime {
               'level': finalLevel.wire,
               'signal_percentile': signal?.percentile,
               'signal_level': signal?.level.wire,
-              'claims': decision.cards
-                  .fold<int>(0, (sum, card) => sum + card.claims.length),
+              'claims': decision.cards.fold<int>(
+                0,
+                (sum, card) => sum + card.claims.length,
+              ),
               'conflicts': conflicts.length,
               'mode': mode.wire,
             },
@@ -608,9 +615,10 @@ final class AgentRuntime {
             asOf: day,
             availableAt: availableAt,
             kind: 'attribution',
-            text: '在 $day 判定 ${finalLevel.wire}；'
+            text:
+                '在 $day 判定 ${finalLevel.wire}；'
                 '三主体自评 ${decision.llmAssessments.entries.map((e) => "${e.key.wire}=${e.value.wire}").join("/")}；'
-                '分歧类型 ${conflicts.map((c) => c.type.wire).toSet().join(",") }。',
+                '分歧类型 ${conflicts.map((c) => c.type.wire).toSet().join(",")}。',
             payload: {
               'level': finalLevel.wire,
               'assessments': {
@@ -754,7 +762,9 @@ final class AgentRuntime {
     // extraTools 是**排除**清单：消融臂 D（去掉新工具）靠它生效。
     // 此前只记录不生效，消融实验等于没做。
     if (settings.ablation.extraTools.isNotEmpty) {
-      plan.removeWhere((tool, _) => settings.ablation.extraTools.contains(tool));
+      plan.removeWhere(
+        (tool, _) => settings.ablation.extraTools.contains(tool),
+      );
     }
     for (final entry in plan.entries) {
       final tool = entry.key;

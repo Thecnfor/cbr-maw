@@ -86,17 +86,18 @@ abstract final class AppTheme {
         alpha: 0.12,
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: isDark ? Tokens.n5d : Tokens.n5),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.focused)) {
-              return (isDark ? Tokens.focusRingD : Tokens.focusRing)
-                  .withValues(alpha: 0.12);
-            }
-            return null;
-          }),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              side: BorderSide(color: isDark ? Tokens.n5d : Tokens.n5),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.focused)) {
+                  return (isDark ? Tokens.focusRingD : Tokens.focusRing)
+                      .withValues(alpha: 0.12);
+                }
+                return null;
+              }),
+            ),
       ),
     );
   }

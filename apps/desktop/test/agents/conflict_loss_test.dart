@@ -25,7 +25,11 @@ void main() {
     test('偏好差异不计入损失（docs/20：不算错误）', () {
       final loss = conflictLossBreakdown(
         conflicts: [
-          _conflict(id: 'k1', type: ConflictType.preference, severity: Severity.high),
+          _conflict(
+            id: 'k1',
+            type: ConflictType.preference,
+            severity: Severity.high,
+          ),
         ],
       );
       expect(loss['conflict_total'], 0);
@@ -34,19 +38,30 @@ void main() {
 
     test('事实分歧比方向分歧更贵', () {
       final fact = conflictLossBreakdown(
-        conflicts: [_conflict(id: 'k1', type: ConflictType.fact, severity: Severity.high)],
+        conflicts: [
+          _conflict(id: 'k1', type: ConflictType.fact, severity: Severity.high),
+        ],
       );
       final directional = conflictLossBreakdown(
         conflicts: [
-          _conflict(id: 'k2', type: ConflictType.directional, severity: Severity.high),
+          _conflict(
+            id: 'k2',
+            type: ConflictType.directional,
+            severity: Severity.high,
+          ),
         ],
       );
-      expect(fact['conflict_total'], greaterThan(directional['conflict_total']!));
+      expect(
+        fact['conflict_total'],
+        greaterThan(directional['conflict_total']!),
+      );
     });
 
     test('工具重算仲裁后代价大幅下降', () {
       final unresolved = conflictLossBreakdown(
-        conflicts: [_conflict(id: 'k1', type: ConflictType.fact, severity: Severity.high)],
+        conflicts: [
+          _conflict(id: 'k1', type: ConflictType.fact, severity: Severity.high),
+        ],
       );
       final resolved = conflictLossBreakdown(
         conflicts: [

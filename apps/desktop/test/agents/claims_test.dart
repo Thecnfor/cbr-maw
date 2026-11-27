@@ -206,7 +206,11 @@ void main() {
         evidence: const [],
         llmAssessment: RiskLevel.low,
       );
-      expect(decision.level, RiskLevel.critical, reason: '0.8 ≥ 0.7 → critical');
+      expect(
+        decision.level,
+        RiskLevel.critical,
+        reason: '0.8 ≥ 0.7 → critical',
+      );
       expect(decision.llmAdjusted, isFalse);
     });
 

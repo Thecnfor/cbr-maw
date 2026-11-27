@@ -222,10 +222,7 @@ final class RoleAgent {
       latencyMs: response.latencyMs,
       round: input.round,
       // 离散行动：只接受该角色枚举内的值，越界一律 null（不猜）。
-      action: SubjectAction.parseFor(
-        input.role,
-        response.json['action'],
-      ),
+      action: SubjectAction.parseFor(input.role, response.json['action']),
     );
 
     return AgentOutput(

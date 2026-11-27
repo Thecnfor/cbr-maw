@@ -1,4 +1,5 @@
 import '../models/domain.dart';
+
 import 'package:cbr_maw_contracts/contracts_dart.dart'
     show Failure, SidecarClient, Success;
 
@@ -15,9 +16,9 @@ final class KernelSignalSource {
   /// 取 [asOf] 当日信号。
   Future<RiskSignal?> read(DateTime asOf) async {
     final day = asOf.toUtc().toIso8601String().substring(0, 10);
-    final results = await client
-        .send('signal.compute', {'as_of': day})
-        .toList();
+    final results = await client.send('signal.compute', {
+      'as_of': day,
+    }).toList();
     final result = results.single;
     return switch (result) {
       Success(:final value) => _parse(day, value),
@@ -39,7 +40,11 @@ final class KernelSignalSource {
     return RiskSignal(
       asOf: DateTime.parse('${day}T10:00:00Z'),
       modelVersion: payload['model_version'] as String? ?? 'cfsi-deterministic',
-      horizons: {5: value.toDouble(), 10: value.toDouble(), 20: value.toDouble()},
+      horizons: {
+        5: value.toDouble(),
+        10: value.toDouble(),
+        20: value.toDouble(),
+      },
       percentile: value.toDouble(),
       level: _level(level is String ? level : ''),
       evidenceId: payload['evidence_id'] as String?,

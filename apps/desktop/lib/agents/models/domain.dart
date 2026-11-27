@@ -167,8 +167,10 @@ enum SubjectAction {
   final String roleWire;
 
   /// 某主体可用的动作。
-  static List<SubjectAction> forRole(RoleId role) =>
-      [for (final a in values) if (a.roleWire == role.wire) a];
+  static List<SubjectAction> forRole(RoleId role) => [
+    for (final a in values)
+      if (a.roleWire == role.wire) a,
+  ];
 
   /// 从字面量解析；不属于该角色时返回 null（不猜）。
   static SubjectAction? parseFor(RoleId role, Object? raw) {

@@ -46,9 +46,9 @@ final class AgentBootstrapFactory {
       signalSource: KernelSignalSource(state.supervisor).read,
       reflectionSource: KernelReflection(state.supervisor).read,
       deepReflectionSource: KernelDeepReflection(state.supervisor).read,
-      knowledgeSource: (query, asOf) => KernelKnowledgeSource(
-        state.supervisor,
-      ).read(query: query, asOf: asOf),
+      knowledgeSource: (query, asOf) =>
+          KernelKnowledgeSource(state.supervisor)
+              .read(query: query, asOf: asOf),
       memory: SidecarMemoryStore(state.supervisor),
     );
     return InvestigationController(

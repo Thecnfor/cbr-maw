@@ -8,7 +8,8 @@
 // ignore_for_file: avoid_print
 import 'dart:io';
 
-import 'package:cbr_maw_contracts/contracts_dart.dart' show ToolSpec, toolRegistry;
+import 'package:cbr_maw_contracts/contracts_dart.dart'
+    show ToolSpec, toolRegistry;
 import 'package:json_schema/json_schema.dart';
 import 'package:path/path.dart' as p;
 
@@ -298,7 +299,10 @@ void main(List<String> args) {
 /// 三方（contracts/tools/tools.json · Rust · Dart）任一漂移都会让新工具
 /// 在某一侧不可用——本次漂移就使 `dimension_dispersion` / `capital_linkage`
 /// 在 Dart 侧 `ToolName.parse` 直接抛错。
-List<String> _rustToolRegistryMismatches(Directory root, List<Map<String, Object?>> tools) {
+List<String> _rustToolRegistryMismatches(
+  Directory root,
+  List<Map<String, Object?>> tools,
+) {
   final file = File(p.join(root.path, 'services/kernel/src/tools/mod.rs'));
   if (!file.existsSync()) {
     return const ['缺少 services/kernel/src/tools/mod.rs（Rust 工具登记表）'];
@@ -357,8 +361,10 @@ List<String> _rustToolRegistryMismatches(Directory root, List<Map<String, Object
 /// 生成物防漂移：契约里登记的工具必须都出现在生成的 `ToolName` 枚举。
 List<String> _staleGeneratedNames(File generated, List<ToolSpec> registry) {
   final source = generated.readAsStringSync();
-  final block = RegExp(r'enum ToolName \{(.*?)\n\}', dotAll: true)
-      .firstMatch(source);
+  final block = RegExp(
+    r'enum ToolName \{(.*?)\n\}',
+    dotAll: true,
+  ).firstMatch(source);
   if (block == null) {
     return const ['生成的 methods.dart 里找不到 ToolName 枚举'];
   }
@@ -389,18 +395,19 @@ String? _regenerateAndDiff(Directory root, File committed) {
   final original = committed.readAsStringSync();
   backup.writeAsStringSync(original);
   try {
-    final result = Process.runSync(
-      python,
-      [generator.path],
-      workingDirectory: root.path,
-    );
+    final result = Process.runSync(python, [
+      generator.path,
+    ], workingDirectory: root.path);
     if (result.exitCode != 0) {
       print('  ! 生成器未运行（exit ${result.exitCode}），跳过内容比对');
       return null;
     }
     // 生成器输出未格式化，仓库内是 `dart format` 过的产物：
     // 先格式化再比对，否则每一行都会被判为漂移。
-    Process.runSync('dart', ['format', committed.path], workingDirectory: root.path);
+    Process.runSync('dart', [
+      'format',
+      committed.path,
+    ], workingDirectory: root.path);
     final regenerated = committed.readAsStringSync();
     if (_normalized(regenerated) == _normalized(original)) {
       return null;
@@ -427,5 +434,9 @@ String? _regenerateAndDiff(Directory root, File committed) {
   }
 }
 
-String _normalized(String text) =>
-    text.replaceAll('\r\n', '\n').split('\n').map((l) => l.trimRight()).join('\n').trim();
+String _normalized(String text) => text
+    .replaceAll('\r\n', '\n')
+    .split('\n')
+    .map((l) => l.trimRight())
+    .join('\n')
+    .trim();

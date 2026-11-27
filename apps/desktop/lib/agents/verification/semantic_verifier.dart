@@ -91,9 +91,7 @@ Future<SemanticVerification> verifySemantics({
   for (final claim in claims.take(maxClaims)) {
     // 数值主张由工具重算覆盖，语义核验对它没有增量。
     if (claim.claimType == ClaimType.numeric) {
-      checks.add(
-        SemanticCheck(claimId: claim.claimId, verdict: 'skipped'),
-      );
+      checks.add(SemanticCheck(claimId: claim.claimId, verdict: 'skipped'));
       continue;
     }
     final supporting = [
@@ -101,9 +99,7 @@ Future<SemanticVerification> verifySemantics({
         if (evidenceById[id] != null) evidenceById[id]!,
     ];
     if (supporting.isEmpty) {
-      checks.add(
-        SemanticCheck(claimId: claim.claimId, verdict: 'unsupported'),
-      );
+      checks.add(SemanticCheck(claimId: claim.claimId, verdict: 'unsupported'));
       continue;
     }
     try {
@@ -139,9 +135,7 @@ Future<SemanticVerification> verifySemantics({
       );
     } on Object {
       // 单条失败不拖垮整轮：记 skipped，不编造判定。
-      checks.add(
-        SemanticCheck(claimId: claim.claimId, verdict: 'skipped'),
-      );
+      checks.add(SemanticCheck(claimId: claim.claimId, verdict: 'skipped'));
     }
   }
 

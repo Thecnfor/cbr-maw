@@ -92,8 +92,11 @@ final class MemoryHit {
   final double score;
 
   /// 渲染成提示词参考块。
-  String render() =>
-      '- [{asOf} · {store} · {id}] {text}'.replaceAll('{asOf}', asOf).replaceAll('{store}', store).replaceAll('{id}', id).replaceAll('{text}', text);
+  String render() => '- [{asOf} · {store} · {id}] {text}'
+      .replaceAll('{asOf}', asOf)
+      .replaceAll('{store}', store)
+      .replaceAll('{id}', id)
+      .replaceAll('{text}', text);
 }
 
 /// 记忆存储接口（测试可注入内存实现）。
@@ -131,14 +134,12 @@ final class SidecarMemoryStore implements MemoryStore {
     required String query,
     int topK = 4,
   }) async {
-    final results = await client
-        .send('memory.search', {
-          'as_of': asOf.toUtc().toIso8601String().substring(0, 10),
-          'query': query,
-          'store': store,
-          'top_k': topK,
-        })
-        .toList();
+    final results = await client.send('memory.search', {
+      'as_of': asOf.toUtc().toIso8601String().substring(0, 10),
+      'query': query,
+      'store': store,
+      'top_k': topK,
+    }).toList();
     return switch (results.single) {
       Success(:final value) => _parse(value),
       Failure() => const [],
@@ -172,10 +173,8 @@ final class SidecarMemoryStore implements MemoryStore {
     if (rows.isEmpty) {
       return;
     }
-    await client
-        .send('memory.upsert', {
-          'rows': [for (final row in rows) row.toJson()],
-        })
-        .toList();
+    await client.send('memory.upsert', {
+      'rows': [for (final row in rows) row.toJson()],
+    }).toList();
   }
 }

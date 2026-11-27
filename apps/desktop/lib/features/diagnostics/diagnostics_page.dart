@@ -151,9 +151,8 @@ class _PerformanceSectionState extends State<_PerformanceSection> {
       _error = null;
     });
     try {
-      final result = await KernelDeepReflection(widget.state.supervisor).read(
-        DateTime.now().toUtc(),
-      );
+      final result = await KernelDeepReflection(widget.state.supervisor)
+          .read(DateTime.now().toUtc());
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -207,7 +206,9 @@ class _PerformanceSectionState extends State<_PerformanceSection> {
                 ),
                 MetricTile(
                   label: '相对基准增益',
-                  value: r.lift == null ? '不可计算' : '${r.lift!.toStringAsFixed(2)}×',
+                  value: r.lift == null
+                      ? '不可计算'
+                      : '${r.lift!.toStringAsFixed(2)}×',
                   hint: '>1 才说明比「一直报警」强',
                   tone: (r.lift ?? 1) <= 1.05 ? BannerTone.warn : BannerTone.ok,
                 ),
