@@ -8,6 +8,7 @@ import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
         CbrRiskLevel,
         CbrRole,
         CbrRoleCard,
+        CbrVerificationSummary,
         CbrSpace,
         CbrStatusTone,
         CbrTimeline,
@@ -1020,6 +1021,33 @@ final class _DecisionPanel extends StatelessWidget {
               ],
             ),
           ],
+          if (summary.verification != null) ...[
+            const SizedBox(height: CbrSpace.s3),
+            // 六类核验可视化：此前只有一行文本，用户看不出「哪类没过」。
+            CbrVerificationSummary(
+              confirmed: (summary.verification!['citation_ok'] as num?)
+                      ?.toInt() ??
+                  0,
+              refuted: (summary.verification!['unsupported_claims'] as num?)
+                      ?.toInt() ??
+                  0,
+              uncertain: (summary.verification!['semantic_unverified'] as num?)
+                      ?.toInt() ??
+                  0,
+              coverage: _coverage(summary.verification!),
+              gaps: [
+                if ((summary.verification!['leakage_events'] as num? ?? 0) > 0)
+                  '存在时点泄漏',
+                if ((summary.verification!['permission_violations'] as num? ??
+                        0) >
+                    0)
+                  '存在越权引用',
+                if ((summary.verification!['numeric_error_rate'] as num? ?? 0) >
+                    0)
+                  '数值与工具重算不一致',
+              ],
+            ),
+          ],
           const SizedBox(height: CbrSpace.s3),
           // 成本账（J = L + μC）：协同代价必须可见，否则「多主体更准」
           // 的说法没有成本侧对照。
@@ -1031,6 +1059,16 @@ final class _DecisionPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// 引文核验覆盖率（无引文检查时返回 null，不伪造 0%）。
+  static double? _coverage(Map<String, Object?> v) {
+    final total = (v['citation_total'] as num?)?.toInt() ?? 0;
+    if (total == 0) {
+      return null;
+    }
+    final ok = (v['citation_ok'] as num?)?.toInt() ?? 0;
+    return ok / total;
   }
 
   /// 契约角色 → 设计系统角色。
