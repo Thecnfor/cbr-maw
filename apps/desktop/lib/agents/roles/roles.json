@@ -82,9 +82,9 @@
   "orchestration": {
     "modes": ["single", "independent", "collaborative", "demo"],
     "max_tool_calls_per_agent": 6,
-    "max_tokens_per_agent": 4000,
-    "max_latency_ms_per_agent": 120000,
-    "max_wall_clock_ms": 300000,
+    "max_tokens_per_agent": 16000,
+    "max_latency_ms_per_agent": 240000,
+    "max_wall_clock_ms": 900000,
     "max_delegations": 3,
     "numeric_tolerance_abs": 1e-6,
     "numeric_tolerance_rel": 1e-3,
