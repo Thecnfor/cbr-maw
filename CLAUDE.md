@@ -7,8 +7,9 @@ This file provides concise guidance to Claude Code when working in this reposito
 - **v1 主体已落地**（可编译、可测试、真实数据端到端跑通）：24 方法契约（`contracts/` `1.0.0`）、9 工具注册表、4 份黄金向量、Flutter 桌面端、Go `collector`（12 包测试绿）、Rust `kernel`（43 单测 + 3 黄金向量测试全绿）、JEV 裁判联网实测通过。
 - **当前架构基线已升级为 CBR-MAW v3.0 / `X-AlertAgent`**（2026-11-27 拍板）：外环 `X-AlertAgent` 跨时点认知闭环 × 内环 `R0–R5` 协同核验、Rust 双嵌入式引擎（DuckDB + LanceDB）、三主体升维与能力槽位路由、桌面三端收敛、激进现成库路线。
 - **已知缺口与下一步**：
-  - DeepSeek 密钥失效（401）致生成侧待复验；部分公开序列停更按 [ADR-008](docs/adr/ADR-008-CFSI缺维降级口径.md) 披露 `limitations`；
-  - 现行 v1 代码与最新架构/工程规范之间的整改任务已全部立账在 [docs/12-v1架构与工程收口清单.md](docs/12-v1架构与工程收口清单.md)（v1.5 收口优先，随后推进 v2/v3）。
+  - 生成侧改走本地 OpenAI 兼容中继后已跑通（`ANTHROPIC_BASE_URL` + `reasoning_effort: low`）；部分公开序列停更按 [ADR-008](docs/adr/ADR-008-CFSI缺维降级口径.md) 披露 `limitations`；
+  - **实测结论（[docs/13 §3.5.1](docs/13-基准测试报告.md)）**：12 配对时点 × 4 臂实跑，`single`/`independent`/`collaborative` 三臂预测向量**逐点一致**——当前 R0–R5 协同**没有带来可测量的判别增量**。根因是定级由确定性规则给出、三角色 LLM 自评只记录不参与；三主体共享同一信号源与工具计划。要证明增量必须让 LLM 判断真的进入定级（v2 设计问题）；
+  - 现行 v1 代码与最新架构/工程规范之间的整改任务已全部立账在 [docs/12-v1架构与工程收口清单.md](docs/12-v1架构与工程收口清单.md)，其中「四维审计确认项」记录了 2026-11-27 审计的已修 10 项 / 待办 10 项。
 
 ## 2. 权威文档地图（唯一真源）
 
