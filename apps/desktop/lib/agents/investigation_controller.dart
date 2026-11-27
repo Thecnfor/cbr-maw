@@ -511,6 +511,14 @@ final class AgentRuntime {
             entry.key: entry.value.llmAssessment!,
       },
       ablation: settings.ablation.toJson(),
+      semanticChecks: [
+        for (final check in semantic.checks)
+          {
+            'claim_id': check.claimId,
+            'verdict': check.verdict,
+            'confidence': check.confidence,
+          },
+      ],
       reflection: {
         if (reflection != null) ...{
           'similar_cases': reflection.cases.length,

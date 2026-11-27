@@ -74,7 +74,7 @@ Future<SemanticVerification> verifySemantics({
   required Judge? judge,
   required List<Claim> claims,
   required Map<String, Evidence> evidenceById,
-  int maxClaims = 6,
+  int maxClaims = 20,
 }) async {
   if (judge == null || !await judge.available) {
     return SemanticVerification(

@@ -1035,6 +1035,7 @@ final class DecisionCard {
     this.conflictLoss = const {},
     this.ablation = const {},
     this.reflection = const {},
+    this.semanticChecks = const [],
   });
 
   /// run id。
@@ -1090,6 +1091,12 @@ final class DecisionCard {
 
   /// 本轮消融开关快照（复现实验必须知道对照组配了什么）。
   final Map<String, Object?> ablation;
+
+  /// 逐条语义核验裁决（claim_id / verdict / confidence）。
+  ///
+  /// 只留汇总数会让「哪一条被裁判判为无依据」丢失——那恰恰是复核时
+  /// 最需要看的信息。
+  final List<Map<String, Object?>> semanticChecks;
 
   /// 跨时点反思摘要（`X-AlertAgent` 外环）：这次研判看到了什么历史归因。
   ///
