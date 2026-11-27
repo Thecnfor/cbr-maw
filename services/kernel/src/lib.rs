@@ -293,11 +293,10 @@ impl Kernel {
             }
         }
         if let Some(ws) = &self.workspace {
-            let root = ws
-                .path
-                .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| std::path::PathBuf::from("."));
+            // 记忆目录必须与工作区一一对应：曾用 `parent()`，导致同目录下所有
+            // 工作区共用一份 `memory.lance`（bench 的四个分片互相污染，
+            // 消融结果无效）。改为 `<workspace>.memory/`。
+            let root = workspace::memory_root(&ws.path);
             // 向量化：默认启用；`CBR_EMBEDDING=off` 或无模型时如实降级到 FTS。
             let embedder: Option<std::sync::Arc<dyn memory::Embedder>> =
                 if std::env::var("CBR_EMBEDDING")

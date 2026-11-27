@@ -130,6 +130,13 @@ pub struct Workspace {
     pub path: PathBuf,
 }
 
+/// 与工作区一一对应的记忆目录（`<workspace>.memory`）。
+///
+/// 不用父目录：同一目录下多个工作区会共用一份记忆库（bench 分片互相污染）。
+pub fn memory_root(workspace: &Path) -> PathBuf {
+    PathBuf::from(format!("{}.memory", workspace.display()))
+}
+
 impl Workspace {
     pub fn open(path: &Path) -> Result<Self> {
         if let Some(parent) = path.parent() {
@@ -360,5 +367,21 @@ impl Workspace {
             )
             .map_err(|e| KernelError::internal(e.to_string()))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod memory_root_tests {
+    use super::memory_root;
+    use std::path::Path;
+
+    #[test]
+    fn memory_root_is_per_workspace() {
+        let a = memory_root(Path::new("/tmp/a.duckdb"));
+        let b = memory_root(Path::new("/tmp/b.duckdb"));
+        assert_eq!(a.to_string_lossy(), "/tmp/a.duckdb.memory");
+        assert_ne!(a, b, "不同工作区不得共用记忆目录");
+        // 同一目录下的工作区也必须分开（历史 bug 的回归点）。
+        assert_eq!(a.parent(), b.parent());
     }
 }
