@@ -11,6 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  a2ui_core: ^0.1.0
   genui: ^0.10.4
   json_schema_builder: ^0.1.7
   material_ui: ^1.11.1

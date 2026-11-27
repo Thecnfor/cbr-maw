@@ -9,6 +9,7 @@
 /// - 版本：[cbrCatalogVersion]（独立于 A2UI 协议版本）
 library;
 
+export 'src/a2ui_protocol.dart';
 export 'src/catalog_registry.dart';
 export 'src/components_basic.dart';
 export 'src/components_domain.dart';

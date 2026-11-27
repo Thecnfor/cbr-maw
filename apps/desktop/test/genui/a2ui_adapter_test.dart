@@ -1,184 +1,126 @@
-import 'dart:async';
-
 import 'package:cbr_maw/genui/actions/action_dispatcher.dart';
 import 'package:cbr_maw/genui/adapter/surface_bridge.dart';
 import 'package:cbr_maw/genui/catalog/cbr_catalog.dart';
+import 'package:cbr_maw_a2ui_catalog/cbr_maw_a2ui_catalog.dart'
+    show A2uiValidationError;
 import 'package:flutter_test/flutter_test.dart';
-
-A2uiMessage message(Map<String, Object?> body) => A2uiMessage.parse(body);
+import 'package:genui/genui.dart' show DataPath;
 
 void main() {
-  group('A2UI 消息解析', () {
-    test('createSurface / updateComponents / updateDataModel 解析', () {
-      final create = message({
-        'version': 'v0.9',
-        'createSurface': {'surfaceId': 's1', 'catalogId': 'cbr.basic'},
-      });
-      expect(create.type, A2uiMessageType.createSurface);
+  group('A2UI 消息入口（官方 SurfaceController 承载）', () {
+    test('工厂方法产出官方协议消息，catalogId 指向 CBR catalog', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
 
-      final update = message({
-        'version': 'v0.9',
-        'updateComponents': {
-          'surfaceId': 's1',
-          'components': [
-            {
-              'id': 'root',
-              'component': 'Column',
-              'children': ['t1'],
-            },
-            {'id': 't1', 'component': 'Text', 'text': 'hi'},
-          ],
-        },
-      });
-      expect(update.components, hasLength(2));
-      expect(update.components.first.children, ['t1']);
+      final create = bridge.createSurface('s1');
+      expect(create.surfaceId, 's1');
+      expect(create.catalogId, 'cn.cbrmaw.a2ui.catalog');
 
-      final data = message({
-        'version': 'v0.9',
-        'updateDataModel': {
-          'surfaceId': 's1',
-          'path': '/risk',
-          'value': 'high',
-        },
-      });
-      expect(data.value, 'high');
+      final update = bridge.updateComponents('s1', [
+        {'id': 'root', 'component': 'Column', 'children': <String>[]},
+      ]);
+      expect(update.components, hasLength(1));
     });
 
     test('协议版本不匹配 → 明确报错', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
       expect(
-        () => message({
+        () => bridge.handleJson({
           'version': 'v0.8',
-          'createSurface': {'surfaceId': 's1'},
+          'createSurface': {'surfaceId': 's1', 'catalogId': 'cbr.basic'},
         }),
-        throwsA(isA<A2uiFormatException>()),
+        throwsA(isA<A2uiValidationError>()),
+      );
+    });
+
+    test('合法 surface 由 SurfaceController 建立组件快照', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
+      bridge.handleMessage(bridge.createSurface('s1'));
+      bridge.handleMessage(
+        bridge.updateComponents('s1', [
+          {
+            'id': 'root',
+            'component': 'Column',
+            'children': <String>['t1'],
+          },
+          {'id': 't1', 'component': 'Text', 'text': 'synthetic'},
+        ]),
+      );
+
+      final definition = bridge.contextFor('s1').definition.value;
+      expect(definition, isNotNull);
+      expect(definition!.components.keys, containsAll(<String>['root', 't1']));
+      expect(definition.components['t1']!.type, 'Text');
+      expect(bridge.rejections, isEmpty);
+    });
+
+    test('updateDataModel 落到官方 data model', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
+      bridge.handleMessage(bridge.createSurface('s1'));
+      bridge.handleMessage(
+        bridge.updateComponents('s1', [
+          {'id': 'root', 'component': 'Text', 'text': 'synthetic'},
+        ]),
+      );
+      bridge.handleMessage(bridge.updateDataModel('s1', '/risk', 'high'));
+
+      expect(
+        bridge.contextFor('s1').dataModel.getValue<String>(DataPath('/risk')),
+        'high',
       );
     });
   });
 
   group('未登记组件显式拒绝', () {
-    test('守卫拒绝未登记组件', () {
-      final guard = CbrVisualGuard(CbrCatalog.defaultCatalog);
-      final result = guard.validate(const [
-        A2uiComponent(id: 'x', kind: 'EvilWidget'),
-        A2uiComponent(id: 'y', kind: 'Text', props: {'text': 'ok'}),
-      ]);
-      expect(result.accepted, hasLength(1));
-      expect(result.rejected.single.$2, contains('未登记'));
+    test('白名单唯一真源是 cbrRegisteredComponentNames', () {
+      final guard = CbrVisualGuard();
+      expect(guard.allowedComponents.contains('Text'), isTrue);
+      expect(guard.allowedComponents.contains('Column'), isTrue);
+      expect(guard.allowedComponents.contains('EvilWidget'), isFalse);
     });
 
-    test('流渲染：未登记组件 → 整条 surface 拒绝并报错，不静默丢弃', () async {
-      final renderer = A2uiStreamRenderer(
-        guard: CbrVisualGuard(CbrCatalog.defaultCatalog),
+    test('拒收发生在进入 SurfaceController 之前，并记录原因', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
+      bridge.handleMessage(bridge.createSurface('s1'));
+      bridge.handleMessage(
+        bridge.updateComponents('s1', [
+          {'id': 'root', 'component': 'EvilWidget'},
+        ]),
       );
-      final controller = StreamController<A2uiMessage>();
-      final states = <SurfaceState>[];
-      final errors = <Object>[];
 
-      final subscription = renderer
-          .render(controller.stream)
-          .listen(states.add, onError: errors.add);
-      controller.add(
-        message({
-          'version': 'v0.9',
-          'createSurface': {'surfaceId': 's1'},
-        }),
+      // surface 仍然存活，但未登记组件没有进入渲染状态。
+      expect(bridge.activeSurfaceIds, contains('s1'));
+      expect(
+        bridge.contextFor('s1').definition.value?.components,
+        isNot(contains('root')),
       );
-      controller.add(
-        message({
-          'version': 'v0.9',
-          'updateComponents': {
-            'surfaceId': 's1',
-            'components': [
-              {'id': 'root', 'component': 'EvilWidget'},
-            ],
-          },
-        }),
-      );
-      await Future<void>.delayed(Duration.zero);
-      await controller.close();
-      await subscription.asFuture<void>();
 
-      expect(errors.whereType<A2uiFormatException>(), isNotEmpty);
-      expect(states.last.error, contains('未登记'));
-    });
-  });
-
-  group('流式增量渲染与中断', () {
-    test('增量更新 + updateDataModel 只 patch 数值', () async {
-      final renderer = A2uiStreamRenderer(
-        guard: CbrVisualGuard(CbrCatalog.defaultCatalog),
-      );
-      final states = await renderer
-          .render(
-            Stream.fromIterable([
-              message({
-                'version': 'v0.9',
-                'createSurface': {'surfaceId': 's1'},
-              }),
-              message({
-                'version': 'v0.9',
-                'updateComponents': {
-                  'surfaceId': 's1',
-                  'components': [
-                    {
-                      'id': 'root',
-                      'component': 'Column',
-                      'children': ['risk'],
-                    },
-                    {'id': 'risk', 'component': 'Text', 'text': 'medium'},
-                  ],
-                },
-              }),
-              message({
-                'version': 'v0.9',
-                'updateDataModel': {
-                  'surfaceId': 's1',
-                  'path': '/risk',
-                  'value': 'high',
-                },
-              }),
-            ]),
-          )
-          .toList();
-
-      expect(states.last.components, hasLength(2));
-      expect(states.last.data['risk'], 'high');
+      final rejection = bridge.rejections.single;
+      expect(rejection.surfaceId, 's1');
+      expect(rejection.componentId, 'root');
+      expect(rejection.componentKind, 'EvilWidget');
+      expect(rejection.reason, contains('未登记'));
+      expect(rejection.toString(), contains('renderError'));
     });
 
-    test('中断保留已有内容并标注已中断', () async {
-      final renderer = A2uiStreamRenderer(
-        guard: CbrVisualGuard(CbrCatalog.defaultCatalog),
+    test('同一批里有一个未登记组件 → 整批拒绝（fail-closed）', () {
+      final bridge = SurfaceBridge();
+      addTearDown(bridge.dispose);
+      bridge.handleMessage(bridge.createSurface('s1'));
+      bridge.handleMessage(
+        bridge.updateComponents('s1', [
+          {'id': 'root', 'component': 'Column', 'children': <String>[]},
+          {'id': 't1', 'component': 'Text', 'text': 'synthetic'},
+          {'id': 'x', 'component': 'EvilWidget'},
+        ]),
       );
-      final controller = StreamController<A2uiMessage>();
-      final states = <SurfaceState>[];
-      final subscription = renderer
-          .render(controller.stream)
-          .listen(states.add, onError: (Object _) {});
 
-      controller.add(
-        message({
-          'version': 'v0.9',
-          'createSurface': {'surfaceId': 's1'},
-        }),
-      );
-      controller.add(
-        message({
-          'version': 'v0.9',
-          'updateComponents': {
-            'surfaceId': 's1',
-            'components': [
-              {'id': 'root', 'component': 'Text', 'text': '已渲染'},
-            ],
-          },
-        }),
-      );
-      await Future<void>.delayed(Duration.zero);
-      controller.addError(StateError('流中断'));
-      await Future<void>.delayed(Duration.zero);
-      await subscription.cancel();
-
-      expect(states.last.interrupted, isTrue);
-      expect(states.last.components, isNotEmpty);
+      expect(bridge.contextFor('s1').definition.value?.components, isEmpty);
+      expect(bridge.rejections.single.componentKind, 'EvilWidget');
     });
   });
 
@@ -295,22 +237,6 @@ void main() {
         payload: const {},
       );
       expect(result.ok, isTrue);
-    });
-  });
-
-  group('SurfaceBridge', () {
-    test('toWire 产出 A2UI v0.9 线格式', () {
-      const bridge = SurfaceBridge();
-      final wire = bridge.toWire(
-        bridge.updateComponents('s1', const [
-          A2uiComponent(id: 'root', kind: 'Column', children: ['t']),
-          A2uiComponent(id: 't', kind: 'Text', props: {'text': 'hi'}),
-        ]),
-      );
-      expect(wire['version'], 'v0.9');
-      final body = wire['updateComponents'] as Map<String, Object?>;
-      expect(body['surfaceId'], 's1');
-      expect((body['components'] as List<Object?>), hasLength(2));
     });
   });
 }

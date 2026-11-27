@@ -60,16 +60,20 @@ Future<void> main(List<String> argv) async {
     pairs: args.pairs,
     seed: args.seed,
   );
+  // 抽样完整性先校验（分片之前）：分片只是切分同一份抽样。
+  if (dates.length < args.pairs * 2) {
+    stderr.writeln('可评分时点不足：需要 ${args.pairs * 2}，实得 ${dates.length}');
+    exit(2);
+  }
   if (args.shards > 1) {
-    // 分片：把同一份抽样按序号取模切开，多进程并行跑而不改变抽样口径。
     dates = [
       for (var i = 0; i < dates.length; i++)
         if (i % args.shards == args.shard) dates[i],
     ];
-  }
-  if (dates.length < args.pairs * 2) {
-    stderr.writeln('可评分时点不足：需要 ${args.pairs * 2}，实得 ${dates.length}');
-    exit(2);
+    if (dates.isEmpty) {
+      stderr.writeln('分片 ${args.shard}/${args.shards} 没有得到任何时点');
+      exit(2);
+    }
   }
 
   final workspace = p.join(
@@ -455,7 +459,7 @@ final class _Args {
           opts['base-url'] ?? env['CBR_API_BASE'] ?? env['DEEPSEEK_BASE_URL'],
       key: opts['key'] ?? env['DEEPSEEK_API_KEY'],
       seed: int.parse(opts['seed'] ?? '11'),
-      maxTokens: int.parse(opts['max-tokens'] ?? '4000'),
+      maxTokens: int.parse(opts['max-tokens'] ?? '8000'),
       kernel: opts['kernel'],
       pitDb: opts['pit-db'],
       color: opts['no-color'] == null,

@@ -6,7 +6,7 @@ import '../agents/memory/memory_store.dart';
 import '../agents/roles/prompt_builder.dart';
 import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
-import '../core/bundle_asset_source.dart';
+import 'bundle_asset_source.dart';
 import '../core/clock.dart';
 import '../data/gate/tool_invoker.dart';
 import '../agents/signals/kernel_knowledge_source.dart';
