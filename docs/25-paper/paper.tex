@@ -810,6 +810,22 @@ $y_{20}$ 与 $t+1$ 至 $t+20$ 窗口完全一致，说明本产物的 $y_{20}$ �
 \section{有效性威胁}
 \label{sec:threats}
 
+\subsection{未运行的消融维度}
+
+本文只报告了协作模式这一维度的正式对照（三臂 × 120 配对时点）。以下开关虽已实现
+并可运行，但\textbf{未纳入本轮正式实验}，因此不给出任何效应量：
+
+\begin{itemize}
+  \item \textbf{三库记忆开/关}（\texttt{--no-memory}）：机制已接线并跑通
+        （MI/LLR 写入与检索、HLR 结算），但未做系统性的开/关对照；
+  \item \textbf{能力槽位异构路由}（ADR-011）：本轮锁定单一端点，无可比对象；
+  \item \textbf{弱证据组}（\texttt{evidence\_strength=weak}）：用于测幻觉率，
+        本轮未跑；
+  \item \textbf{模态子集}：语音/图像/视频解析未实现，五模态只有文本与数值。
+\end{itemize}
+
+把这些维度说成“已验证无效果”是最容易犯的错，本文明确避免：未跑即未跑。
+
 \subsection{标签循环性}
 
 \texttt{high\_stress} 由 CFSI 超过 $\tau$ 定义，而 $y_{20}$ 由未来的
