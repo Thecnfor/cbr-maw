@@ -299,6 +299,7 @@ final class AgentRuntime {
     }
 
     // R2 交叉验证（双轨）。
+    final peerRefuted = <String>{};
     if (flags.crossValidate) {
       final findings = await _crossValidate(
         runId: runId,
@@ -313,6 +314,23 @@ final class AgentRuntime {
         yield AgentActivity(runId, entry.key.wire, 'peer_review', {
           'findings': entry.value.map((f) => f.toJson()).toList(),
         });
+      }
+      // R2 的裁定必须回流：被同侪 `refuted` 的证据所支撑的主张，降级为
+      // conflicted 交给 R4 仲裁。此前 findings 只进事件流，从不影响结论——
+      // 交叉验证等于白跑。
+      for (final entry in findings.entries) {
+        for (final finding in entry.value) {
+          if (finding.verdict != 'refuted') {
+            continue;
+          }
+          for (final card in cards) {
+            for (final claim in card.claims) {
+              if (claim.evidenceIds.contains(finding.evidenceId)) {
+                peerRefuted.add(claim.claimId);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -338,7 +356,9 @@ final class AgentRuntime {
     }
 
     // R4 协调仲裁。
-    final statusUpdates = <String, ClaimStatus>{};
+    final statusUpdates = <String, ClaimStatus>{
+      for (final claimId in peerRefuted) claimId: ClaimStatus.conflicted,
+    };
     var escalated = <String>[];
     if (flags.coordinate && conflicts.isNotEmpty) {
       final arbitration = await arbitrateConflicts(

@@ -153,6 +153,11 @@ VerificationReport verify(VerificationContext context) {
   for (final card in context.cards) {
     final seenClaimIds = <String>{};
     for (final claim in card.claims) {
+      // R4 已判 rejected 的主张不再是有效结论：继续核验它的数值只会
+      // 把「仲裁已经否掉了」的草稿算成数值错误，反过来把正确的仲裁判成失败。
+      if (claim.status == ClaimStatus.rejected) {
+        continue;
+      }
       if (claim.claimId.isEmpty) {
         schemaErrors++;
         issues.add(
