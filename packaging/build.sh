@@ -22,14 +22,14 @@ build_sidecars() {
 
   log "kernel (Rust) → $SIDECAR_OUT/kernel"
   (cd services/kernel && cargo build --release)
-  cp services/kernel/target/release/kernel "$SIDECAR_OUT/kernel"
+  cp services/kernel/target/release/cbr-kernel "$SIDECAR_OUT/kernel"
 }
 
 cross_sidecars_windows() {
   log "交叉编译 Windows sidecar（Go/Rust 可跨；Flutter 官方不支持从 Linux 交叉编译 Windows）"
   (cd services/collector && GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o "$SIDECAR_OUT/collector.exe" .)
   (cd services/kernel && cargo build --release --target x86_64-pc-windows-gnu)
-  cp services/kernel/target/x86_64-pc-windows-gnu/release/kernel.exe "$SIDECAR_OUT/kernel.exe"
+  cp services/kernel/target/x86_64-pc-windows-gnu/release/cbr-kernel.exe "$SIDECAR_OUT/kernel.exe"
 }
 
 build_flutter() {

@@ -7,6 +7,10 @@ cd "$ROOT"
 QUICK=0
 [ "${1:-}" = "--quick" ] && QUICK=1
 
+# 构建前预检：磁盘不足直接失败；顺手清掉上次中断留下的孤儿对象（无副作用）
+bash "$ROOT/packaging/preflight.sh" || exit 1
+bash "$ROOT/packaging/clean_build_leaks.sh" | tail -1
+
 PASS=0; FAIL=0; SKIP=0
 declare -a FAILED
 

@@ -18,6 +18,18 @@ sha2 = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 csv = "1"
 
+# 门禁（clippy / test）统一走 dev profile：DuckDB 是 bundled C++，编译开销远大于
+# 运行时差异。dev 统一 -O1 是折中：C++ 侧约 3 分钟（vs release -O3 的 8–15 分钟），
+# 数值测试仍可用；release 只用于打包。
+[profile.dev]
+opt-level = 1
+debug = 0
+# 实测：cargo 1.100 把测试可执行与增量对象写入 target/<profile>/build/<crate>/<hash>/out/，
+# 构建被中断时这些 .rcgu.o 会永久残留（单次 ~200MB，7 次中断 = 1.3GB）。
+# 依赖本来就不做增量，关掉只影响本 crate（全量重编实测 6.6s）。
+incremental = false
+
 [profile.release]
 opt-level = 3
 lto = "thin"
+debug = 0
