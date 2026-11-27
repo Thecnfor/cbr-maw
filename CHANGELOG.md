@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+### feat · v3 三库记忆（ADR-010）与可复现基准控制台
+
+- **kernel 内嵌 LanceDB**：新增 `memory` 模块（`services/kernel/src/memory.rs`），单表 `memory`
+  + `store` 判别列（`mi`/`llr`/`hlr`），JSON `payload` 承载库内差异字段；`memory.upsert/search/stats`
+  三个 RPC 与契约（6 个 schema + 样例）同步落地。
+- **PIT 硬过滤**：检索前 `only_if(available_at <= as_of)`，实测「未来才可得」的记录被排除；
+  写入按 `id` 幂等覆盖（`merge_insert`），写后重建索引（否则 FTS 看不到新片段，已加回归测试）。
+- **中文全文检索**：FTS 使用内置 ICU 分词（jieba 需要外部词典文件，实测会静默退化）；
+  `memory.stats.fts_tokenizer` 如实暴露实际分词器。
+- **MMR**：LanceDB Rust 只提供 RRF，MMR 按公式实现（30 行）+ 单测。
+- **本地向量化**：`fastembed` + BGE-small-zh-v1.5（512 维，离线），模型缓存到 `<workspace>/models/`；
+  初始化失败不伪造，原因写入 `memory.stats.embedding_error`。
+- **agents 层解除 Flutter 依赖**：新增 `AssetSource`（文件/资源包两种实现），
+  使同一套 R0–R5 编排可在纯 Dart CLI 下跑。
+- **终端基准控制台** `apps/desktop/tool/bench_console.dart`：压力/平静配对抽样 + 固定种子，
+  流式打印角色/工具/主张/冲突/核验，产物结构对齐 `score_arms.py`。
+- **构建回环**：`[profile.dev] opt-level=1, debug=0, incremental=false`；`packaging/preflight.sh`
+  与 `packaging/clean_build_leaks.sh` 接入 `verify_all.sh`（首次 296s，增量 6.6s；已释放 786MB 残留）。
+
 ### fix · 内核派生序列重算性能（真实缺陷）
 
 - `services/kernel/src/ingest.rs` 的 `recompute_derived` 原本**每行一次 SELECT + 每行一次 INSERT**：

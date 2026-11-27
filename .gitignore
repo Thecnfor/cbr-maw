@@ -86,3 +86,6 @@ data/seed/documents.jsonl
 # ===== 生成与缓存（不入库）=====
 apps/desktop/linux/flutter/ephemeral/
 *.iml
+
+# 本地模型与缓存（不入库）
+.cache/

@@ -5,6 +5,7 @@
 pub mod canon;
 pub mod cfsi;
 pub mod db;
+pub mod embedder;
 pub mod error;
 pub mod features;
 pub mod ingest;
@@ -60,6 +61,9 @@ pub struct Kernel {
     resource_home: Option<String>,
     catalog: pit::SeriesCatalog,
     memory: Option<memory::Memory>,
+    embedding_error: Option<String>,
+    /// 模型目录覆盖（`--model-dir`，缺省 `<workspace>/models`）。
+    model_dir: Option<String>,
     initialized: bool,
     shutdown_requested: bool,
     log_level: String,
@@ -73,6 +77,8 @@ impl Default for Kernel {
             resource_home: None,
             catalog: pit::SeriesCatalog::builtin(),
             memory: None,
+            embedding_error: None,
+            model_dir: None,
             initialized: false,
             shutdown_requested: false,
             log_level: "info".to_string(),
@@ -119,6 +125,7 @@ impl Kernel {
                 self.resource_home = Some(value.to_string());
                 self.catalog = pit::SeriesCatalog::load(value);
             }
+            "model-dir" => self.model_dir = Some(value.to_string()),
             "log-level" => self.log_level = value.to_string(),
             other => {
                 return Err(KernelError::invalid_params(format!(
@@ -291,7 +298,27 @@ impl Kernel {
                 .parent()
                 .map(|p| p.to_path_buf())
                 .unwrap_or_else(|| std::path::PathBuf::from("."));
-            self.memory = Some(memory::Memory::open(&root, None)?);
+            // 向量化：默认启用；`CBR_EMBEDDING=off` 或无模型时如实降级到 FTS。
+            let embedder: Option<std::sync::Arc<dyn memory::Embedder>> =
+                if std::env::var("CBR_EMBEDDING").map(|v| v == "off").unwrap_or(false) {
+                    self.embedding_error = Some("已通过 CBR_EMBEDDING=off 关闭本地向量化".to_string());
+                    None
+                } else {
+                    let model_dir = self
+                        .model_dir
+                        .clone()
+                        .or_else(|| std::env::var("CBR_MODEL_DIR").ok())
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or_else(|| root.join("models"));
+                    match embedder::LocalEmbedder::new(&model_dir) {
+                        Ok(local) => Some(std::sync::Arc::new(local)),
+                        Err(reason) => {
+                            self.embedding_error = Some(reason);
+                            None
+                        }
+                    }
+                };
+            self.memory = Some(memory::Memory::open(&root, embedder)?);
         }
         self.initialized = true;
         self.log(
@@ -465,7 +492,13 @@ impl Kernel {
     }
 
     fn memory_stats(&mut self) -> Result<Value> {
-        self.memory()?.stats()
+        let mut stats = self.memory()?.stats()?;
+        if let Some(err) = &self.embedding_error {
+            if let Some(obj) = stats.as_object_mut() {
+                obj.insert("embedding_error".into(), json!(err));
+            }
+        }
+        Ok(stats)
     }
 
     fn features_build(&mut self, params: &Value) -> Result<Value> {

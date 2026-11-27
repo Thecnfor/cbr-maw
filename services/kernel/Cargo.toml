@@ -21,6 +21,7 @@ lancedb = { version = "0.41", default-features = false }
 tokio = { version = "1", features = ["rt"] }
 futures = "0.3"
 lance-index = { version = "=14.0.2", features = ["tokenizer-jieba"] }
+fastembed = "7.8"
 
 # 门禁（clippy / test）统一走 dev profile：DuckDB 是 bundled C++，编译开销远大于
 # 运行时差异。dev 统一 -O1 是折中：C++ 侧约 3 分钟（vs release -O3 的 8–15 分钟），
