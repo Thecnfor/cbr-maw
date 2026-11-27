@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+### fix · 门禁自身的两个缺陷（E9/E10）
+
+- **端到端冒烟常年 skipped**：该步骤要求先构建 collector，一直显示「sidecar 未构建，跳过」，
+  缺陷从未暴露。补齐二进制后又发现它依赖手工留下的 `build/kw` 种子库、且未先算 CFSI。
+  现改为**自播种真实 PIT 库 + 前置 `cfsi.compute`**，删掉 `build/kw` 从零可跑通。
+- **门禁自我污染**：`validate_contract` 的防漂移检查会重跑生成器，但只备份被比对的那一个
+  文件；`tools.dart` 被覆盖成未格式化输出，导致**下一次 `dart format` 检查必失败**。
+  改为备份/还原全部生成物，跑完 `git status` 干净。
+- 结果：`CBR_FULL_GOLDEN=1 bash packaging/verify_all.sh` → **16 通过 / 0 失败 / 0 跳过**，
+  且可重复。
+
 ### refactor · A2UI 官方控制器迁移 + 工具链事故恢复
 
 - `surface_bridge` 497→243 行：手写 A2UI 解析/patch 状态机删除，改由 `package:genui`
