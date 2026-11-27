@@ -391,9 +391,13 @@ String? _regenerateAndDiff(Directory root, File committed) {
     return null;
   }
   final python = Platform.environment['CBR_PYTHON'] ?? 'python3';
-  final backup = File('${committed.path}.drift-backup');
-  final original = committed.readAsStringSync();
-  backup.writeAsStringSync(original);
+  // 生成器同时写 methods.dart 与 tools.dart：只备份被比对的那一个，其余会被
+  // 生成器的未格式化输出覆盖，导致下一次 `dart format --set-exit-if-changed` 失败。
+  final siblings = [
+    committed,
+    File(p.join(committed.parent.path, 'tools.dart')),
+  ].where((f) => f.existsSync()).toList();
+  final originals = {for (final f in siblings) f.path: f.readAsStringSync()};
   try {
     final result = Process.runSync(python, [
       generator.path,
@@ -409,6 +413,7 @@ String? _regenerateAndDiff(Directory root, File committed) {
       committed.path,
     ], workingDirectory: root.path);
     final regenerated = committed.readAsStringSync();
+    final original = originals[committed.path]!;
     if (_normalized(regenerated) == _normalized(original)) {
       return null;
     }
@@ -426,10 +431,9 @@ String? _regenerateAndDiff(Directory root, File committed) {
     print('  ! 找不到 $python，跳过生成物内容比对');
     return null;
   } finally {
-    // 无论成败都还原：校验工具不得改动仓库内容。
-    committed.writeAsStringSync(original);
-    if (backup.existsSync()) {
-      backup.deleteSync();
+    // 无论成败都还原**所有**生成物：校验工具不得改动仓库内容。
+    for (final entry in originals.entries) {
+      File(entry.key).writeAsStringSync(entry.value);
     }
   }
 }
