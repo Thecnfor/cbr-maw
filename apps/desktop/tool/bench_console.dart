@@ -39,12 +39,15 @@ import 'package:path/path.dart' as p;
 Future<void> main(List<String> argv) async {
   final args = _Args.parse(argv);
   final root = args.root;
-  final kernelBin = args.kernel ?? p.join(root, 'services/kernel/target/debug/cbr-kernel');
-  final pitDb = args.pitDb ?? '/mnt/shared/recently/commorcial/data/pit_real.duckdb';
+  final kernelBin =
+      args.kernel ?? p.join(root, 'services/kernel/target/debug/cbr-kernel');
+  final pitDb =
+      args.pitDb ?? '/mnt/shared/recently/commorcial/data/pit_real.duckdb';
   final missing = <String>[
     if (!File(kernelBin).existsSync()) 'kernel=$kernelBin（先跑 cargo build）',
     if (!File(pitDb).existsSync()) 'pit_db=$pitDb',
-    if (args.baseUrl == null || args.key == null) '--base-url/--key 或 CBR_API_BASE/DEEPSEEK_API_KEY',
+    if (args.baseUrl == null || args.key == null)
+      '--base-url/--key 或 CBR_API_BASE/DEEPSEEK_API_KEY',
   ];
   if (missing.isNotEmpty) {
     stderr.writeln('无法开跑，缺少：\n  - ${missing.join('\n  - ')}');
@@ -52,17 +55,27 @@ Future<void> main(List<String> argv) async {
   }
 
   final styles = _Style(useColor: args.color && stdout.hasTerminal);
-  final dates = _samplePairedDates(
+  var dates = _samplePairedDates(
     p.join(root, 'contracts/golden-vectors/cfsi_stress_pca_q90_reference.json'),
     pairs: args.pairs,
     seed: args.seed,
   );
+  if (args.shards > 1) {
+    // 分片：把同一份抽样按序号取模切开，多进程并行跑而不改变抽样口径。
+    dates = [
+      for (var i = 0; i < dates.length; i++)
+        if (i % args.shards == args.shard) dates[i],
+    ];
+  }
   if (dates.length < args.pairs * 2) {
     stderr.writeln('可评分时点不足：需要 ${args.pairs * 2}，实得 ${dates.length}');
     exit(2);
   }
 
-  final workspace = p.join(Directory.systemTemp.path, 'cbr_console_${DateTime.now().millisecondsSinceEpoch}.duckdb');
+  final workspace = p.join(
+    Directory.systemTemp.path,
+    'cbr_console_${DateTime.now().millisecondsSinceEpoch}.duckdb',
+  );
   File(pitDb).copySync(workspace);
 
   // agents 的资源路径按应用包根解析（lib/agents/...）。
@@ -73,11 +86,16 @@ Future<void> main(List<String> argv) async {
     transportFactory: () => StdioSidecarTransport(
       executable: kernelBin,
       arguments: [
-        '--workspace', workspace,
-        '--data-home', Directory.systemTemp.path,
-        '--resource-home', root,
-        '--model-dir', args.modelDir,
-        '--log-level', 'warn',
+        '--workspace',
+        workspace,
+        '--data-home',
+        Directory.systemTemp.path,
+        '--resource-home',
+        root,
+        '--model-dir',
+        args.modelDir,
+        '--log-level',
+        'warn',
       ],
     ),
     clientVersion: 'bench-console',
@@ -91,7 +109,10 @@ Future<void> main(List<String> argv) async {
     gate: PermissionGate(now: () => DateTime.now().toUtc().toIso8601String()),
     auditSink: (_) {},
   );
-  final registry = ToolRegistry(specs: catalog.specs, invoker: _GatedInvoker(invoker));
+  final registry = ToolRegistry(
+    specs: catalog.specs,
+    invoker: _GatedInvoker(invoker),
+  );
   final generator = DeepSeekGenerator(
     secrets: _EnvSecrets({'DEEPSEEK_API_KEY': args.key!}),
     baseUrl: args.baseUrl!,
@@ -103,7 +124,9 @@ Future<void> main(List<String> argv) async {
   stdout.writeln(styles.title('CBR-MAW bench console'));
   stdout.writeln('  端点   ${args.baseUrl}  model=${args.model}');
   stdout.writeln('  kernel $kernelBin');
-  stdout.writeln('  时点   ${dates.length}（压力 ${dates.where((d) => d.pressure).length} / 平静 ${dates.where((d) => !d.pressure).length}，seed=${args.seed}）');
+  stdout.writeln(
+    '  时点   ${dates.length}（压力 ${dates.where((d) => d.pressure).length} / 平静 ${dates.where((d) => !d.pressure).length}，seed=${args.seed}）',
+  );
   stdout.writeln('  臂     ${args.arms.join(', ')}\n');
 
   final records = <Map<String, Object?>>[];
@@ -131,10 +154,12 @@ Future<void> main(List<String> argv) async {
       final claims = <Map<String, Object?>>[];
       final conflicts = <String>[];
 
-      stdout.writeln(styles.header(
-        '━ [$index/${dates.length}] ${day.date} '
-        '${day.pressure ? "压力" : "平静"} · 臂 $arm',
-      ));
+      stdout.writeln(
+        styles.header(
+          '━ [$index/${dates.length}] ${day.date} '
+          '${day.pressure ? "压力" : "平静"} · 臂 $arm',
+        ),
+      );
       await for (final event in runtime.run(
         question: '基于证据包评估 ${day.date} 的跨境金融压力，并给出三主体行动建议。',
         runId: 'bench-${day.date}-$arm',
@@ -147,18 +172,35 @@ Future<void> main(List<String> argv) async {
           case RunFailed(:final code, :final message):
             failure = '$code: $message';
             stdout.writeln(styles.warn('  ✗ 失败 $failure'));
-          case ClaimProduced(:final kind, :final text, :final claimId, :final evidenceIds):
-            claims.add({'claim_id': claimId, 'kind': kind, 'evidence_ids': evidenceIds});
-            stdout.writeln('  ├ 主张[$kind] ${_clip(text)}  ← 证据 ${evidenceIds.length}');
+          case ClaimProduced(
+            :final kind,
+            :final text,
+            :final claimId,
+            :final evidenceIds,
+          ):
+            claims.add({
+              'claim_id': claimId,
+              'kind': kind,
+              'evidence_ids': evidenceIds,
+            });
+            stdout.writeln(
+              '  ├ 主张[$kind] ${_clip(text)}  ← 证据 ${evidenceIds.length}',
+            );
           case ConflictFound(:final category, :final details, :final escalated):
             conflicts.add(category);
-            stdout.writeln('  ├ 冲突[$category]${escalated ? " ⚠升级人工" : ""} ${_clip(jsonEncode(details))}');
+            stdout.writeln(
+              '  ├ 冲突[$category]${escalated ? " ⚠升级人工" : ""} ${_clip(jsonEncode(details))}',
+            );
           case ToolInvoked(:final tool, :final denied, :final result):
-            stdout.writeln(denied
-                ? styles.warn('  ├ 工具 $tool 被拒（越权/未确认）')
-                : '  ├ 工具 $tool → ${_clip(jsonEncode(result))}');
+            stdout.writeln(
+              denied
+                  ? styles.warn('  ├ 工具 $tool 被拒（越权/未确认）')
+                  : '  ├ 工具 $tool → ${_clip(jsonEncode(result))}',
+            );
           case AgentActivity(:final agentRole, :final action, :final detail):
-            stdout.writeln('  ├ [$agentRole] $action ${_clip(jsonEncode(detail))}');
+            stdout.writeln(
+              '  ├ [$agentRole] $action ${_clip(jsonEncode(detail))}',
+            );
           case RunStarted():
             break;
         }
@@ -183,11 +225,13 @@ Future<void> main(List<String> argv) async {
                 'unsupported_claims': decision.verification.unsupportedClaims,
               },
       };
-      stdout.writeln(styles.result(
-        '  └ → ${summary?.riskLevel ?? "-"}  ${(ms / 1000).toStringAsFixed(1)}s  '
-        'token=${summary?.tokensUsed ?? 0}  '
-        '核验=${decision?.verification.passed ?? false ? "通过" : "未通过"}',
-      ));
+      stdout.writeln(
+        styles.result(
+          '  └ → ${summary?.riskLevel ?? "-"}  ${(ms / 1000).toStringAsFixed(1)}s  '
+          'token=${summary?.tokensUsed ?? 0}  '
+          '核验=${decision?.verification.passed ?? false ? "通过" : "未通过"}',
+        ),
+      );
     }
     records.add({'as_of': day.date, 'y20': day.label, 'arms': armResults});
     _writeOut(args.out, records, args, dates, startedAll);
@@ -195,8 +239,14 @@ Future<void> main(List<String> argv) async {
 
   await supervisor.shutdown();
   _writeOut(args.out, records, args, dates, startedAll);
-  stdout.writeln(styles.title('\n完成 ${records.length} 个时点 × ${args.arms.length} 臂 → ${args.out}'));
-  stdout.writeln('评分：~/.cache/cbr-venv/bin/python tools/bench/analysis/score_arms.py ${args.out}');
+  stdout.writeln(
+    styles.title(
+      '\n完成 ${records.length} 个时点 × ${args.arms.length} 臂 → ${args.out}',
+    ),
+  );
+  stdout.writeln(
+    '评分：~/.cache/cbr-venv/bin/python tools/bench/analysis/score_arms.py ${args.out}',
+  );
 }
 
 void _writeOut(
@@ -208,25 +258,35 @@ void _writeOut(
 ) {
   final file = File(path);
   file.parent.createSync(recursive: true);
-  file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
-    'generated_at': DateTime.now().toUtc().toIso8601String(),
-    'elapsed_s': DateTime.now().difference(started).inSeconds,
-    'model': args.model,
-    'base_url': args.baseUrl,
-    'arms': args.arms,
-    'sampling': {
-      'seed': args.seed,
-      'pairs': args.pairs,
-      'dates': [for (final d in dates) {'as_of': d.date, 'pressure': d.pressure, 'y20': d.label}],
-    },
-    'n_runs': records.length,
-    'records': records,
-  }));
+  file.writeAsStringSync(
+    const JsonEncoder.withIndent('  ').convert({
+      'generated_at': DateTime.now().toUtc().toIso8601String(),
+      'elapsed_s': DateTime.now().difference(started).inSeconds,
+      'model': args.model,
+      'base_url': args.baseUrl,
+      'arms': args.arms,
+      'sampling': {
+        'seed': args.seed,
+        'pairs': args.pairs,
+        'dates': [
+          for (final d in dates)
+            {'as_of': d.date, 'pressure': d.pressure, 'y20': d.label},
+        ],
+      },
+      'n_runs': records.length,
+      'records': records,
+    }),
+  );
 }
 
 /// 压力/平静配对抽样：各自内部按时间均匀取，种子固定。
-List<_Day> _samplePairedDates(String goldenPath, {required int pairs, required int seed}) {
-  final golden = jsonDecode(File(goldenPath).readAsStringSync()) as Map<String, Object?>;
+List<_Day> _samplePairedDates(
+  String goldenPath, {
+  required int pairs,
+  required int seed,
+}) {
+  final golden =
+      jsonDecode(File(goldenPath).readAsStringSync()) as Map<String, Object?>;
   final rows = (golden['rows'] as List).cast<Map<String, Object?>>();
   final scored = <_Day>[
     for (final row in rows)
@@ -288,8 +348,7 @@ final class _NoJudge implements Judge {
   Future<JudgeAnswer> ask({
     required Object state,
     required ChoiceQuestion question,
-  }) =>
-      throw UnsupportedError('bench console 不调用裁判');
+  }) => throw UnsupportedError('bench console 不调用裁判');
 }
 
 final class _GatedInvoker implements ToolInvoker {
@@ -303,7 +362,9 @@ final class _GatedInvoker implements ToolInvoker {
     required Map<String, Object?> params,
   }) async {
     final spec = ToolRegistry.specOf(tool);
-    final role = (spec == null || spec.allowedRoles.isEmpty) ? 'unknown' : spec.allowedRoles.first;
+    final role = (spec == null || spec.allowedRoles.isEmpty)
+        ? 'unknown'
+        : spec.allowedRoles.first;
     final outcome = await _invoker.invoke(
       role: role,
       tool: tool,
@@ -349,6 +410,8 @@ final class _Args {
     required this.color,
     required this.modelDir,
     required this.memory,
+    required this.shard,
+    required this.shards,
   });
 
   final String root;
@@ -365,6 +428,8 @@ final class _Args {
   final bool color;
   final String modelDir;
   final bool memory;
+  final int shard;
+  final int shards;
 
   static _Args parse(List<String> argv) {
     final opts = <String, String>{};
@@ -374,7 +439,9 @@ final class _Args {
         continue;
       }
       final key = arg.substring(2);
-      final value = (i + 1 < argv.length && !argv[i + 1].startsWith('--')) ? argv[++i] : 'true';
+      final value = (i + 1 < argv.length && !argv[i + 1].startsWith('--'))
+          ? argv[++i]
+          : 'true';
       opts[key] = value;
     }
     final env = Platform.environment;
@@ -384,15 +451,20 @@ final class _Args {
       pairs: int.parse(opts['pairs'] ?? '30'),
       out: opts['out'] ?? 'artifacts/bench/console.json',
       model: opts['model'] ?? env['DEEPSEEK_MODEL'] ?? 'deepseek-v4.1-flash',
-      baseUrl: opts['base-url'] ?? env['CBR_API_BASE'] ?? env['DEEPSEEK_BASE_URL'],
+      baseUrl:
+          opts['base-url'] ?? env['CBR_API_BASE'] ?? env['DEEPSEEK_BASE_URL'],
       key: opts['key'] ?? env['DEEPSEEK_API_KEY'],
       seed: int.parse(opts['seed'] ?? '11'),
       maxTokens: int.parse(opts['max-tokens'] ?? '4000'),
       kernel: opts['kernel'],
       pitDb: opts['pit-db'],
       color: opts['no-color'] == null,
-      modelDir: opts['model-dir'] ?? p.join(opts['root'] ?? _repoRoot(), '.cache/models'),
+      modelDir:
+          opts['model-dir'] ??
+          p.join(opts['root'] ?? _repoRoot(), '.cache/models'),
       memory: opts['no-memory'] == null,
+      shard: int.parse(opts['shard'] ?? '0'),
+      shards: int.parse(opts['shards'] ?? '1'),
     );
   }
 
@@ -416,7 +488,8 @@ final class _Style {
   const _Style({required this.useColor});
   final bool useColor;
 
-  String _wrap(String code, String text) => useColor ? '\x1b[${code}m$text\x1b[0m' : text;
+  String _wrap(String code, String text) =>
+      useColor ? '\x1b[${code}m$text\x1b[0m' : text;
 
   String title(String text) => _wrap('1;36', text);
   String header(String text) => _wrap('1;33', text);
