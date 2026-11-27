@@ -1,0 +1,20 @@
+% 由 tools/bench/analysis/render_tables.py 生成，请勿手改。
+\begin{table}[t]
+\centering
+\caption{配对 McNemar 精确检验（以协同臂为处理组；$b$/$c$ 为不一致对计数）}
+\label{tab:mcnemar}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+比较 & $n$ & 仅协同正确 & 仅基线正确 & $p$ & Holm $p$ & 判定 \\
+\midrule
+单智能体 S vs 协同 & 4 & 0 & 0 & -- & -- & 无不一致对 \\
+独立 I vs 协同 & 4 & 0 & 0 & -- & -- & 无不一致对 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\raggedright\scriptsize
+注：双侧精确二项检验；Holm 校正覆盖两张配对比较。
+按预注册协议，$n<30$ 或无不一致对时只报描述统计，不作显著性主张。
+\end{table}

@@ -1,0 +1,30 @@
+% 由 tools/bench/analysis/render_tables.py 生成，请勿手改。
+% 直接由 contracts/golden-vectors/cfsi_stress_pca_q90_reference.json 计算。
+\begin{table}[t]
+\centering
+\caption{标签循环性诊断（$y_{20}$ 为 $t+1$ 至 $t+20$ 的严格未来标签；\texttt{strict} 再推后一天至 $t+2$）}
+\label{tab:circularity}
+\footnotesize
+\begin{tabular}{lr}
+\toprule
+统计量 & 值 \\
+\midrule
+样本日数（$y_{20}$ 可用） & 2646 \\
+基准发生率 $P(y_{20}=1)$ & 0.341 \\
+$P(y_{20}=1\mid hs_t=1)$ & 0.921 \\
+$P(y_{20}=1\mid hs_t=0)$ & 0.265 \\
+严格标签样本日数 & 2646 \\
+$y_{20}$ 与严格标签一致的日数 & 2646 \\
+基准发生率 $P(y^{\mathrm{strict}}=1)$ & 0.341 \\
+$P(y^{\mathrm{strict}}=1\mid hs_t=1)$ & 0.921 \\
+$P(y^{\mathrm{strict}}=1\mid hs_t=0)$ & 0.265 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\raggedright\scriptsize
+注：$hs_t$ 为当日 high\_stress（定义即 CFSI $>\tau$）。
+随附黄金向量中 $y_{20}$ 与 $t+1$ 至 $t+20$ 的严格未来标签逐日一致（见上行），
+即本产物口径不含当日（与 \texttt{docs/13} §5.5 旧表述不一致，差异见附录 A.4）。
+无论口径如何，二者都与 CFSI 同源，
+$P(y\mid hs_t=1)$ 只能作为循环性诊断，不能当作预测能力。
+\end{table}

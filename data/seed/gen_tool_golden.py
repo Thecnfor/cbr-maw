@@ -38,8 +38,13 @@ def main():
     df = res.frame.copy(); wide = ds.daily_frame()
     TE = pd.Timestamp(res.train_end)
     hs = df['high_stress'].fillna(0).astype(int)
+    # 严格未来标签：只用 t+1..t+20，**不含当日**。
+    # 曾误写为 hs.iloc[i:i+20]（含当日），与 contracts 黄金向量口径不一致，
+    # 并导致 docs/13 §5.5 把 P(y=1|hs_t=1) 错报为 1.000（实际 0.921）。
     future = pd.Series(0, index=df.index)
-    for i in range(len(df)-1): future.iloc[i] = int(hs.iloc[i:i+20].max() == 1)
+    for i in range(len(df)-1):
+        window = hs.iloc[i+1:i+21]
+        future.iloc[i] = int(len(window) > 0 and window.max() == 1)
     oos = df.index > TE
     base_rate = float((future[oos] == 1).mean())
 

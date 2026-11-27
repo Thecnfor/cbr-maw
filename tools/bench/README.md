@@ -80,7 +80,7 @@ dart run tools/bench/self_check.dart
 
 ## 指标口径（与 docs/23 一致）
 
-- 正例 `y_20 = max(high_stress[t..t+19])`，**含当日**、尾部 19 行按 0
+- 正例 `y_20 = max(high_stress[t+1..t+20])`，**严格未来、不含当日**；尾部不足 20 行为 null
   （黄金向量定义，不是我们的选择）。
 - 单工具阈值用协议冻结值（`capital_linkage` z>0.5、`dimension_dispersion`
   z>1.0），这样 walk-forward 能与 docs/18 §7.1、docs/20 §4 逐位对齐。
@@ -90,7 +90,7 @@ dart run tools/bench/self_check.dart
 
 ## 本轮发现的方法学问题
 
-`high_stress := (cfsi > τ)`，而 `y_20` 含当日 → `P(y=1 | hs_t=1) = 1.000`。
+`high_stress := (cfsi > τ)`，而 `y_20` 是严格未来标签 → `P(y=1 | hs_t=1) = 0.921`（压力状态自相关）。
 任何 CFSI 派生信号的高 lift 都含"当日在压力区"的同义成分。`arms.py`
 的 `label_circularity` 用严格未来标签（不含当日）做对照，报告 §5.5 有量化。
 

@@ -126,7 +126,7 @@ DuckDB 不可用时退回 `data/seed/pit_real_obs.jsonl`（同一批观测的导
   `leave_one_out`；
 - `singles`：三个工具单测（`capital_linkage` / `dimension_dispersion` / `cfsi_level`），
   含 `walk_forward`、`lead_time`（附零假设期望）、`lead_profile`、`placebo`、`evidence`；
-- `label_circularity`：`high_stress := (cfsi>τ)` 且 `y_20` 含当日造成的循环性诊断；
+- `label_circularity`：`high_stress := (cfsi>τ)` 与标签同源造成的循环性诊断（含严格未来标签对照）；
 - `structure`：`dominant_dim` 命中率（对照随机 1/6）与阶段信号（对照无条件率）；
 - `level_vs_returns`：水平 vs 变化率（含置换 p）；
 - `freshness`：每个依赖序列最新可用日与 NaN 率。

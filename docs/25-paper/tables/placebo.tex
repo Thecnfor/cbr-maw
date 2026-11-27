@@ -1,0 +1,21 @@
+% 由 tools/bench/analysis/render_tables.py 生成，请勿手改。
+\begin{table}[t]
+\centering
+\caption{标签置换安慰剂：打乱真值顺序后的 lift 零分布（$B$ 次置换）}
+\label{tab:placebo}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+臂 & 观测 lift & 零分布均值 & 零分布 95\% 分位 & $p$ & $B$ & 判定 \\
+\midrule
+协同 C & -- & -- & -- & -- & 0 & 未执行 \\
+单智能体 S & -- & -- & -- & -- & 0 & 未执行 \\
+独立 I & -- & -- & -- & -- & 0 & 未执行 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\raggedright\scriptsize
+注：保持预测向量与正例数不变，仅置换真值顺序；$p=(1+\#\{lift_{\rm null}\ge lift_{\rm obs}\})/(B+1)$。
+该检验只说明「相对随机标签分配是否异常」，\emph{不替代}独立重跑的安慰剂。
+\end{table}

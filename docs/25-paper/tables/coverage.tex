@@ -1,0 +1,42 @@
+% 由 tools/bench/analysis/render_tables.py 生成，请勿手改。
+\begin{table}[t]
+\centering
+\caption{覆盖率：有效定级占计划评分时点的比例（缺指标显示 \texttt{--}）}
+\label{tab:coverage}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+臂 & 计划时点 & 已跑记录 & 有效定级 & 覆盖率 & partial & 有降级 & 核验通过率 \\
+\midrule
+协同 C & 120 & 4 & 4 & 0.033 & 0.000 & 0.000 & 1.000 \\
+单智能体 S & 120 & 4 & 4 & 0.033 & 0.000 & 0.000 & 1.000 \\
+独立 I & 120 & 4 & 4 & 0.033 & 0.000 & 0.000 & 1.000 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\raggedright\scriptsize
+注：覆盖率 $=$ 有效定级 / 计划评分时点（有 $y_{20}$ 真值的抽样日期）。
+partial 与「有降级」为占已跑记录的比例；核验通过率为 verification 非空记录中的通过比例。
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{遮蔽计数：被排除在评分之外或未通过核验的记录（计数，不是比例）}
+\label{tab:masking}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+臂 & 无有效定级 & 运行失败 & 降级角色数 & 泄漏事件 & 无证据主张 & 核验未通过 \\
+\midrule
+协同 C & 0 & 0 & 0 & 0 & 0 & 0 \\
+单智能体 S & 0 & 0 & 0 & 0 & 0 & 0 \\
+独立 I & 0 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\raggedright\scriptsize
+注：无有效定级指 risk 缺失或不在四档枚举内；泄漏事件与无证据主张为
+verification 字段的累计计数；这些记录不会被改写成负例。
+\end{table}

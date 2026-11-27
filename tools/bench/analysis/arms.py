@@ -561,8 +561,9 @@ def label_circularity(labels: dict, as_of: pd.Timestamp) -> dict:
     """high_stress 的定义就是 CFSI > τ，所以任何 CFSI 派生信号都在"重建标签"。
 
     这里量化这件事：
-    1. y_20 与当日 high_stress 的重叠（y_20 含当日 → P(y=1|hs_t=1)=1 是定义使然）；
-    2. 严格未来标签 y_strict = max(hs[t+1..t+20])（不含当日、尾部 20 行丢弃）；
+    1. y_20 与当日 high_stress 的重叠（y_20 已是严格未来标签 hs[t+1..t+20]，
+       但压力状态自相关强 → P(y=1|hs_t=1)≈0.92，仍会高估 CFSI 派生信号）；
+    2. 再推后一天的标签 y_strict = max(hs[t+2..t+20])（尾部 20 行丢弃）；
     3. 同一 CFSI 规则在 y_strict 上的指标 —— 这才是"预测"而非"复述"。
     """
     cal, hs = labels['calendar'], labels['high_stress']
@@ -585,7 +586,7 @@ def label_circularity(labels: dict, as_of: pd.Timestamp) -> dict:
     q_loose = C.quality(zc, y20, oos, thr)
 
     return {
-        'issue': 'high_stress := (cfsi > τ)。y_20 含当日，故 CFSI 当日子信号'
+        'issue': 'high_stress := (cfsi > τ)。标签与信号同源且压力状态自相关强，故 CFSI 当日子信号'
                  'P(y=1|hs_t=1)=1 由定义决定，不是预测能力。',
         'p_y20_given_hs_today': {
             'hs=1': float(y_oo[h_oo == 1].mean()) if (h_oo == 1).any() else None,
@@ -600,13 +601,13 @@ def label_circularity(labels: dict, as_of: pd.Timestamp) -> dict:
             'lift': q_loose['lift'], 'n': q_loose['n'],
         },
         'cfsi_rule_on_y_strict': {
-            'definition': 'y_strict = max(high_stress[t+1..t+20])，不含当日',
+            'definition': 'y_strict = max(high_stress[t+2..t+20])，比 y_20 再推后一天',
             'precision': q_strict['precision'], 'recall': q_strict['recall'],
             'lift': q_strict['lift'], 'n': q_strict['n'],
             'base_rate': q_strict['base_rate'],
         },
-        'conclusion': '严格未来标签下 CFSI 规则 lift 明显低于含当日口径；'
-                      '含当日口径的高 lift 主要来自"当日在压力区"的同义反复。',
+        'conclusion': '把标签窗口再推后一天后 CFSI 规则 lift 下降；'
+                      '说明部分 lift 来自压力状态的自相关，而非独立预测能力。',
     }
 
 

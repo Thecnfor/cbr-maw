@@ -5,7 +5,7 @@
         artifacts/bench/arms_live.json
 
 真值：`contracts/golden-vectors/cfsi_stress_pca_q90_reference.json` 的 y_20
-（未来 20 交易日内进入 high_stress，含当日——黄金向量定义）。
+（max(high_stress[t+1..t+20])，严格未来、不含当日；已逐日核对 2646/2646）。
 
 不编造数字：缺哪个臂就标 n/a 并写明原因；样本不足不给显著性主张。
 """
