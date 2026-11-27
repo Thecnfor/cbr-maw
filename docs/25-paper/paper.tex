@@ -753,6 +753,22 @@ $y_{20}$ 与 $t+1$ 至 $t+20$ 窗口完全一致，说明本产物的 $y_{20}$ �
 最高降级率 \RESULT{concl}{max_degraded}，部分结论标记（\RESULT{concl}{partial_any}）。
 泄漏事件数、核验失败数与不支持主张数分别见覆盖率表三列；任一非零即计入本节异常清单。
 
+\subsection{记忆消融（MI/LLR/HLR 开与关）}
+\label{sec:memory-ablation}
+
+为回答「三库记忆是否改变判别」，在同一端点、同一提示词与同一工具集下，对
+\texttt{collaborative} 臂做一次开/关对照：记忆关组把记忆客户端置空，检索与写回
+\emph{都不发生}（不是「忽略结果」）。操作检查先行：\texttt{memory\_written} 事件在
+记忆开组出现、记忆关组为 0，确认开关确实生效。
+
+配对时点 \RESULT{mem}{n} 个。均衡准确率：记忆开 \RESULT{mem}{balacc_a}、
+记忆关 \RESULT{mem}{balacc_b}，差 \RESULT{mem}{balacc_delta}
+（配对 McNemar $p=\RESULT{mem}{p}$，判定：\RESULT{mem}{verdict}）。
+
+读法与主表一致：若两条件预测一致，正确结论是「记忆\emph{不改变判别}，其价值在
+可解释性与跨时点归因」，而\emph{不是}「记忆无效」——后者需要变更判别的证据，
+本设计并未提供。
+
 \section{讨论}
 
 \subsection{上一轮负结果}

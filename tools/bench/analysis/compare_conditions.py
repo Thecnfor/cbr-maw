@@ -73,6 +73,8 @@ def main() -> int:
     parser.add_argument('--b', required=True)
     parser.add_argument('--label-b', default='B')
     parser.add_argument('--threshold', default='high')
+    parser.add_argument('--macros-out', default=None,
+                        help='把结果写成 LaTeX 宏（供论文 \\RESULT 引用）')
     args = parser.parse_args()
 
     golden = json.loads(GOLDEN.read_text(encoding='utf-8'))
@@ -114,6 +116,41 @@ def main() -> int:
         print('n<30：不作显著性主张')
     delta = (ma['balanced_accuracy'] or 0) - (mb['balanced_accuracy'] or 0)
     print(f'均衡准确率差（{args.label_a} − {args.label_b}）：{delta:+.3f}')
+
+    if args.macros_out:
+        def f(value, nd=3):
+            return '--' if value is None else f'{value:.{nd}f}'
+
+        def pfmt(value):
+            return '--' if value is None else ('$<$0.001' if value < 0.001 else f'{value:.3f}')
+
+        lines = [
+            '% 由 tools/bench/analysis/compare_conditions.py 生成，请勿手改。',
+            f'% {args.label_a} vs {args.label_b}',
+            '',
+        ]
+        defs = {
+            'n': str(len(pa)),
+            'balacc_a': f(ma['balanced_accuracy']),
+            'balacc_b': f(mb['balanced_accuracy']),
+            'balacc_delta': f'{delta:+.3f}',
+            'prec_a': f(ma['precision']),
+            'prec_b': f(mb['precision']),
+            'recall_a': f(ma['recall']),
+            'recall_b': f(mb['recall']),
+            'lift_a': f(ma['lift']),
+            'lift_b': f(mb['lift']),
+            'only_a': str(only_a),
+            'only_b': str(only_b),
+            'p': pfmt(p),
+            'verdict': ('无显著差异' if (p is None or p >= 0.05) else
+                        ('显著更高' if delta > 0 else '显著更低'))
+            if len(pa) >= 30 else '样本不足，不作显著性主张',
+        }
+        for key, value in defs.items():
+            lines.append(f'\\expandafter\\def\\csname res@mem@{key}\\endcsname{{{value}}}')
+        Path(args.macros_out).write_text('\n'.join(lines) + '\n', encoding='utf-8')
+        print(f'宏已写入 {args.macros_out}')
     return 0
 
 
