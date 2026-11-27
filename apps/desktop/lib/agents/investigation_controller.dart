@@ -235,7 +235,16 @@ final class AgentRuntime {
         // 角色自己的生成 token 必须计费：否则 single / independent 臂的
         // 成本恒为 0，J = L + μC 在对照臂上完全失真。
         guard.chargeTokens(roles.indexOf(role), output.tokens.total);
+        guard.chargeLatency(output.latencyMs);
         outputs[role] = output;
+        // 墙钟熔断：预算耗尽必须停止继续委派，并标 partial（不得静默跑完）。
+        if (guard.checkCircuitBreaker()) {
+          yield AgentActivity(runId, 'coordinator', 'budget_tripped', {
+            'reason': guard.tripReason ?? '墙钟超限',
+            'roles_done': outputs.length,
+          });
+          break;
+        }
         if (output.card != null) {
           for (final claim in output.card!.claims) {
             yield ClaimProduced(
@@ -717,7 +726,11 @@ final class AgentRuntime {
         ),
       );
       guard.chargeTokens(roles.indexOf(role), output.tokens.total);
+      guard.chargeLatency(output.latencyMs);
       outputs[role] = output;
+      if (guard.checkCircuitBreaker()) {
+        break;
+      }
     }
     return outputs;
   }
