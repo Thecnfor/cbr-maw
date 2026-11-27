@@ -1,3 +1,6 @@
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrEmptyState;
+
 import '../ui.dart';
 import '../theme/theme.dart';
 import '../theme/tokens.dart';
@@ -31,32 +34,13 @@ final class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Tokens.space6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 32, color: secondary),
-            const SizedBox(height: Tokens.space3),
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: Tokens.space1),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: secondary),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: Tokens.space4),
-              FilledButton.tonal(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
-            ],
-          ],
-        ),
-      ),
+    // 转发到设计系统的空态：图标尺寸、间距、按钮样式与全站统一，
+    // app 侧不再维护第二套（docs/12 P1-5 单一真源）。
+    return CbrEmptyState(
+      title: title,
+      description: message,
+      primaryActionLabel: actionLabel,
+      onPrimaryAction: onAction,
     );
   }
 }
