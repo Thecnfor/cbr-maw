@@ -397,6 +397,10 @@ final class AgentRuntime {
         cards: updatedCards,
         evidenceIndex: board.evidenceById,
         deniedToolCalls: List.of(denied),
+        // 六类核验的「冲突」「预算」两类此前从未被喂入，等于只做了四类。
+        conflicts: conflicts,
+        budgetTruncated: guard.truncated,
+        budgetTripped: guard.tripped,
         roleSpecs: specs,
         absTol: settings.catalog.orchestration.numericToleranceAbs,
         relTol: settings.catalog.orchestration.numericToleranceRel,
@@ -602,7 +606,24 @@ final class AgentRuntime {
         failures.add('$tool: budget_exceeded');
         continue;
       }
-      final outcome = await registry.recompute(tool: tool, asOf: _date(asOf));
+      // 走带权限矩阵的 run（default_deny）：越权必须记入 denials 并跳过，
+      // 否则 R5 的「越权」一类核验永远是 0，权限矩阵形同虚设。
+      final outcome = await registry.run(
+        role: entry.value,
+        tool: tool,
+        asOf: _date(asOf),
+      );
+      if (outcome.denied) {
+        failures.add('$tool: permission_denied');
+        calls.add(
+          _ToolCall(tool, const {}, {
+            'ok': false,
+            'error': 'permission_denied',
+            'role': entry.value.wire,
+          }),
+        );
+        continue;
+      }
       if (outcome.ok && outcome.evidence != null) {
         evidence.add(outcome.evidence!);
         calls.add(
