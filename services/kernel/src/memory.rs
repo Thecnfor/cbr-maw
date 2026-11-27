@@ -98,7 +98,10 @@ fn schema() -> SchemaRef {
         Field::new("text", DataType::Utf8, false),
         Field::new(
             "vector",
-            DataType::FixedSizeList(Arc::new(Field::new("item", DataType::Float32, false)), EMBED_DIM as i32),
+            DataType::FixedSizeList(
+                Arc::new(Field::new("item", DataType::Float32, false)),
+                EMBED_DIM as i32,
+            ),
             false,
         ),
         Field::new("has_vector", DataType::Boolean, false),
@@ -129,15 +132,24 @@ fn batches_to_hits(batches: &[RecordBatch]) -> Result<Vec<MemoryHit>> {
     let mut hits = Vec::new();
     for batch in batches {
         let col = |name: &str| -> Result<&ArrayRef> {
-            batch
-                .column_by_name(name)
-                .ok_or_else(|| KernelError::new(ErrorKind::Internal, format!("LanceDB 结果缺少列 {name}")))
+            batch.column_by_name(name).ok_or_else(|| {
+                KernelError::new(ErrorKind::Internal, format!("LanceDB 结果缺少列 {name}"))
+            })
         };
         let ids = col("id")?.as_any().downcast_ref::<StringArray>();
         let scores = batch
             .column_by_name("_distance")
             .and_then(|c| c.as_any().downcast_ref::<Float32Array>());
-        let (Some(ids), Some(stores), Some(as_ofs), Some(avails), Some(subjects), Some(kinds), Some(texts), Some(payloads)) = (
+        let (
+            Some(ids),
+            Some(stores),
+            Some(as_ofs),
+            Some(avails),
+            Some(subjects),
+            Some(kinds),
+            Some(texts),
+            Some(payloads),
+        ) = (
             ids,
             col("store")?.as_any().downcast_ref::<StringArray>(),
             col("as_of")?.as_any().downcast_ref::<StringArray>(),
@@ -146,8 +158,12 @@ fn batches_to_hits(batches: &[RecordBatch]) -> Result<Vec<MemoryHit>> {
             col("kind")?.as_any().downcast_ref::<StringArray>(),
             col("text")?.as_any().downcast_ref::<StringArray>(),
             col("payload")?.as_any().downcast_ref::<StringArray>(),
-        ) else {
-            return Err(KernelError::new(ErrorKind::Internal, "LanceDB 结果列类型不符"));
+        )
+        else {
+            return Err(KernelError::new(
+                ErrorKind::Internal,
+                "LanceDB 结果列类型不符",
+            ));
         };
         let vectors = batch
             .column_by_name("vector")
@@ -207,10 +223,19 @@ pub fn mmr(candidates: &[MemoryHit], relevance: &[f32], lambda: f32, k: usize) -
         for &idx in &remaining {
             let redundancy = order
                 .iter()
-                .filter_map(|&j| candidates[idx].vector.as_ref().zip(candidates[j].vector.as_ref()))
+                .filter_map(|&j| {
+                    candidates[idx]
+                        .vector
+                        .as_ref()
+                        .zip(candidates[j].vector.as_ref())
+                })
                 .map(|(a, b)| cosine(a, b))
                 .fold(f32::NEG_INFINITY, f32::max);
-            let redundancy = if redundancy == f32::NEG_INFINITY { 0.0 } else { redundancy };
+            let redundancy = if redundancy == f32::NEG_INFINITY {
+                0.0
+            } else {
+                redundancy
+            };
             let score = lambda * relevance[idx] - (1.0 - lambda) * redundancy;
             if score > best_score {
                 best_score = score;
@@ -223,21 +248,16 @@ pub fn mmr(candidates: &[MemoryHit], relevance: &[f32], lambda: f32, k: usize) -
     order
 }
 
-
 /// 打开或创建记忆表，并在 `text` 上建 FTS 索引（无向量时的降级检索路径）。
 fn ensure_table(rt: &tokio::runtime::Runtime, db: &Connection) -> Result<(Table, Option<bool>)> {
     rt.block_on(async {
-        let names = db
-            .table_names()
-            .execute()
-            .await
-            .map_err(|e| KernelError::new(ErrorKind::Internal, format!("列举 LanceDB 表失败: {e}")))?;
+        let names = db.table_names().execute().await.map_err(|e| {
+            KernelError::new(ErrorKind::Internal, format!("列举 LanceDB 表失败: {e}"))
+        })?;
         if names.iter().any(|n| n == TABLE) {
-            let table = db
-                .open_table(TABLE)
-                .execute()
-                .await
-                .map_err(|e| KernelError::new(ErrorKind::Internal, format!("打开记忆表失败: {e}")))?;
+            let table = db.open_table(TABLE).execute().await.map_err(|e| {
+                KernelError::new(ErrorKind::Internal, format!("打开记忆表失败: {e}"))
+            })?;
             // 既有表的 tokenizer 无法回读（Lance 未暴露），如实报告为未知。
             return Ok((table, None));
         }
@@ -249,14 +269,20 @@ fn ensure_table(rt: &tokio::runtime::Runtime, db: &Connection) -> Result<(Table,
         // 中文分词：用内置 ICU 分词（无需外部词典文件，实测中文可切）。
         // jieba 需要 `LANCE_LANGUAGE_MODEL_HOME` 下的词典文件，缺文件时会静默退化。
         let icu = FtsIndexBuilder::default().base_tokenizer("icu".to_string());
-        let fts_jieba = match table.create_index(&["text"], Index::FTS(icu)).execute().await {
+        let fts_jieba = match table
+            .create_index(&["text"], Index::FTS(icu))
+            .execute()
+            .await
+        {
             Ok(_) => true,
             Err(_) => {
                 table
                     .create_index(&["text"], Index::FTS(FtsIndexBuilder::default()))
                     .execute()
                     .await
-                    .map_err(|e| KernelError::new(ErrorKind::Internal, format!("创建 FTS 索引失败: {e}")))?;
+                    .map_err(|e| {
+                        KernelError::new(ErrorKind::Internal, format!("创建 FTS 索引失败: {e}"))
+                    })?;
                 false
             }
         };
@@ -270,7 +296,9 @@ impl Memory {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .map_err(|e| KernelError::new(ErrorKind::Internal, format!("tokio runtime 启动失败: {e}")))?;
+            .map_err(|e| {
+                KernelError::new(ErrorKind::Internal, format!("tokio runtime 启动失败: {e}"))
+            })?;
         let dir = root.join("memory.lance");
         std::fs::create_dir_all(&dir)
             .map_err(|e| KernelError::new(ErrorKind::Internal, format!("创建记忆目录失败: {e}")))?;
@@ -279,7 +307,12 @@ impl Memory {
             .block_on(async { connect(&uri).execute().await })
             .map_err(|e| KernelError::new(ErrorKind::Internal, format!("LanceDB 连接失败: {e}")))?;
         let (table, fts_jieba) = ensure_table(&rt, &db)?;
-        Ok(Self { rt, table, embedder, fts_jieba })
+        Ok(Self {
+            rt,
+            table,
+            embedder,
+            fts_jieba,
+        })
     }
 
     pub fn embedding_ready(&self) -> bool {
@@ -299,7 +332,10 @@ impl Memory {
                 ));
             }
             if row.id.trim().is_empty() {
-                return Err(KernelError::new(ErrorKind::InvalidParams, "记忆记录缺少 id"));
+                return Err(KernelError::new(
+                    ErrorKind::InvalidParams,
+                    "记忆记录缺少 id",
+                ));
             }
             if row.available_at.trim().is_empty() {
                 return Err(KernelError::new(
@@ -405,10 +441,14 @@ impl Memory {
             merge.when_matched_update_all(None);
             merge.when_not_matched_insert_all();
             merge
-                .execute(Box::new(lancedb::arrow::arrow_array::RecordBatchIterator::new(
-                    vec![Ok::<RecordBatch, lancedb::arrow::arrow_schema::ArrowError>(batch)],
-                    schema(),
-                )))
+                .execute(Box::new(
+                    lancedb::arrow::arrow_array::RecordBatchIterator::new(
+                        vec![Ok::<RecordBatch, lancedb::arrow::arrow_schema::ArrowError>(
+                            batch,
+                        )],
+                        schema(),
+                    ),
+                ))
                 .await
                 .map_err(|e| KernelError::new(ErrorKind::Internal, format!("写入记忆失败: {e}")))?;
             // LanceDB 的 FTS 索引不会自动覆盖新写入的片段：每次写入后增量重建，
@@ -418,7 +458,9 @@ impl Memory {
                     lancedb::table::OptimizeOptions::default(),
                 ))
                 .await
-                .map_err(|e| KernelError::new(ErrorKind::Internal, format!("重建记忆索引失败: {e}")))
+                .map_err(|e| {
+                    KernelError::new(ErrorKind::Internal, format!("重建记忆索引失败: {e}"))
+                })
         })?;
         Ok(n)
     }
@@ -457,7 +499,9 @@ impl Memory {
                 Some(v) => {
                     query
                         .nearest_to(v.as_slice())
-                        .map_err(|e| KernelError::new(ErrorKind::Internal, format!("向量查询构造失败: {e}")))?
+                        .map_err(|e| {
+                            KernelError::new(ErrorKind::Internal, format!("向量查询构造失败: {e}"))
+                        })?
                         .only_if(&filter)
                         .limit(fetch_k)
                         .execute()
@@ -465,7 +509,9 @@ impl Memory {
                 }
                 None => {
                     query
-                        .full_text_search(lancedb::index::scalar::FullTextSearchQuery::new(req.text.to_string()))
+                        .full_text_search(lancedb::index::scalar::FullTextSearchQuery::new(
+                            req.text.to_string(),
+                        ))
                         .only_if(&filter)
                         .limit(fetch_k)
                         .execute()
@@ -475,13 +521,18 @@ impl Memory {
             .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("记忆检索失败: {e}")))?;
             futures::TryStreamExt::try_collect::<Vec<RecordBatch>>(stream)
                 .await
-                .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("记忆检索读取失败: {e}")))
+                .map_err(|e| {
+                    KernelError::new(ErrorKind::DataMissing, format!("记忆检索读取失败: {e}"))
+                })
         })?;
 
         let mut hits = batches_to_hits(&batches)?;
         if vector.is_some() && hits.len() > req.top_k && req.mmr_lambda < 1.0 {
             // 距离越小越相似；按 1/(1+d) 归一化后做 MMR。
-            let relevance: Vec<f32> = hits.iter().map(|h| 1.0 / (1.0 + h.score.max(0.0))).collect();
+            let relevance: Vec<f32> = hits
+                .iter()
+                .map(|h| 1.0 / (1.0 + h.score.max(0.0)))
+                .collect();
             let order = mmr(&hits, &relevance, req.mmr_lambda.clamp(0.0, 1.0), req.top_k);
             hits = order.into_iter().map(|i| hits[i].clone()).collect();
         } else {
@@ -491,12 +542,7 @@ impl Memory {
     }
 
     /// 按条件列举（不做向量检索）。用于 HLR 结算这类「按时间扫一遍」的场景。
-    pub fn list(
-        &self,
-        store: &str,
-        as_of_max: &str,
-        limit: usize,
-    ) -> Result<Vec<MemoryHit>> {
+    pub fn list(&self, store: &str, as_of_max: &str, limit: usize) -> Result<Vec<MemoryHit>> {
         if !STORES.contains(&store) {
             return Err(KernelError::new(
                 ErrorKind::InvalidParams,
@@ -517,10 +563,14 @@ impl Memory {
                 .limit(limit.max(1))
                 .execute()
                 .await
-                .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("列举记忆失败: {e}")))?;
+                .map_err(|e| {
+                    KernelError::new(ErrorKind::DataMissing, format!("列举记忆失败: {e}"))
+                })?;
             futures::TryStreamExt::try_collect::<Vec<RecordBatch>>(stream)
                 .await
-                .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("列举记忆读取失败: {e}")))
+                .map_err(|e| {
+                    KernelError::new(ErrorKind::DataMissing, format!("列举记忆读取失败: {e}"))
+                })
         })?;
         batches_to_hits(&batches)
     }
@@ -559,7 +609,9 @@ impl Memory {
                         .count_rows(Some(format!("store = {}", quote(store))))
                         .await
                 })
-                .map_err(|e| KernelError::new(ErrorKind::Internal, format!("统计 {store} 失败: {e}")))?;
+                .map_err(|e| {
+                    KernelError::new(ErrorKind::Internal, format!("统计 {store} 失败: {e}"))
+                })?;
             per_store.insert(store.to_string(), json!(n));
         }
         Ok(json!({

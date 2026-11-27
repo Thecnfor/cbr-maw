@@ -300,8 +300,12 @@ impl Kernel {
                 .unwrap_or_else(|| std::path::PathBuf::from("."));
             // 向量化：默认启用；`CBR_EMBEDDING=off` 或无模型时如实降级到 FTS。
             let embedder: Option<std::sync::Arc<dyn memory::Embedder>> =
-                if std::env::var("CBR_EMBEDDING").map(|v| v == "off").unwrap_or(false) {
-                    self.embedding_error = Some("已通过 CBR_EMBEDDING=off 关闭本地向量化".to_string());
+                if std::env::var("CBR_EMBEDDING")
+                    .map(|v| v == "off")
+                    .unwrap_or(false)
+                {
+                    self.embedding_error =
+                        Some("已通过 CBR_EMBEDDING=off 关闭本地向量化".to_string());
                     None
                 } else {
                     let model_dir = self
@@ -426,7 +430,12 @@ impl Kernel {
             .ok_or_else(|| KernelError::invalid_params("缺少 rows"))?;
         let mut rows = Vec::with_capacity(rows_json.len());
         for item in rows_json.iter() {
-            let get = |k: &str| item.get(k).and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let get = |k: &str| {
+                item.get(k)
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string()
+            };
             let vector = item.get("vector").and_then(|v| v.as_array()).map(|arr| {
                 arr.iter()
                     .filter_map(|x| x.as_f64().map(|f| f as f32))
@@ -448,9 +457,9 @@ impl Kernel {
         let embedding_ready = self.memory()?.embedding_ready();
         // HLR 结算：写 LLR 时顺带回填「已走完 horizon 天」的旧记录（docs/24 §D7）。
         // 结算失败不影响写入结果，但要如实返回，不能假装结算成功。
-        let settled = self.settle_hlr().unwrap_or_else(|err| {
-            json!({"settled": 0, "error": err.message})
-        });
+        let settled = self
+            .settle_hlr()
+            .unwrap_or_else(|err| json!({"settled": 0, "error": err.message}));
         Ok(json!({
             "written": written,
             "embedding_ready": embedding_ready,
@@ -511,7 +520,11 @@ impl Kernel {
                     if alarmed { "预警" } else { "未预警" },
                     peak,
                     tau,
-                    if stressed { "确实进入压力" } else { "未进入压力" }
+                    if stressed {
+                        "确实进入压力"
+                    } else {
+                        "未进入压力"
+                    }
                 ),
                 vector: None,
                 payload: json!({
@@ -620,14 +633,8 @@ impl Kernel {
 
     fn reflection_shallow(&mut self, params: &Value) -> Result<Value> {
         let as_of = require_str(params, "as_of")?;
-        let top_k = params
-            .get("top_k")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(5) as usize;
-        let horizon = params
-            .get("horizon")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(20) as usize;
+        let top_k = params.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+        let horizon = params.get("horizon").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
         reflection::shallow(self.workspace()?, as_of, top_k, horizon)
     }
 
@@ -637,10 +644,7 @@ impl Kernel {
             .get("lookback_days")
             .and_then(|v| v.as_u64())
             .unwrap_or(120) as usize;
-        let horizon = params
-            .get("horizon")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(20) as usize;
+        let horizon = params.get("horizon").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
         reflection::deep(self.workspace()?, as_of, lookback, horizon)
     }
 

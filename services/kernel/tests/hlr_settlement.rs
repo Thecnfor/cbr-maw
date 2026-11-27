@@ -44,7 +44,13 @@ fn unsettled_rows_have_no_hlr_counterpart() {
 
     // 用「今天」写一条 LLR：事后窗口必然没走完，不得被结算。
     let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
-    let mut rows = vec![row("llr:today", "llr", &today, &format!("{today}T10:00:00Z"), "high")];
+    let mut rows = vec![row(
+        "llr:today",
+        "llr",
+        &today,
+        &format!("{today}T10:00:00Z"),
+        "high",
+    )];
     memory.upsert(&mut rows).expect("upsert");
 
     let pending = memory.list("llr", &today, 100).expect("list llr");
@@ -108,5 +114,8 @@ fn settlement_criterion_matches_reflection_window() {
     };
     assert!(peak.is_finite() && tau.is_finite());
     // 该时点位于 2018 年压力窗口内，事后 20 日应当仍在压力区。
-    assert!(stressed, "2018-05-30 之后 20 日应处于压力区（peak={peak}, tau={tau}）");
+    assert!(
+        stressed,
+        "2018-05-30 之后 20 日应处于压力区（peak={peak}, tau={tau}）"
+    );
 }

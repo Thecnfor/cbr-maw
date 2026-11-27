@@ -39,7 +39,10 @@ pub fn shallow(ws: &Workspace, as_of: &str, top_k: usize, horizon: usize) -> Res
     if history.len() < 20 {
         return Err(KernelError::new(
             ErrorKind::DataMissing,
-            format!("历史信号仅 {} 条，不足以做相似案例检索（需要 ≥ 20）", history.len()),
+            format!(
+                "历史信号仅 {} 条，不足以做相似案例检索（需要 ≥ 20）",
+                history.len()
+            ),
         )
         .with_detail(json!({"reason": "历史样本不足", "available": history.len()})));
     }
@@ -101,12 +104,7 @@ pub fn shallow(ws: &Workspace, as_of: &str, top_k: usize, horizon: usize) -> Res
 /// - 事后窗口固定 `horizon` 个交易日（与 y_20 一致）；
 /// - 「命中」= 当时 level ∈ {high, critical} 且事后窗口内压力峰值 ≥ τ；
 /// - 未到 `horizon` 的近期时点**不参与**统计（标签未成熟，不能算对错）。
-pub fn deep(
-    ws: &Workspace,
-    as_of: &str,
-    lookback_days: usize,
-    horizon: usize,
-) -> Result<Value> {
+pub fn deep(ws: &Workspace, as_of: &str, lookback_days: usize, horizon: usize) -> Result<Value> {
     let day = &as_of[..10.min(as_of.len())];
     // τ 取自当日信号（缺维时 τ 会按可用维度重估，ADR-008）。
     let current = load_signal(ws, day)?;
@@ -145,7 +143,10 @@ pub fn deep(
 
     let signals = load_signals_between(
         ws,
-        calendar.get(start).map(String::as_str).unwrap_or(&calendar[0]),
+        calendar
+            .get(start)
+            .map(String::as_str)
+            .unwrap_or(&calendar[0]),
         calendar[mature_end].as_str(),
     )?;
     if signals.is_empty() {
@@ -172,7 +173,9 @@ pub fn deep(
     let mut false_alarms = 0usize;
     let mut cases = Vec::new();
     for row in &signals {
-        let Some(case_day) = row["as_of"].as_str() else { continue };
+        let Some(case_day) = row["as_of"].as_str() else {
+            continue;
+        };
         let Some(pos) = calendar.iter().position(|d| d == case_day) else {
             continue;
         };
@@ -202,14 +205,21 @@ pub fn deep(
         }));
     }
 
-    let precision = if alarms > 0 { Some(hits as f64 / alarms as f64) } else { None };
+    let precision = if alarms > 0 {
+        Some(hits as f64 / alarms as f64)
+    } else {
+        None
+    };
     let recall = if hits + missed > 0 {
         Some(hits as f64 / (hits + missed) as f64)
     } else {
         None
     };
     let base_rate = if !cases.is_empty() {
-        cases.iter().filter(|c| c["actually_stressed"] == true).count() as f64
+        cases
+            .iter()
+            .filter(|c| c["actually_stressed"] == true)
+            .count() as f64
             / cases.len() as f64
     } else {
         0.0
@@ -263,7 +273,10 @@ pub fn trading_calendar(ws: &Workspace, as_of: &str) -> Result<Vec<String>> {
         .query(duckdb::params![as_of])
         .map_err(|e| KernelError::internal(e.to_string()))?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? {
+    while let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    {
         if let Ok(d) = row.get::<usize, chrono::NaiveDate>(0) {
             out.push(d.to_string());
         }
@@ -284,7 +297,10 @@ fn load_signals_between(ws: &Workspace, from: &str, to: &str) -> Result<Vec<Valu
         .query(duckdb::params![from, to])
         .map_err(|e| KernelError::internal(e.to_string()))?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? {
+    while let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    {
         out.push(json!({
             "as_of": row.get::<usize, chrono::NaiveDate>(0).map(|d| d.to_string()).ok(),
             "value": row.get::<usize, f64>(1).ok(),
@@ -303,7 +319,10 @@ pub fn tau_on(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
     let mut rows = stmt
         .query(duckdb::params![as_of])
         .map_err(|e| KernelError::internal(e.to_string()))?;
-    let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? else {
+    let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    else {
         return Ok(None);
     };
     Ok(row.get::<usize, f64>(0).ok())
@@ -311,7 +330,9 @@ pub fn tau_on(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
 
 /// 区间内 CFSI 的峰值。
 pub fn peak_between(ws: &Workspace, days: &[String]) -> Result<Option<f64>> {
-    let Some(first) = days.first() else { return Ok(None) };
+    let Some(first) = days.first() else {
+        return Ok(None);
+    };
     let last = days.last().unwrap_or(first);
     let mut stmt = ws
         .conn
@@ -323,7 +344,10 @@ pub fn peak_between(ws: &Workspace, days: &[String]) -> Result<Option<f64>> {
     let mut rows = stmt
         .query(duckdb::params![first, last])
         .map_err(|e| KernelError::internal(e.to_string()))?;
-    let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? else {
+    let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    else {
         return Ok(None);
     };
     Ok(row.get::<usize, f64>(0).ok())
@@ -341,7 +365,10 @@ fn load_signal(ws: &Workspace, as_of: &str) -> Result<Option<Value>> {
     let mut rows = stmt
         .query(duckdb::params![as_of])
         .map_err(|e| KernelError::internal(e.to_string()))?;
-    let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? else {
+    let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    else {
         return Ok(None);
     };
     let dims_text: Option<String> = row.get(3).ok();
@@ -367,7 +394,10 @@ fn load_history(ws: &Workspace, as_of: &str) -> Result<Vec<Value>> {
         .query(duckdb::params![as_of])
         .map_err(|e| KernelError::internal(e.to_string()))?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next().map_err(|e| KernelError::internal(e.to_string()))? {
+    while let Some(row) = rows
+        .next()
+        .map_err(|e| KernelError::internal(e.to_string()))?
+    {
         let dims_text: Option<String> = row.get(3).ok();
         out.push(json!({
             "as_of": row.get::<usize, chrono::NaiveDate>(0).map(|d| d.to_string()).ok(),
@@ -508,7 +538,12 @@ mod tests {
                 .unwrap();
             // 信号：前 5 天报警（其中部分是误报），后 15 天不报警。
             let level = if i < 5 { "high" } else { "low" };
-            insert_signal(&ws, &day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, 0.5);
+            insert_signal(
+                &ws,
+                &day,
+                r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#,
+                0.5,
+            );
             ws.conn
                 .execute(
                     "UPDATE signals SET level = ? WHERE as_of = CAST(? AS DATE)",
@@ -540,7 +575,12 @@ mod tests {
                     duckdb::params![day],
                 )
                 .unwrap();
-            insert_signal(&ws, &day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, 0.5);
+            insert_signal(
+                &ws,
+                &day,
+                r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#,
+                0.5,
+            );
         }
         // horizon=20 但只有 3 天历史 → 必须报「标签未成熟」，不得硬算。
         let err = deep(&ws, "2026-01-03", 10, 20).unwrap_err();
@@ -560,7 +600,12 @@ mod tests {
             ("2026-01-03", 30.0),
             ("2026-01-04", 40.0),
         ] {
-            insert_signal(&ws, day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, value);
+            insert_signal(
+                &ws,
+                day,
+                r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#,
+                value,
+            );
         }
         // 案例日 01-01、决策时点 01-02：事后窗口只能看到 01-02，不得包含 01-03/04。
         let outcome = outcome_after(&ws, "2026-01-01", "2026-01-02", 20);

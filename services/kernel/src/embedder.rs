@@ -70,8 +70,8 @@ impl LocalEmbedder {
     fn from_offline_dir(dir: &Path) -> std::result::Result<Self, String> {
         let manifest_raw = std::fs::read_to_string(dir.join("manifest.json"))
             .map_err(|e| format!("读取模型清单失败：{e}"))?;
-        let manifest: serde_json::Value =
-            serde_json::from_str(&manifest_raw).map_err(|e| format!("模型清单不是合法 JSON：{e}"))?;
+        let manifest: serde_json::Value = serde_json::from_str(&manifest_raw)
+            .map_err(|e| format!("模型清单不是合法 JSON：{e}"))?;
         let files = manifest
             .get("files")
             .and_then(|v| v.as_object())
@@ -82,8 +82,8 @@ impl LocalEmbedder {
                 .get(name)
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| format!("模型清单缺少 {name} 的哈希"))?;
-            let bytes = std::fs::read(dir.join(name))
-                .map_err(|e| format!("缺少模型文件 {name}：{e}"))?;
+            let bytes =
+                std::fs::read(dir.join(name)).map_err(|e| format!("缺少模型文件 {name}：{e}"))?;
             let actual = format!("{:x}", sha2::Sha256::digest(&bytes));
             if actual != expected {
                 return Err(format!(

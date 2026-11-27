@@ -25,8 +25,18 @@ fn pit_prefilter_excludes_rows_not_yet_available() {
     let memory = Memory::open(dir.path(), None).expect("open memory");
 
     let mut rows = vec![
-        row("a", "mi", "2024-01-02T09:30:00Z", "北向资金净流出 87 亿，人民币承压"),
-        row("b", "mi", "2025-01-02T09:30:00Z", "北向资金净流出 200 亿，人民币大幅承压"),
+        row(
+            "a",
+            "mi",
+            "2024-01-02T09:30:00Z",
+            "北向资金净流出 87 亿，人民币承压",
+        ),
+        row(
+            "b",
+            "mi",
+            "2025-01-02T09:30:00Z",
+            "北向资金净流出 200 亿，人民币大幅承压",
+        ),
     ];
     memory.upsert(&mut rows).expect("upsert");
 
@@ -54,7 +64,12 @@ fn upsert_is_idempotent_by_id() {
 
     let mut first = vec![row("llr:1", "llr", "2024-03-01T00:00:00Z", "浅层反思初版")];
     memory.upsert(&mut first).expect("upsert once");
-    let mut second = vec![row("llr:1", "llr", "2024-03-01T00:00:00Z", "浅层反思修订版")];
+    let mut second = vec![row(
+        "llr:1",
+        "llr",
+        "2024-03-01T00:00:00Z",
+        "浅层反思修订版",
+    )];
     memory.upsert(&mut second).expect("upsert twice");
 
     let stats = memory.stats().expect("stats");
@@ -68,13 +83,18 @@ fn rejects_unknown_store_and_missing_available_at() {
     let memory = Memory::open(dir.path(), None).expect("open memory");
 
     let mut bad_store = vec![row("x", "hmm", "2024-01-01T00:00:00Z", "未知库")];
-    assert!(memory.upsert(&mut bad_store).is_err(), "未知 store 必须拒绝");
+    assert!(
+        memory.upsert(&mut bad_store).is_err(),
+        "未知 store 必须拒绝"
+    );
 
     let mut missing = vec![row("y", "mi", "2024-01-01T00:00:00Z", "缺时间")];
     missing[0].available_at = String::new();
-    assert!(memory.upsert(&mut missing).is_err(), "缺 available_at 必须拒绝");
+    assert!(
+        memory.upsert(&mut missing).is_err(),
+        "缺 available_at 必须拒绝"
+    );
 }
-
 
 #[test]
 fn same_day_rows_are_visible_when_querying_by_bare_date() {
