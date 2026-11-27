@@ -12,6 +12,7 @@
 | `refs.bib` | 手写（逐条核实） | 经 DOI / arXiv API 核对标题、作者、年份 |
 | `tables/*.tex` | **脚本生成**，勿手改 | 主表、McNemar、覆盖率、安慰剂、循环性、宏 |
 | `paper.pdf` | `tectonic` 编译 | 当前批次可能只是部分产物 |
+| `results.scored.json` | `score_arms.py` 输出副本 | 聚合指标（precision/CI/recall/lift/McNemar），供审计；逐时点原始产物在 `artifacts/bench/`（gitignored） |
 
 ## 复现
 
