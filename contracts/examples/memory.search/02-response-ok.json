@@ -1,0 +1,23 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m2",
+  "result": {
+    "mode": "ann",
+    "embedding_ready": true,
+    "hits": [
+      {
+        "id": "mi:2026-10-20:flows",
+        "store": "mi",
+        "as_of": "2026-10-20",
+        "available_at": "2026-10-20T09:30:00Z",
+        "subject": "all",
+        "kind": "event",
+        "text": "北向连续三日净流出，人民币中间价下调。",
+        "payload": {
+          "modality": "text"
+        },
+        "score": 0.1832
+      }
+    ]
+  }
+}

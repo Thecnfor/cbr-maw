@@ -17,6 +17,10 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 sha2 = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 csv = "1"
+lancedb = { version = "0.41", default-features = false }
+tokio = { version = "1", features = ["rt"] }
+futures = "0.3"
+lance-index = { version = "=14.0.2", features = ["tokenizer-jieba"] }
 
 # 门禁（clippy / test）统一走 dev profile：DuckDB 是 bundled C++，编译开销远大于
 # 运行时差异。dev 统一 -O1 是折中：C++ 侧约 3 分钟（vs release -O3 的 8–15 分钟），
@@ -33,3 +37,6 @@ incremental = false
 opt-level = 3
 lto = "thin"
 debug = 0
+
+[dev-dependencies]
+tempfile = "3"

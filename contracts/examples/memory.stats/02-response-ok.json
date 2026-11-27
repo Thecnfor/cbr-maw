@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m3",
+  "result": {
+    "table": "memory",
+    "rows": 42,
+    "per_store": {
+      "mi": 30,
+      "llr": 10,
+      "hlr": 2
+    },
+    "embedding_ready": true,
+    "embed_dim": 512,
+    "mmr": true,
+    "pit_prefilter": true
+  }
+}

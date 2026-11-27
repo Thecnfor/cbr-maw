@@ -9,6 +9,7 @@ pub mod error;
 pub mod features;
 pub mod ingest;
 pub mod kb;
+pub mod memory;
 pub mod numeric;
 pub mod pit;
 pub mod reflection;
@@ -27,7 +28,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CONTRACT_VERSION: &str = "1.0.0";
 
 /// 本内核实现的方法（`initialize.result.capabilities`）。
-pub const CAPABILITIES: [&str; 19] = [
+pub const CAPABILITIES: [&str; 22] = [
     "initialize",
     "shutdown",
     "ping",
@@ -47,6 +48,9 @@ pub const CAPABILITIES: [&str; 19] = [
     "tools.describe",
     "reflection.shallow",
     "reflection.deep",
+    "memory.upsert",
+    "memory.search",
+    "memory.stats",
 ];
 
 /// 运行期上下文。
@@ -55,6 +59,7 @@ pub struct Kernel {
     data_home: Option<String>,
     resource_home: Option<String>,
     catalog: pit::SeriesCatalog,
+    memory: Option<memory::Memory>,
     initialized: bool,
     shutdown_requested: bool,
     log_level: String,
@@ -67,6 +72,7 @@ impl Default for Kernel {
             data_home: None,
             resource_home: None,
             catalog: pit::SeriesCatalog::builtin(),
+            memory: None,
             initialized: false,
             shutdown_requested: false,
             log_level: "info".to_string(),
@@ -248,6 +254,9 @@ impl Kernel {
             "tools.invoke" => self.tools_invoke(params),
             "reflection.shallow" => self.reflection_shallow(params),
             "reflection.deep" => self.reflection_deep(params),
+            "memory.upsert" => self.memory_upsert(params),
+            "memory.search" => self.memory_search(params),
+            "memory.stats" => self.memory_stats(),
             "kernel.hash" => kernel_hash(params),
             other => Err(KernelError::method_not_found(other)),
         }
@@ -275,6 +284,14 @@ impl Kernel {
             if !workspace.is_empty() {
                 self.workspace = Some(Workspace::open(std::path::Path::new(workspace))?);
             }
+        }
+        if let Some(ws) = &self.workspace {
+            let root = ws
+                .path
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| std::path::PathBuf::from("."));
+            self.memory = Some(memory::Memory::open(&root, None)?);
         }
         self.initialized = true;
         self.log(
@@ -366,6 +383,89 @@ impl Kernel {
         Ok(json!({
             "hits": hits.into_iter().map(|hit| tools::kb_search::to_kb_hit(&hit)).collect::<Vec<_>>()
         }))
+    }
+
+    fn memory(&mut self) -> Result<&memory::Memory> {
+        self.memory.as_ref().ok_or_else(|| {
+            KernelError::not_initialized("记忆库未打开：请先调用 initialize 并传入 workspace")
+        })
+    }
+
+    fn memory_upsert(&mut self, params: &Value) -> Result<Value> {
+        let rows_json = params
+            .get("rows")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .ok_or_else(|| KernelError::invalid_params("缺少 rows"))?;
+        let mut rows = Vec::with_capacity(rows_json.len());
+        for item in rows_json.iter() {
+            let get = |k: &str| item.get(k).and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let vector = item.get("vector").and_then(|v| v.as_array()).map(|arr| {
+                arr.iter()
+                    .filter_map(|x| x.as_f64().map(|f| f as f32))
+                    .collect::<Vec<f32>>()
+            });
+            rows.push(memory::MemoryRow {
+                id: get("id"),
+                store: get("store"),
+                as_of: get("as_of"),
+                available_at: get("available_at"),
+                subject: get("subject"),
+                kind: get("kind"),
+                text: get("text"),
+                vector,
+                payload: item.get("payload").cloned().unwrap_or(json!({})),
+            });
+        }
+        let written = self.memory()?.upsert(&mut rows)?;
+        let embedding_ready = self.memory()?.embedding_ready();
+        Ok(json!({"written": written, "embedding_ready": embedding_ready}))
+    }
+
+    fn memory_search(&mut self, params: &Value) -> Result<Value> {
+        let as_of = require_str(params, "as_of")?;
+        let text = require_str(params, "query")?;
+        let store = params.get("store").and_then(|v| v.as_str());
+        let subject = params.get("subject").and_then(|v| v.as_str());
+        let kind = params.get("kind").and_then(|v| v.as_str());
+        let top_k = params
+            .get("top_k")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(5)
+            .clamp(1, 50) as usize;
+        let mmr_lambda = params
+            .get("mmr_lambda")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.7) as f32;
+        let req = memory::SearchRequest {
+            store,
+            as_of,
+            text,
+            subject,
+            kind,
+            top_k,
+            mmr_lambda,
+        };
+        let (hits, mode) = self.memory()?.search(&req)?;
+        Ok(json!({
+            "mode": mode,
+            "embedding_ready": self.memory()?.embedding_ready(),
+            "hits": hits.into_iter().map(|hit| json!({
+                "id": hit.id,
+                "store": hit.store,
+                "as_of": hit.as_of,
+                "available_at": hit.available_at,
+                "subject": hit.subject,
+                "kind": hit.kind,
+                "text": hit.text,
+                "payload": hit.payload,
+                "score": hit.score,
+            })).collect::<Vec<_>>()
+        }))
+    }
+
+    fn memory_stats(&mut self) -> Result<Value> {
+        self.memory()?.stats()
     }
 
     fn features_build(&mut self, params: &Value) -> Result<Value> {

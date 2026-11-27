@@ -16,9 +16,6 @@ use serde_json::{json, Map, Value};
 
 use crate::numeric::r;
 
-/// 相似案例的判定窗口（交易日）。
-const SIMILARITY_WINDOW: usize = 5;
-
 /// 浅层反思：在 `as_of` 时点回看历史，找出压力结构相似的时点，
 /// 并给出这些时点**之后**的真实走势（事后绩效，仅用于归因）。
 ///

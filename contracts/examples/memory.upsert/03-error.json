@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m1",
+  "error": {
+    "code": -32602,
+    "message": "记忆记录缺少 available_at",
+    "data": {
+      "kind": "E_INVALID_PARAMS",
+      "retryable": false,
+      "detail": {
+        "reason": "记忆记录缺少 available_at（PIT 硬约束）",
+        "field": "available_at"
+      }
+    }
+  }
+}

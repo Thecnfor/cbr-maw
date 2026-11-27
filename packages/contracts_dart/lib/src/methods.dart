@@ -73,6 +73,28 @@ enum EndpointStatus {
   }
 }
 
+/// 契约枚举 MemoryStore（字面量与 JSON 一致）。
+enum MemoryStore {
+  mi('mi'),
+  llr('llr'),
+  hlr('hlr');
+
+  const MemoryStore(this.wire);
+
+  /// JSON 字面量。
+  final String wire;
+
+  /// 从 JSON 字面量解析（解析即校验）。
+  static MemoryStore parse(String raw) {
+    for (final value in values) {
+      if (value.wire == raw) {
+        return value;
+      }
+    }
+    throw ContractFormatException('非法枚举取值：$raw');
+  }
+}
+
 /// 契约枚举 CollectStatus（字面量与 JSON 一致）。
 enum CollectStatus {
   ok('ok'),
@@ -203,6 +225,27 @@ enum HashKind {
 
   /// 从 JSON 字面量解析（解析即校验）。
   static HashKind parse(String raw) {
+    for (final value in values) {
+      if (value.wire == raw) {
+        return value;
+      }
+    }
+    throw ContractFormatException('非法枚举取值：$raw');
+  }
+}
+
+/// 契约枚举 MemorySearchMode（字面量与 JSON 一致）。
+enum MemorySearchMode {
+  ann('ann'),
+  fts('fts');
+
+  const MemorySearchMode(this.wire);
+
+  /// JSON 字面量。
+  final String wire;
+
+  /// 从 JSON 字面量解析（解析即校验）。
+  static MemorySearchMode parse(String raw) {
     for (final value in values) {
       if (value.wire == raw) {
         return value;
@@ -743,6 +786,148 @@ final class KbHit {
     'locator': locator,
     'published_at': publishedAt,
     'source_id': sourceId,
+  };
+}
+
+/// MemoryHit —— 契约嵌套对象。
+final class MemoryHit {
+  const MemoryHit({
+    required this.id,
+    required this.store,
+    required this.asOf,
+    required this.availableAt,
+    required this.subject,
+    required this.kind,
+    required this.text,
+    required this.payload,
+    required this.score,
+  });
+
+  /// 从 JSON 对象解析（解析即校验；不符合契约抛 ContractFormatException）。
+  factory MemoryHit.parse(Object? json) {
+    final r = JsonReader(json, 'object');
+    return MemoryHit(
+      id: r.str('id'),
+      store: r.str('store'),
+      asOf: r.str('as_of'),
+      availableAt: r.str('available_at'),
+      subject: r.str('subject'),
+      kind: r.str('kind'),
+      text: r.str('text'),
+      payload: r.obj('payload'),
+      score: r.number('score'),
+    );
+  }
+
+  ///
+  final String id;
+
+  ///
+  final String store;
+
+  ///
+  final String asOf;
+
+  ///
+  final String availableAt;
+
+  ///
+  final String subject;
+
+  ///
+  final String kind;
+
+  ///
+  final String text;
+
+  ///
+  final Map<String, Object?> payload;
+
+  ///
+  final double score;
+
+  /// 回写为 JSON 对象。
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'store': store,
+    'as_of': asOf,
+    'available_at': availableAt,
+    'subject': subject,
+    'kind': kind,
+    'text': text,
+    'payload': payload,
+    'score': score,
+  };
+}
+
+/// MemoryRow —— 契约嵌套对象。
+final class MemoryRow {
+  const MemoryRow({
+    required this.id,
+    required this.store,
+    required this.asOf,
+    required this.availableAt,
+    this.subject,
+    this.kind,
+    required this.text,
+    this.vector,
+    this.payload,
+  });
+
+  /// 从 JSON 对象解析（解析即校验；不符合契约抛 ContractFormatException）。
+  factory MemoryRow.parse(Object? json) {
+    final r = JsonReader(json, 'object');
+    return MemoryRow(
+      id: r.str('id'),
+      store: MemoryStore.parse(r.str('store')),
+      asOf: r.str('as_of'),
+      availableAt: r.str('available_at'),
+      subject: r.strOpt('subject'),
+      kind: r.strOpt('kind'),
+      text: r.str('text'),
+      vector: r.numbersOpt('vector'),
+      payload: r.objOpt('payload'),
+    );
+  }
+
+  /// 幂等主键
+  final String id;
+
+  /// 记忆库：市场情报/浅层反思/深层反思
+  final MemoryStore store;
+
+  /// 记录所属决策时点（YYYY-MM-DD）
+  final String asOf;
+
+  /// 可得时点（RFC3339，PIT 硬约束：检索时强制 <= as_of）
+  final String availableAt;
+
+  /// 主体视角：regulator/institution/investor/all
+  final String? subject;
+
+  /// 记录类型（如 event / reflection / outcome）
+  final String? kind;
+
+  /// 被向量化与全文检索的正文
+  final String text;
+
+  /// 预计算向量（省略则由 kernel 本地向量化）
+  final List<double>? vector;
+
+  /// 库内差异字段
+  final Map<String, Object?>? payload;
+
+  /// 回写为 JSON 对象。
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'store': store.wire,
+    'as_of': asOf,
+    'available_at': availableAt,
+    'subject': subject,
+    'kind': kind,
+    'text': text,
+    'vector': vector,
+    'payload': payload,
   };
 }
 
@@ -1920,6 +2105,242 @@ final class KernelHashResult extends RpcResult {
 
   @override
   Map<String, Object?> toJson() => {'hash': hash};
+}
+
+/// `memory.search` params。
+final class MemorySearchParams extends RpcParams {
+  const MemorySearchParams({
+    required this.asOf,
+    required this.query,
+    this.store,
+    this.subject,
+    this.kind,
+    this.topK,
+    this.mmrLambda,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemorySearchParams.parse(Object? json) {
+    final r = JsonReader(json, 'params');
+    return MemorySearchParams(
+      asOf: r.str('as_of'),
+      query: r.str('query'),
+      store: switch (r.strOpt('store')) {
+        null => null,
+        final v => MemoryStore.parse(v),
+      },
+      subject: r.strOpt('subject'),
+      kind: r.strOpt('kind'),
+      topK: r.integerOpt('top_k'),
+      mmrLambda: r.numberOpt('mmr_lambda'),
+    );
+  }
+
+  @override
+  String get method => 'memory.search';
+
+  /// 决策时点：强制 available_at <= as_of
+  final String asOf;
+
+  ///
+  final String query;
+
+  ///
+  final MemoryStore? store;
+
+  ///
+  final String? subject;
+
+  ///
+  final String? kind;
+
+  ///
+  final int? topK;
+
+  /// MMR 多样性系数：1=纯相关 0=纯多样
+  final double? mmrLambda;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'as_of': asOf,
+    'query': query,
+    'store': store?.wire,
+    'subject': subject,
+    'kind': kind,
+    'top_k': topK,
+    'mmr_lambda': mmrLambda,
+  };
+}
+
+/// `memory.search` result。
+final class MemorySearchResult extends RpcResult {
+  const MemorySearchResult({
+    required this.mode,
+    required this.embeddingReady,
+    required this.hits,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemorySearchResult.parse(Object? json) {
+    final r = JsonReader(json, 'result');
+    return MemorySearchResult(
+      mode: MemorySearchMode.parse(r.str('mode')),
+      embeddingReady: r.boolean('embedding_ready'),
+      hits: r.listOf('hits', (e) => MemoryHit.parse(e.raw)),
+    );
+  }
+
+  @override
+  String get method => 'memory.search';
+
+  /// 实际使用的检索通道（诚实降级）
+  final MemorySearchMode mode;
+
+  ///
+  final bool embeddingReady;
+
+  ///
+  final List<MemoryHit> hits;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'mode': mode.wire,
+    'embedding_ready': embeddingReady,
+    'hits': hits,
+  };
+}
+
+/// `memory.stats` params。
+final class MemoryStatsParams extends RpcParams {
+  const MemoryStatsParams();
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemoryStatsParams.parse(Object? json) {
+    JsonReader(json, 'params').requireKeys(<String>{});
+    return const MemoryStatsParams();
+  }
+
+  @override
+  String get method => 'memory.stats';
+
+  @override
+  Map<String, Object?> toJson() => {};
+}
+
+/// `memory.stats` result。
+final class MemoryStatsResult extends RpcResult {
+  const MemoryStatsResult({
+    required this.table,
+    required this.rows,
+    required this.perStore,
+    required this.embeddingReady,
+    required this.embedDim,
+    required this.mmr,
+    required this.pitPrefilter,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemoryStatsResult.parse(Object? json) {
+    final r = JsonReader(json, 'result');
+    return MemoryStatsResult(
+      table: r.str('table'),
+      rows: r.integer('rows'),
+      perStore: r.obj('per_store'),
+      embeddingReady: r.boolean('embedding_ready'),
+      embedDim: r.integer('embed_dim'),
+      mmr: r.boolean('mmr'),
+      pitPrefilter: r.boolean('pit_prefilter'),
+    );
+  }
+
+  @override
+  String get method => 'memory.stats';
+
+  ///
+  final String table;
+
+  ///
+  final int rows;
+
+  /// 各库行数：mi/llr/hlr（键固定，未出现的库视为 0）
+  final Map<String, Object?> perStore;
+
+  ///
+  final bool embeddingReady;
+
+  ///
+  final int embedDim;
+
+  ///
+  final bool mmr;
+
+  ///
+  final bool pitPrefilter;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'table': table,
+    'rows': rows,
+    'per_store': perStore,
+    'embedding_ready': embeddingReady,
+    'embed_dim': embedDim,
+    'mmr': mmr,
+    'pit_prefilter': pitPrefilter,
+  };
+}
+
+/// `memory.upsert` params。
+final class MemoryUpsertParams extends RpcParams {
+  const MemoryUpsertParams({required this.rows});
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemoryUpsertParams.parse(Object? json) {
+    final r = JsonReader(json, 'params');
+    return MemoryUpsertParams(
+      rows: r.listOf('rows', (e) => MemoryRow.parse(e.raw)),
+    );
+  }
+
+  @override
+  String get method => 'memory.upsert';
+
+  ///
+  final List<MemoryRow> rows;
+
+  @override
+  Map<String, Object?> toJson() => {'rows': rows};
+}
+
+/// `memory.upsert` result。
+final class MemoryUpsertResult extends RpcResult {
+  const MemoryUpsertResult({
+    required this.written,
+    required this.embeddingReady,
+  });
+
+  /// 从 JSON 对象解析（解析即校验）。
+  factory MemoryUpsertResult.parse(Object? json) {
+    final r = JsonReader(json, 'result');
+    return MemoryUpsertResult(
+      written: r.integer('written'),
+      embeddingReady: r.boolean('embedding_ready'),
+    );
+  }
+
+  @override
+  String get method => 'memory.upsert';
+
+  ///
+  final int written;
+
+  /// 本地向量化是否可用；false 时只写 FTS
+  final bool embeddingReady;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'written': written,
+    'embedding_ready': embeddingReady,
+  };
 }
 
 /// `pit.ingest` params。

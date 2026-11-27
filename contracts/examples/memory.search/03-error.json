@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m2",
+  "error": {
+    "code": -32004,
+    "message": "记忆检索失败",
+    "data": {
+      "kind": "E_DATA_MISSING",
+      "retryable": false,
+      "detail": {
+        "reason": "记忆表尚未创建，请先调用 memory.upsert"
+      }
+    }
+  }
+}

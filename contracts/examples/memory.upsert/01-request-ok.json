@@ -1,0 +1,24 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m1",
+  "method": "memory.upsert",
+  "params": {
+    "rows": [
+      {
+        "id": "mi:2026-10-22:csi300",
+        "store": "mi",
+        "as_of": "2026-10-22",
+        "available_at": "2026-10-22T09:31:00Z",
+        "subject": "all",
+        "kind": "event",
+        "text": "沪深300 当日下挫 2.1%，北向净流出扩大至 87 亿。",
+        "payload": {
+          "modality": "text",
+          "sources": [
+            "src:sse"
+          ]
+        }
+      }
+    ]
+  }
+}

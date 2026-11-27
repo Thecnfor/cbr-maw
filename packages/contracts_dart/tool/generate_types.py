@@ -50,6 +50,8 @@ ENUM_NAMES = {
     ("pct", "bp"): "ToolSpreadUnit",
     ("linear", "historical", "both"): "ToolScenarioMethod",
     ("asc", "desc"): "SortOrder",
+    ("mi", "llr", "hlr"): "MemoryStore",
+    ("ann", "fts"): "MemorySearchMode",
 }
 
 

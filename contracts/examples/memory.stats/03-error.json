@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m3",
+  "error": {
+    "code": -32008,
+    "message": "记忆库未打开",
+    "data": {
+      "kind": "E_NOT_INITIALIZED",
+      "retryable": false,
+      "detail": {
+        "reason": "记忆库未打开：请先调用 initialize 并传入 workspace"
+      }
+    }
+  }
+}

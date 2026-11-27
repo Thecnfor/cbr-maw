@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/memory.stats.request.schema.json",
+  "title": "memory.stats 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 memory.stats。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "memory.stats"
+    },
+    "params": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

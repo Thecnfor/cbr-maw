@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m2",
+  "method": "memory.search",
+  "params": {
+    "as_of": "2026-10-22",
+    "query": "北向资金撤离与汇率压力",
+    "store": "mi",
+    "top_k": 5,
+    "mmr_lambda": 0.7
+  }
+}

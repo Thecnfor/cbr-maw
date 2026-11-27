@@ -1,0 +1,6 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m3",
+  "method": "memory.stats",
+  "params": {}
+}

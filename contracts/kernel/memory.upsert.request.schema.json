@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contracts/kernel/memory.upsert.request.schema.json",
+  "title": "memory.upsert 请求信封",
+  "description": "JSON-RPC 2.0 请求信封；method 固定为 memory.upsert。kernel 是记忆唯一写入者（ADR-010）。",
+  "type": "object",
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "const": "memory.upsert"
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/$defs/MemoryRow"
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "MemoryRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "幂等主键"
+        },
+        "store": {
+          "type": "string",
+          "enum": [
+            "mi",
+            "llr",
+            "hlr"
+          ],
+          "description": "记忆库：市场情报/浅层反思/深层反思"
+        },
+        "as_of": {
+          "type": "string",
+          "description": "记录所属决策时点（YYYY-MM-DD）"
+        },
+        "available_at": {
+          "type": "string",
+          "description": "可得时点（RFC3339，PIT 硬约束：检索时强制 <= as_of）"
+        },
+        "subject": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "主体视角：regulator/institution/investor/all"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "记录类型（如 event / reflection / outcome）"
+        },
+        "text": {
+          "type": "string",
+          "description": "被向量化与全文检索的正文"
+        },
+        "vector": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "预计算向量（省略则由 kernel 本地向量化）"
+        },
+        "payload": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "库内差异字段"
+        }
+      },
+      "required": [
+        "id",
+        "store",
+        "as_of",
+        "available_at",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": "m1",
+  "result": {
+    "written": 1,
+    "embedding_ready": true
+  }
+}
