@@ -100,6 +100,10 @@ dart run tools/bench/self_check.dart
 # 压力/平静各 30（默认 seed=11），三臂；每步流式打印角色/工具/主张/冲突/核验
 dart run apps/desktop/tool/bench_console.dart   --pairs 30 --arms collaborative,single,independent   --out artifacts/bench/console.json
 
+# 消融：记忆关（检索与写回都不发生） / 弱证据（测幻觉率）
+dart run apps/desktop/tool/bench_console.dart --pairs 30 --arms collaborative --no-memory --out /tmp/mem_off.json
+dart run apps/desktop/tool/bench_console.dart --pairs 30 --arms collaborative --weak --out /tmp/weak.json
+
 # 并行：同一份配对抽样按序号切 4 片，四个进程各跑一片（产物分开落盘再合并）
 dart run apps/desktop/tool/bench_console.dart --pairs 30 --shards 4 --shard 0 --out artifacts/bench/console.0.json
 

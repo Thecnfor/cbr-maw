@@ -150,6 +150,12 @@ Future<void> main(List<String> argv) async {
         judge: _NoJudge(),
         signalSource: KernelSignalSource(supervisor).read,
         memory: args.memory ? SidecarMemoryStore(supervisor) : null,
+        // 弱证据消融：只减少证据包，不伪造；用于测幻觉率（docs/01 §2.3）。
+        ablation: AblationFlags(
+          evidenceStrength: args.weak
+              ? EvidenceStrength.weak
+              : EvidenceStrength.full,
+        ),
         runHooks: RunHooks(onDecision: decisions.add),
       );
       final runtime = AgentRuntime(settings);
@@ -416,6 +422,7 @@ final class _Args {
     required this.memory,
     required this.shard,
     required this.shards,
+    required this.weak,
   });
 
   final String root;
@@ -434,6 +441,7 @@ final class _Args {
   final bool memory;
   final int shard;
   final int shards;
+  final bool weak;
 
   static _Args parse(List<String> argv) {
     final opts = <String, String>{};
@@ -469,6 +477,7 @@ final class _Args {
       memory: opts['no-memory'] == null,
       shard: int.parse(opts['shard'] ?? '0'),
       shards: int.parse(opts['shards'] ?? '1'),
+      weak: opts['weak'] != null,
     );
   }
 
