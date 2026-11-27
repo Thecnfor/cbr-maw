@@ -760,8 +760,9 @@ $y_{20}$ 与 $t+1$ 至 $t+20$ 窗口完全一致，说明本产物的 $y_{20}$ �
 \label{sec:memory-ablation}
 
 为回答「三库记忆是否改变判别」，在同一端点、同一提示词与同一工具集下，对
-\texttt{collaborative} 臂做一次开/关对照：记忆关组把记忆客户端置空，检索与写回
-\emph{都不发生}（不是「忽略结果」）。操作检查先行：\texttt{memory\_written} 事件在
+\texttt{collaborative} 臂做一次开/关对照：记忆关组把记忆客户端置空，\emph{三库记忆}（MI 检索、LLR/HLR 写回）都不发生
+（不是「忽略结果」）；两条条件都保留 DuckDB 侧的相似案例反思，因此本对照隔离的是
+LanceDB 三库记忆本身，而非「有没有反思」。操作检查先行：\texttt{memory\_written} 事件在
 记忆开组出现、记忆关组为 0，确认开关确实生效。
 
 配对时点 \RESULT{mem}{n} 个。均衡准确率：记忆开 \RESULT{mem}{balacc_a}、
