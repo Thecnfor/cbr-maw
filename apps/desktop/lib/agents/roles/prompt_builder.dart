@@ -5,8 +5,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/services.dart' show AssetBundle, rootBundle;
-
+import 'asset_source.dart';
 import '../models/domain.dart';
 import '../roles/role_config.dart';
 
@@ -14,9 +13,8 @@ import '../roles/role_config.dart';
 final class PromptBuilder {
   PromptBuilder._(this._templates);
 
-  /// 从资源加载全部模板。
-  static Future<PromptBuilder> load([AssetBundle? bundle]) async {
-    final assets = bundle ?? rootBundle;
+  /// 从资源源加载全部模板（应用传 `BundleAssetSource`，CLI 传 `FileAssetSource`）。
+  static Future<PromptBuilder> load(AssetSource source) async {
     const names = [
       'common_rules',
       'regulator',
@@ -27,7 +25,7 @@ final class PromptBuilder {
     ];
     final templates = <String, String>{};
     for (final name in names) {
-      templates[name] = await assets.loadString('lib/agents/prompts/$name.md');
+      templates[name] = await source.read('lib/agents/prompts/$name.md');
     }
     return PromptBuilder._(templates);
   }

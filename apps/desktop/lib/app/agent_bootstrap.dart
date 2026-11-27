@@ -5,6 +5,7 @@ import '../agents/llm/llm_channel.dart';
 import '../agents/roles/prompt_builder.dart';
 import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
+import '../core/bundle_asset_source.dart';
 import '../core/clock.dart';
 import '../data/gate/tool_invoker.dart';
 import '../agents/signals/kernel_knowledge_source.dart';
@@ -22,8 +23,9 @@ final class AgentBootstrapFactory {
 
   /// 创建控制器。
   static Future<InvestigationController> create(AppState state) async {
-    final catalog = await RoleCatalog.load();
-    final prompts = await PromptBuilder.load();
+    final assets = BundleAssetSource();
+    final catalog = await RoleCatalog.load(assets);
+    final prompts = await PromptBuilder.load(assets);
     final secrets = _AppSecretProvider(state);
     final registry = ToolRegistry(
       specs: catalog.specs,

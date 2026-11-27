@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:cbr_maw/agents/models/domain.dart';
+import 'package:cbr_maw/agents/roles/asset_source.dart';
 import 'package:cbr_maw/agents/roles/prompt_builder.dart';
 import 'package:cbr_maw/agents/roles/role_config.dart';
 import 'package:cbr_maw_contracts/contracts_dart.dart' show toolRegistry;
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// 校验随包资源（roles.json + prompts/*.md）真实可加载且与契约一致。
@@ -12,23 +12,16 @@ import 'package:flutter_test/flutter_test.dart';
 /// 注意：从 workspace 根跑 `flutter test apps/desktop` 时，测试资源清单只覆盖
 /// 根包的 assets，`rootBundle` 读不到子包声明的资源（Flutter 测试工具链限制）。
 /// 因此这里用磁盘读同一个文件验证内容与解析；`rootBundle` 路径由应用运行时使用。
-final class _DiskBundle extends AssetBundle {
+final class _DiskSource implements AssetSource {
   /// 从 workspace 根跑测试时 cwd 是根，从包内跑时是包目录；两处都试。
-  String _path(String key) =>
-      File(key).existsSync() ? key : 'apps/desktop/$key';
-
   @override
-  Future<ByteData> load(String key) async =>
-      ByteData.sublistView(await File(_path(key)).readAsBytes());
-
-  @override
-  Future<String> loadString(String key, {bool cache = true}) =>
-      File(_path(key)).readAsString();
+  Future<String> read(String key) =>
+      File(File(key).existsSync() ? key : 'apps/desktop/$key').readAsString();
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final bundle = _DiskBundle();
+  final bundle = _DiskSource();
 
   test('roles.json 可加载，三角色齐全', () async {
     final catalog = await RoleCatalog.load(bundle);

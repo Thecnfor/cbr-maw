@@ -3,8 +3,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/services.dart' show AssetBundle, rootBundle;
-
+import 'asset_source.dart';
 import '../models/domain.dart';
 
 /// 单个角色的规范。
@@ -234,11 +233,9 @@ final class RoleCatalog {
     }, OrchestrationSettings.parse(decoded['orchestration']));
   }
 
-  /// 从资源加载。
-  static Future<RoleCatalog> load([AssetBundle? bundle]) async =>
-      RoleCatalog.parse(
-        await (bundle ?? rootBundle).loadString('lib/agents/roles/roles.json'),
-      );
+  /// 从资源源加载。
+  static Future<RoleCatalog> load(AssetSource source) async =>
+      RoleCatalog.parse(await source.read('lib/agents/roles/roles.json'));
 
   /// 角色规范（只含出卡的三主体）。
   final Map<RoleId, RoleSpec> specs;
