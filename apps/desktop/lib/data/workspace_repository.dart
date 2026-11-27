@@ -8,9 +8,19 @@ import 'sidecar/sidecar_supervisor.dart';
 ///
 /// 严禁在这里编造任何数值；调用方拿到错误后必须渲染「需授权/不可达/缺失」。
 final class WorkspaceRepository {
-  WorkspaceRepository({required this.supervisor, required this.log});
+  WorkspaceRepository({
+    required this.supervisor,
+    required this.log,
+    this.collector,
+  });
 
   final SidecarSupervisor supervisor;
+
+  /// 采集器通道：`sources.*` / `collect.run` / `inbox.ingest` 只在它那里。
+  ///
+  /// 这些方法与 kernel 的 `db.*` / `tools.invoke` 分属两个 sidecar；
+  /// 此前全部发往 kernel，导致来源台账与抓取链路在桌面端不可用。
+  final SidecarSupervisor? collector;
 
   /// 开发日志。
   final AppLog log;
@@ -22,13 +32,13 @@ final class WorkspaceRepository {
   );
 
   Future<List<SourceLedgerEntry>> sources({bool includeDisabled = true}) =>
-      _call(
+      _collect(
         'sources.list',
         SourcesListParams(includeDisabled: includeDisabled).toJson(),
         (payload) => SourcesListResult.parse(payload).sources,
       );
 
-  Future<List<HealthEntry>> sourcesHealth() => _call(
+  Future<List<HealthEntry>> sourcesHealth() => _collect(
     'sources.health',
     const SourcesHealthParams().toJson(),
     (payload) => SourcesHealthResult.parse(payload).entries,
@@ -60,7 +70,7 @@ final class WorkspaceRepository {
     required String path,
     String? declaredSource,
     String? asOf,
-  }) => _call(
+  }) => _collect(
     'inbox.ingest',
     InboxIngestParams(
       path: path,
@@ -70,13 +80,38 @@ final class WorkspaceRepository {
     InboxIngestResult.parse,
   );
 
+  /// 发往 collector 的调用；未配置 collector 时显式失败（不静默回落到 kernel）。
+  Future<T> _collect<T>(
+    String method,
+    Map<String, Object?> params,
+    T Function(Object? payload) parse,
+  ) {
+    final target = collector;
+    if (target == null) {
+      throw AppError.unavailable(
+        code: 'E_COLLECTOR_UNAVAILABLE',
+        what: '采集器未就绪',
+        why: '当前会话未启动 collector sidecar',
+        next: '请确认安装包内含 collector，或重新启动应用',
+      );
+    }
+    return _callOn(target, method, params, parse);
+  }
+
   Future<T> _call<T>(
+    String method,
+    Map<String, Object?> params,
+    T Function(Object? payload) parse,
+  ) => _callOn(supervisor, method, params, parse);
+
+  Future<T> _callOn<T>(
+    SidecarSupervisor target,
     String method,
     Map<String, Object?> params,
     T Function(Object? payload) parse,
   ) async {
     try {
-      return await supervisor.callTyped(method, params, parse);
+      return await target.callTyped(method, params, parse);
     } on AppError catch (e) {
       log.error('$method 失败', error: e);
       rethrow;

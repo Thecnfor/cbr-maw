@@ -49,6 +49,7 @@ final class AppState extends ChangeNotifier {
     required this.secrets,
     required this.log,
     required this.supervisor,
+    required this.collector,
     required this.repository,
     required this.gate,
   });
@@ -89,13 +90,40 @@ final class AppState extends ChangeNotifier {
       dataHome: paths.dataHome,
       resourceHome: paths.resourceHome,
     );
-    final repository = WorkspaceRepository(supervisor: supervisor, log: log);
+    // collector 是独立 sidecar：数据抓取与 Inbox 清洗只在它那里，
+    // 此前桌面端从不拉起它 → 抓取链路完全不可用（审计 B1）。
+    final collector = SidecarSupervisor(
+      transportFactory: () => StdioSidecarTransport(
+        executable: _sidecarExecutable('collector'),
+        arguments: [
+          '--workspace',
+          paths.workspacePath,
+          '--data-home',
+          paths.dataHome,
+          '--resource-home',
+          paths.resourceHome,
+          '--log-level',
+          'info',
+        ],
+      ),
+      clientVersion: '0.1.0',
+      contractVersion: '1.0.0',
+      workspace: paths.workspacePath,
+      dataHome: paths.dataHome,
+      resourceHome: paths.resourceHome,
+    );
+    final repository = WorkspaceRepository(
+      supervisor: supervisor,
+      log: log,
+      collector: collector,
+    );
     final state = AppState._(
       paths: paths,
       config: config,
       secrets: secrets,
       log: log,
       supervisor: supervisor,
+      collector: collector,
       repository: repository,
       gate: PermissionGate(now: Clock.asOfNow),
     );
@@ -123,6 +151,9 @@ final class AppState extends ChangeNotifier {
 
   /// 内核监督者。
   final SidecarSupervisor supervisor;
+
+  /// 采集器 sidecar（数据抓取 / Inbox 清洗）。
+  final SidecarSupervisor collector;
 
   /// 数据仓储。
   final WorkspaceRepository repository;
@@ -214,6 +245,8 @@ final class AppState extends ChangeNotifier {
   /// 退出：先优雅关闭内核。
   Future<void> shutdown() async {
     await supervisor.shutdown();
+    // collector 必须一并优雅退出，否则会留下孤儿进程。
+    await collector.shutdown();
     await _auditController.close();
     dispose();
   }
