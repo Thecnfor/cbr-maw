@@ -1,5 +1,5 @@
 import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
-    show CbrEmptyState;
+    show CbrEmptyState, CbrInlineBanner, CbrStatusTone;
 
 import '../ui.dart';
 import '../theme/theme.dart';
@@ -186,41 +186,17 @@ final class InlineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = SemanticColors.of(context);
-    final (Color ink, Color tint, IconData defaultIcon) = switch (tone) {
-      BannerTone.info => (colors.infoInk, colors.infoTint, Icons.info_outline),
-      BannerTone.warn => (colors.warnInk, colors.warnTint, Icons.warning_amber),
-      BannerTone.error => (
-        colors.dangerInk,
-        colors.dangerTint,
-        Icons.error_outline,
-      ),
-      BannerTone.ok => (
-        colors.okInk,
-        colors.okTint,
-        Icons.check_circle_outline,
-      ),
-    };
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: Tokens.space3,
-        vertical: Tokens.space2,
-      ),
-      decoration: BoxDecoration(
-        color: tint,
-        borderRadius: BorderRadius.circular(Tokens.radiusControl),
-        border: Border.all(color: ink.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon ?? defaultIcon, size: 18, color: ink),
-          const SizedBox(width: Tokens.space2),
-          Expanded(child: Text(message)),
-        ],
-      ),
-    );
+    // 转发到设计系统的提示条：语义色三态（solid/ink/tint）与对比度由
+    // 设计系统保证，app 侧不再自绘。
+    return CbrInlineBanner(message: message, tone: _tone(tone));
   }
+
+  static CbrStatusTone _tone(BannerTone tone) => switch (tone) {
+    BannerTone.info => CbrStatusTone.info,
+    BannerTone.warn => CbrStatusTone.warn,
+    BannerTone.error => CbrStatusTone.danger,
+    BannerTone.ok => CbrStatusTone.ok,
+  };
 }
 
 /// 提示条语气。
