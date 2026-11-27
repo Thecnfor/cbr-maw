@@ -158,8 +158,16 @@ pub fn deep(
         ));
     }
 
-    // τ 用当日值（口径一致；缺维时它本身已按 ADR-008 重估）。
-    let tau = load_tau(ws, day)?.unwrap_or(91.506447831184);
+    // τ 必须取自当日 CFSI 行（缺维时已按 ADR-008 重估）。
+    // 不得用硬编码兜底：缺失≠零值，拿一个常量冒充 τ 会把「不知道阈值」
+    // 伪装成「知道」，正是红线禁止的做法。
+    let Some(tau) = load_tau(ws, day)? else {
+        return Err(KernelError::new(
+            ErrorKind::DataMissing,
+            "当日 CFSI 行缺少 τ，无法判定是否命中（缺失不得用常量兜底）",
+        )
+        .with_detail(json!({"reason": "τ 缺失", "as_of": day})));
+    };
 
     let mut hits = 0usize;
     let mut alarms = 0usize;
