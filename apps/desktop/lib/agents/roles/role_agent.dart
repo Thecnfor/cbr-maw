@@ -168,10 +168,13 @@ final class RoleAgent {
       signalRef: input.signalRef,
     );
 
+    // LLM 自评在定级**之前**解析：它要参与定级，不是事后记录。
+    final assessment = _assessment(response.json['risk_level_assessment']);
     final decision = decideLevel(
       spec: input.spec,
       signal: input.signal,
       evidence: input.evidence,
+      llmAssessment: assessment,
     );
 
     final limitations = [
@@ -226,7 +229,7 @@ final class RoleAgent {
       ),
       latencyMs: response.latencyMs,
       numericMismatches: materialized.numericMismatches,
-      llmAssessment: _assessment(response.json['risk_level_assessment']),
+      llmAssessment: assessment,
     );
   }
 

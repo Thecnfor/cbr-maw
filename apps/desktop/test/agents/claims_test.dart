@@ -178,6 +178,52 @@ void main() {
       expect(decision.level, RiskLevel.medium);
     });
 
+    test('LLM 自评高于确定性定级 → 上调一级（漏报成本更高）', () {
+      final decision = decideLevel(
+        spec: spec('regulator'),
+        signal: RiskSignal(
+          asOf: DateTime.utc(2024, 8, 5),
+          modelVersion: 'test',
+          horizons: const {10: 0.3},
+        ),
+        evidence: const [],
+        llmAssessment: RiskLevel.high,
+      );
+      // 0.3 → medium；LLM 说 high → 上调到 high。
+      expect(decision.level, RiskLevel.high);
+      expect(decision.llmAdjusted, isTrue);
+      expect(decision.limitations.any((l) => l.contains('上调')), isTrue);
+    });
+
+    test('LLM 自评低于确定性定级 → 一律不采纳（不得压低风险）', () {
+      final decision = decideLevel(
+        spec: spec('regulator'),
+        signal: RiskSignal(
+          asOf: DateTime.utc(2024, 8, 5),
+          modelVersion: 'test',
+          horizons: const {10: 0.8},
+        ),
+        evidence: const [],
+        llmAssessment: RiskLevel.low,
+      );
+      expect(decision.level, RiskLevel.critical, reason: '0.8 ≥ 0.7 → critical');
+      expect(decision.llmAdjusted, isFalse);
+    });
+
+    test('无 LLM 自评时定级与旧口径一致（向后兼容）', () {
+      final decision = decideLevel(
+        spec: spec('regulator'),
+        signal: RiskSignal(
+          asOf: DateTime.utc(2024, 8, 5),
+          modelVersion: 'test',
+          horizons: const {10: 0.3},
+        ),
+        evidence: const [],
+      );
+      expect(decision.level, RiskLevel.medium);
+      expect(decision.llmAdjusted, isFalse);
+    });
+
     test('缺窗口时取最近窗口', () {
       expect(
         probabilityForWindow(

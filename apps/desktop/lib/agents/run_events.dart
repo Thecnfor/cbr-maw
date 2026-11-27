@@ -179,6 +179,7 @@ final class RunSummary {
     required this.costUsd,
     required this.partial,
     this.verification,
+    this.roles = const [],
   });
 
   /// run id。
@@ -216,4 +217,10 @@ final class RunSummary {
 
   /// 六类核验摘要（界面与导出都要能看见；null = 未核验）。
   final Map<String, Object?>? verification;
+
+  /// 三主体子卡摘要（角色 / 等级 / 标题 / 证据数 / 是否降级）。
+  ///
+  /// 三主体是本产品的核心卖点，但此前界面只显示"最终等级"，看不到
+  /// 「三个主体各自怎么看」——那正是多主体相对单模型的可解释性所在。
+  final List<Map<String, Object?>> roles;
 }

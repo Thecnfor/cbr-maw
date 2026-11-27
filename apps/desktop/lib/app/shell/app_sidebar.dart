@@ -254,18 +254,24 @@ final class AppRail extends StatelessWidget {
     return Semantics(
       label: '主导航',
       container: true,
-      child: NavigationRail(
-        extended: false,
-        selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
-        onDestinationSelected: (index) => onSelect(items[index].path),
-        labelType: NavigationRailLabelType.all,
-        destinations: [
-          for (final item in items)
-            NavigationRailDestination(
-              icon: Icon(item.icon),
-              label: Text(item.label),
-            ),
-        ],
+      // NavigationRail 在 640 高窗口下会溢出 136px（12 个目的地 × 标签）。
+      // 包一层滚动：高度够时表现不变，不够时可滚动而不是报 RenderFlex 溢出。
+      child: SingleChildScrollView(
+        child: IntrinsicHeight(
+          child: NavigationRail(
+            extended: false,
+            selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+            onDestinationSelected: (index) => onSelect(items[index].path),
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              for (final item in items)
+                NavigationRailDestination(
+                  icon: Icon(item.icon),
+                  label: Text(item.label),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

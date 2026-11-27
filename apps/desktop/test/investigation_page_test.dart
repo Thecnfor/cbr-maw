@@ -244,11 +244,11 @@ void main() {
       expect(find.text('研判结论'), findsOneWidget);
       expect(find.textContaining('模式：'), findsWidgets);
       // 结论卡必须绑定证据：过程指标里证据数 > 0。
-      expect(find.textContaining('证据 '), findsOneWidget);
+      expect(find.textContaining('主张 3 条'), findsOneWidget);
       final supports = tester
           .widgetList<Text>(find.byType(Text))
           .map((t) => t.data ?? '')
-          .firstWhere((d) => d.contains('证据 '));
+          .firstWhere((d) => d.contains('主张 3 条'));
       final evidenceCount = int.parse(
         RegExp(r'证据 (\d+) 条').firstMatch(supports)!.group(1)!,
       );

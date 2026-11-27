@@ -14,6 +14,7 @@ final class LevelDecision {
     required this.probability,
     required this.escalationEvidenceIds,
     required this.limitations,
+    this.llmAdjusted = false,
   });
 
   /// 最终等级。
@@ -27,6 +28,9 @@ final class LevelDecision {
 
   /// 判定过程中的系统局限。
   final List<String> limitations;
+
+  /// 是否因 LLM 自评高于确定性定级而上调过。
+  final bool llmAdjusted;
 }
 
 /// 取某角色窗口的压力概率（缺窗口取最近，再缺用 percentile）。
@@ -67,11 +71,16 @@ RiskLevel baseLevelFor(double? probability, RoleSpec spec) {
   return RiskLevel.low;
 }
 
-/// 判定某角色风险等级（两步：概率基准 → 工具越阈 +1）。
+/// 判定某角色风险等级（三步：概率基准 → 工具越阈 +1 → LLM 判断上调）。
+///
+/// 为什么 LLM 只能上调不能下调：`decision_loss_weights` 里漏报成本普遍是
+/// 误报的数倍（docs/20 §3）。让模型能把等级**压低**，等于允许一次幻觉
+/// 掩盖真实风险；只允许抬高则是把模型当「额外的报警源」用，代价可控。
 LevelDecision decideLevel({
   required RoleSpec spec,
   required RiskSignal? signal,
   required Iterable<Evidence> evidence,
+  RiskLevel? llmAssessment,
 }) {
   final probability = probabilityForWindow(signal, spec.horizonDays);
   var level = baseLevelFor(probability, spec);
@@ -117,11 +126,28 @@ LevelDecision decideLevel({
     level = level.escalate();
   }
 
+  // 第三步：LLM 自评进入定级（非对称）。
+  //
+  // 这是「多智能体是否有增量」的关键开关：此前 LLM 自评只记录不参与，
+  // 导致三臂预测向量逐点一致（docs/13 §3.5.1）。现在模型判断真的改变
+  // 等级，协同与不协同才可能在指标上分开。
+  var llmAdjusted = false;
+  if (llmAssessment != null && llmAssessment.order > level.order) {
+    final raised = level.escalate();
+    limitations.add(
+      '模型自评（${llmAssessment.label}）高于确定性定级（${level.label}），'
+      '按「漏报成本高于误报」上调一级；下调一律不采纳。',
+    );
+    level = raised;
+    llmAdjusted = true;
+  }
+
   return LevelDecision(
     level: level,
     probability: probability,
     escalationEvidenceIds: escalations,
     limitations: limitations,
+    llmAdjusted: llmAdjusted,
   );
 }
 

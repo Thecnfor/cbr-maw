@@ -266,9 +266,17 @@ class _LegendItem extends StatelessWidget {
       button: onTap != null,
       selected: !hidden,
       label: '${series.name}，${hidden ? '已隐藏' : '已显示'}',
-      child: GestureDetector(
+      // 用 InkWell 而不是 GestureDetector：图例是交互控件，必须能 Tab 到、
+      // 能回车触发（docs/07 §5 键盘可达）。GestureDetector 只有指针事件。
+      child: InkWell(
         onTap: onTap,
-        child: Opacity(
+        borderRadius: CbrRadius.smAll,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: CbrSpace.s1,
+            vertical: CbrSpace.s1,
+          ),
+          child: Opacity(
           opacity: hidden ? 0.4 : 1,
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -280,6 +288,7 @@ class _LegendItem extends StatelessWidget {
                 style: CbrType.caption.copyWith(color: palette.textSecondary),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -307,7 +316,7 @@ class _ChartDataTable extends StatelessWidget {
           color: palette.textPrimary,
         ),
         columns: <DataColumn>[
-          const DataColumn(label: Text('x')),
+          const DataColumn(label: Text('序号')),
           for (final index in visible)
             DataColumn(label: Text(series[index].name)),
         ],

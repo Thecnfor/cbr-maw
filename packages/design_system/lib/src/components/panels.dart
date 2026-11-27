@@ -421,7 +421,7 @@ class CbrCostMeter extends StatelessWidget {
             spacing: CbrSpace.s5,
             runSpacing: CbrSpace.s2,
             children: <Widget>[
-              _metric(palette, 'Token', _fmt(tokens)),
+              _metric(palette, 'token 用量', _fmt(tokens)),
               _metric(palette, '工具调用', _fmt(toolCalls, unit: '次')),
               _metric(
                 palette,

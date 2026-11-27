@@ -918,7 +918,15 @@ final class CoordinationStats {
     this.conflictsEscalated = 0,
     this.jointCost = 0,
     this.truncated = false,
+    this.assessmentSpread = 0,
   });
+
+  /// 三主体 LLM 自评的等级跨度（max - min，0..3）。
+  ///
+  /// 这是多智能体**独有**的信息：单模型只有一个自评，跨度恒为 0。
+  /// 跨度大说明「同一批证据，不同主体读出不同风险」，本身就是不确定性
+  /// 信号——它不提高点预测准确率，但能标出「该复核」的时点。
+  final int assessmentSpread;
 
   /// 工具调用。
   final int toolCalls;

@@ -6,6 +6,8 @@ import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
         CbrCostMeter,
         CbrDecisionPanel,
         CbrRiskLevel,
+        CbrRole,
+        CbrRoleCard,
         CbrSpace,
         CbrStatusTone,
         CbrTimeline,
@@ -996,6 +998,27 @@ final class _DecisionPanel extends StatelessWidget {
             supports: supports,
             limitations: summary.limitations.take(3).toList(),
           ),
+          if (summary.roles.isNotEmpty) ...[
+            const SizedBox(height: CbrSpace.s3),
+            // 三主体各自怎么看：多主体相对单模型的可解释性就在这里。
+            Wrap(
+              spacing: CbrSpace.s3,
+              runSpacing: CbrSpace.s3,
+              children: [
+                for (final role in summary.roles)
+                  SizedBox(
+                    width: 260,
+                    child: CbrRoleCard(
+                      role: _cbrRole(role['role']?.toString()),
+                      headline: role['headline']?.toString() ?? '',
+                      riskLevel: _cbrLevel(role['level']?.toString()),
+                      evidenceCount: (role['evidence'] as num?)?.toInt(),
+                      degraded: role['degraded'] == true,
+                    ),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: CbrSpace.s3),
           // 成本账（J = L + μC）：协同代价必须可见，否则「多主体更准」
           // 的说法没有成本侧对照。
@@ -1009,7 +1032,15 @@ final class _DecisionPanel extends StatelessWidget {
     );
   }
 
-  static CbrRiskLevel _cbrLevel(String wire) => switch (wire) {
+  /// 契约角色 → 设计系统角色。
+  static CbrRole _cbrRole(String? wire) => switch (wire) {
+    'investor' => CbrRole.investor,
+    'financing' => CbrRole.financing,
+    'crossValidator' => CbrRole.crossValidator,
+    _ => CbrRole.regulator,
+  };
+
+  static CbrRiskLevel _cbrLevel(String? wire) => switch (wire) {
     'critical' => CbrRiskLevel.critical,
     'high' => CbrRiskLevel.high,
     'medium' => CbrRiskLevel.medium,

@@ -475,6 +475,7 @@ final class AgentRuntime {
       conflicts: conflicts,
       verification: report,
       coordination: CoordinationStats(
+        assessmentSpread: _assessmentSpread(outputs),
         toolCalls: guard.totalToolCalls,
         tokens: guard.totalTokens,
         latencyMs: guard.totalLatencyMs,
@@ -557,6 +558,16 @@ final class AgentRuntime {
           'unsupported_claims': report.unsupportedClaims,
           'tool_calls': guard.totalToolCalls,
         },
+        roles: [
+          for (final card in updatedCards)
+            {
+              'role': card.role.wire,
+              'level': card.riskLevel.wire,
+              'headline': card.headline,
+              'evidence': card.evidenceIds.length,
+              'degraded': degraded.contains(card.role),
+            },
+        ],
       ),
     );
   }
@@ -782,6 +793,19 @@ final class AgentRuntime {
     RoleId.financing: ['funding_cost', 'scenario', 'risk_measure', 'forecast'],
     RoleId.crossValidator: [],
   };
+}
+
+/// 三主体 LLM 自评的等级跨度（无自评时按 0 处理）。
+int _assessmentSpread(Map<RoleId, AgentOutput> outputs) {
+  final orders = [
+    for (final output in outputs.values)
+      if (output.llmAssessment != null) output.llmAssessment!.order,
+  ];
+  if (orders.length < 2) {
+    return 0;
+  }
+  orders.sort();
+  return orders.last - orders.first;
 }
 
 /// 过滤出角色信息域内的证据。

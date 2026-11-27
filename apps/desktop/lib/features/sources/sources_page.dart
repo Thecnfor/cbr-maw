@@ -1,4 +1,6 @@
 import 'package:cbr_maw_contracts/contracts_dart.dart';
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrSourceStatus, CbrSourceStatusChip, CbrSpace, CbrStaleBadge;
 
 import '../../app/app_state.dart';
 import '../../app/routes.dart';
@@ -177,6 +179,15 @@ class _SourcesPageState extends State<SourcesPage> {
       };
 }
 
+/// 契约五态 → 设计系统状态芯片（唯一视觉真源）。
+CbrSourceStatus _cbrStatus(SourceState state) => switch (state) {
+  SourceState.reachable => CbrSourceStatus.fetched,
+  SourceState.needAuth => CbrSourceStatus.needsAuth,
+  SourceState.needLogin => CbrSourceStatus.needsLogin,
+  SourceState.restricted => CbrSourceStatus.antiScrape,
+  SourceState.unreachable => CbrSourceStatus.expired,
+};
+
 final class _SourceRow extends StatelessWidget {
   const _SourceRow({
     required this.source,
@@ -215,7 +226,18 @@ final class _SourceRow extends StatelessWidget {
                   style: theme.textTheme.titleSmall,
                 ),
               ),
-              SourceStateChip(state: state, stale: stale),
+              // 用设计系统的来源状态芯片（唯一视觉真源）；app 侧的
+              // SourceStateChip 是平行实现，状态色与文案两套口径。
+              CbrSourceStatusChip(
+                status: _cbrStatus(state),
+                sourceName: source.sourceName,
+                reason: state == SourceState.restricted ? '反爬受限' : null,
+                lastSuccessAt: lastSuccessAt,
+              ),
+              if (stale) ...[
+                const SizedBox(width: CbrSpace.s2),
+                CbrStaleBadge(lastSuccessAt: lastSuccessAt ?? '未登记'),
+              ],
             ],
           ),
           const SizedBox(height: Tokens.space2),

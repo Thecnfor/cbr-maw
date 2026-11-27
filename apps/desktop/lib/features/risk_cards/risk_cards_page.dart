@@ -1,4 +1,6 @@
 import 'package:cbr_maw_contracts/contracts_dart.dart';
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrRiskBadge, CbrRiskLevel;
 
 import '../../app/app_state.dart';
 import '../../app/routes.dart';
@@ -277,6 +279,14 @@ final class _StructuralReading extends StatelessWidget {
 /// 风险卡详情（/risk-cards/:claimId）：结论、证据链、限制。
 ///
 /// 数据来自本地库 `signals` 视图；查不到就显式说明，不编造结论。
+/// 契约等级 → 设计系统等级（单一真源）。
+CbrRiskLevel _cbrLevel(String? wire) => switch (wire) {
+  'critical' => CbrRiskLevel.critical,
+  'high' => CbrRiskLevel.high,
+  'medium' => CbrRiskLevel.medium,
+  _ => CbrRiskLevel.low,
+};
+
 final class RiskCardDetailPage extends StatefulWidget {
   /// 创建页面。
   const RiskCardDetailPage({
@@ -389,10 +399,9 @@ class _RiskCardDetailPageState extends State<RiskCardDetailPage> {
                       children: [
                         Row(
                           children: [
-                            RiskLevelBadge(
-                              level: riskLevelFromWire(
-                                row['risk_level']?.toString(),
-                              ),
+                            // 用设计系统的风险徽章（唯一视觉真源）。
+                            CbrRiskBadge(
+                              level: _cbrLevel(row['risk_level']?.toString()),
                             ),
                             const SizedBox(width: Tokens.space2),
                             StatusTag(
