@@ -140,6 +140,7 @@ def main() -> int:
             'recall_b': f(mb['recall']),
             'lift_a': f(ma['lift']),
             'lift_b': f(mb['lift']),
+            'discordant': str(only_a + only_b),
             'only_a': str(only_a),
             'only_b': str(only_b),
             'p': pfmt(p),
