@@ -70,7 +70,7 @@ pub fn shallow(ws: &Workspace, as_of: &str, top_k: usize, horizon: usize) -> Res
                 "level": row["level"],
                 "value": row["value"],
                 // 事后走势：只读 case_day 之后的真实信号，用于归因「相似之后发生了什么」。
-                "outcome": outcome_after(ws, case_day, horizon),
+                "outcome": outcome_after(ws, case_day, day, horizon),
             })
         })
         .collect();
@@ -395,14 +395,19 @@ fn dims_distance(a: &Value, b: &Map<String, Value>) -> Option<f64> {
 }
 
 /// 案例之后 [horizon] 个交易日的真实信号走势（事后复盘，只读）。
-fn outcome_after(ws: &Workspace, day: &str, horizon: usize) -> Value {
+///
+/// **必须同时有下界与上界**：`day` 是案例日（只读其后），`as_of` 是决策时点
+/// （不得越过）。少了上界时，若相似案例就在决策时点前几天，会把决策时点
+/// **之后**的数据读进来——这正是 PIT 泄漏。
+fn outcome_after(ws: &Workspace, day: &str, as_of: &str, horizon: usize) -> Value {
     let Ok(mut stmt) = ws.conn.prepare(
         "SELECT as_of, value, level FROM signals \
-         WHERE as_of > CAST(? AS DATE) ORDER BY as_of ASC LIMIT ?",
+         WHERE as_of > CAST(? AS DATE) AND as_of <= CAST(? AS DATE) \
+         ORDER BY as_of ASC LIMIT ?",
     ) else {
         return json!(null);
     };
-    let Ok(mut rows) = stmt.query(duckdb::params![day, horizon as i64]) else {
+    let Ok(mut rows) = stmt.query(duckdb::params![day, as_of, horizon as i64]) else {
         return json!(null);
     };
     let mut values = Vec::new();
@@ -535,6 +540,28 @@ mod tests {
         // horizon=20 但只有 3 天历史 → 必须报「标签未成熟」，不得硬算。
         let err = deep(&ws, "2026-01-03", 10, 20).unwrap_err();
         assert_eq!(err.kind, ErrorKind::DataMissing);
+        drop(ws);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn outcome_after_never_reads_past_as_of() {
+        // 回归：曾只有下界 `as_of > case_day`，没有上界。若相似案例就在
+        // 决策时点前几天，会把决策时点**之后**的数据读进来（PIT 泄漏）。
+        let (ws, path) = temp_ws("outcome");
+        for (day, value) in [
+            ("2026-01-01", 10.0),
+            ("2026-01-02", 20.0),
+            ("2026-01-03", 30.0),
+            ("2026-01-04", 40.0),
+        ] {
+            insert_signal(&ws, day, r#"{"bond":0.5,"credit":0.5,"crossborder":0.5,"equity":0.5,"fx":0.5,"global":0.5}"#, value);
+        }
+        // 案例日 01-01、决策时点 01-02：事后窗口只能看到 01-02，不得包含 01-03/04。
+        let outcome = outcome_after(&ws, "2026-01-01", "2026-01-02", 20);
+        assert_eq!(outcome["days"].as_u64(), Some(1), "只能读到 as_of 当日");
+        assert_eq!(outcome["last"].as_f64(), Some(20.0));
+        assert_eq!(outcome["peak"].as_f64(), Some(20.0), "不得读到 30/40");
         drop(ws);
         let _ = std::fs::remove_file(path);
     }

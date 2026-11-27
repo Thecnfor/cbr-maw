@@ -98,7 +98,7 @@ LevelDecision decideLevel({
         if (item.payload['metric'] != null) item.payload['metric'].toString(),
         if (item.tool != null) item.tool!.name,
         for (final key in _escalationMetricKeys)
-          if (item.payload[key] != null) '$key',
+          if (item.payload[key] != null) key,
       ].join(' ').toLowerCase();
       if (fields.isEmpty) {
         continue;

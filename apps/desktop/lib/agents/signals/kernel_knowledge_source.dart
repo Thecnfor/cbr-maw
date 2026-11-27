@@ -25,8 +25,15 @@ final class KernelKnowledgeSource {
     int topK = 3,
   }) async {
     final day = asOf.toUtc().toIso8601String().substring(0, 10);
+    // 契约 kb.search 不接受顶层 as_of（params.additionalProperties=false）；
+    // PIT 走 filters.as_of（filters 是自由对象，kernel 会据此按 publish_time
+    // 过滤）。若误用 filters.end，kernel 不认该键 → 等于不设上界。
     final results = await client
-        .send('kb.search', {'query': query, 'as_of': day, 'top_k': topK})
+        .send('kb.search', {
+          'query': query,
+          'top_k': topK,
+          'filters': {'as_of': day},
+        })
         .toList();
     final result = results.single;
     return switch (result) {

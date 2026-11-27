@@ -223,7 +223,7 @@ final class AgentRuntime {
             role: role,
             spec: specs[role]!,
             task: question,
-            evidence: gathered.evidence,
+            evidence: _visibleTo(specs[role]!, gathered.evidence),
             signal: signal,
             signalRef: signal?.evidenceId,
             reflection: reflection,
@@ -653,7 +653,7 @@ final class AgentRuntime {
           role: role,
           spec: specs[role]!,
           task: '$question\n（单智能体基线：本次只承担 ${specs[role]!.displayName} 任务）',
-          evidence: evidence,
+          evidence: _visibleTo(specs[role]!, evidence),
           signal: signal,
           signalRef: signal?.evidenceId,
           reflection: reflection,
@@ -742,6 +742,18 @@ final class AgentRuntime {
     RoleId.crossValidator: [],
   };
 }
+
+/// 过滤出角色信息域内的证据。
+///
+/// 知识库证据的 domain 是 `policy.fulltext`，而 investor / financing 的信息域
+/// 不含它——若不按角色过滤，它们一旦引用 KB 证据就会被核验层判越权，
+/// 整轮 `passed=false`。证据可见性与权限校验必须用同一套口径。
+List<Evidence> _visibleTo(RoleSpec spec, List<Evidence> evidence) => [
+  for (final item in evidence)
+    if (item.payload['domain'] is! String ||
+        spec.allowsDomain(item.payload['domain']! as String))
+      item,
+];
 
 final class _Gathered {
   _Gathered(this.evidence, this.failures, this.calls);
