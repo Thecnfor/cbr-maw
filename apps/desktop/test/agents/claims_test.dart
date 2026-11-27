@@ -11,11 +11,15 @@ Evidence toolEvidence({
   double value = 0.62,
   String title = 'dy_spillover 溢出指数',
   DateTime? asOf,
+  Map<String, Object?> payload = const {'metric': 'dy_spillover'},
 }) => Evidence(
   evidenceId: id,
   kind: EvidenceKind.tool,
   asOf: asOf ?? DateTime.utc(2024, 8, 5),
   title: title,
+  // 升级判定只认结构化指标名（payload.metric），不认正文关键词：
+  // 正文里天然含工具名与中文描述，会把每个时点都判成越阈。
+  payload: payload,
   value: value,
   unit: 'ratio',
   tool: const ToolRef(name: 'systemic_risk', version: '1.0.0'),
@@ -145,6 +149,33 @@ void main() {
       // 0.3 >= 0.5*0.5 → medium，再因 dy_spillover=0.62 >= 0.5 上调到 high。
       expect(decision.level, RiskLevel.high);
       expect(decision.escalationEvidenceIds, ['ev_tool_1']);
+    });
+
+    test('工具名出现在正文里不得触发升级（回归）', () {
+      // 回归：曾用 title+summary 全文匹配关键词，`systemic_risk` 的标题天然含
+      // "systemic"、risk_measure 的摘要天然含「回撤」→ 每个时点都被判越阈，
+      // 三主体恒定 critical，判别力归零。
+      final decision = decideLevel(
+        spec: spec('regulator'),
+        signal: RiskSignal(
+          asOf: DateTime.utc(2024, 8, 5),
+          modelVersion: 'test',
+          horizons: const {10: 0.3},
+        ),
+        evidence: [
+          toolEvidence(
+            value: 0.62,
+            title: 'systemic_risk 溢出指数',
+            payload: const {}, // 无结构化指标名
+          ),
+        ],
+      );
+      expect(
+        decision.escalationEvidenceIds,
+        isEmpty,
+        reason: '只有工具名/正文命中，不应升级',
+      );
+      expect(decision.level, RiskLevel.medium);
     });
 
     test('缺窗口时取最近窗口', () {

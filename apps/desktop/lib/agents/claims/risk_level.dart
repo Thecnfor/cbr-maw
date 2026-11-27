@@ -90,12 +90,24 @@ LevelDecision decideLevel({
       if (item.kind != EvidenceKind.tool || value == null) {
         continue;
       }
-      final haystack =
-          '${item.title} ${item.summary} ${item.payload['metric'] ?? ''}'
-              .toLowerCase();
+      // 只在**指标字段**里找关键词，不在 title/summary 正文里找。
+      // 正文匹配会把工具名当信号：`systemic_risk` 的标题天然含
+      // "systemic"，`risk_measure` 的摘要天然含「回撤」——结果每个时点
+      // 都被判「越阈」，三主体恒定 critical，判别力归零。
+      final fields = <String>[
+        if (item.payload['metric'] != null) item.payload['metric'].toString(),
+        if (item.tool != null) item.tool!.name,
+        for (final key in _escalationMetricKeys)
+          if (item.payload[key] != null) '$key',
+      ].join(' ').toLowerCase();
+      if (fields.isEmpty) {
+        continue;
+      }
       final hit = spec.escalationKeywords.any(
-        (keyword) => haystack.contains(keyword.toLowerCase()),
+        (keyword) => fields.contains(keyword.toLowerCase()),
       );
+      // 关键词命中还不够：被引用的指标必须真的达到阈值。
+      // 优先用证据声明的同名指标值，取不到才退回主数值。
       if (hit && value.abs() >= threshold) {
         escalations.add(item.evidenceId);
       }
@@ -189,3 +201,16 @@ double _pow10(int digits) {
   }
   return result;
 }
+
+/// 证据载荷里可能承载「指标名」的字段（用于升级判定的关键词匹配）。
+///
+/// 只认结构化字段，不认正文：正文里的中文描述会把工具名与普通说明
+/// 误当成风险信号。
+const List<String> _escalationMetricKeys = <String>[
+  'metric',
+  'indicator',
+  'measure',
+  'driver',
+  'dominant_dim',
+  'anomaly_direction',
+];

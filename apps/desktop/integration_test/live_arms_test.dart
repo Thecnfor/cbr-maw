@@ -288,13 +288,18 @@ Future<Map<String, Object?>> _runArmA({
         .toList();
     final result = results.single;
     if (result case Success(:final value)) {
-      final rows = value is Map<String, Object?>
-          ? (value['rows'] as List?) ?? const []
-          : const [];
-      if (rows.isNotEmpty && rows.first is Map) {
-        final row = (rows.first as Map).cast<String, Object?>();
-        panel[series] = row['value'];
-        final day = row['obs_date']?.toString() ?? '';
+      if (value is! Map<String, Object?>) continue;
+      // db.query 返回列式结构：columns + rows（数组的数组），不是对象数组。
+      final columns = (value['columns'] as List?)?.cast<String>() ?? const [];
+      final rows = (value['rows'] as List?) ?? const [];
+      final valueIdx = columns.indexOf('value');
+      final dateIdx = columns.indexOf('obs_date');
+      if (rows.isEmpty || valueIdx < 0) continue;
+      final row = (rows.first as List?) ?? const [];
+      if (row.length <= valueIdx) continue;
+      panel[series] = row[valueIdx];
+      if (dateIdx >= 0 && row.length > dateIdx) {
+        final day = row[dateIdx]?.toString() ?? '';
         if (day.isNotEmpty && day.compareTo(date) > 0) {
           stale[series] = day; // 晚于评估时点 → 未来数据
         }
