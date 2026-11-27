@@ -25,6 +25,18 @@ ok()   { printf '\033[1;32m✔ %s\033[0m\n' "$1"; }
 rm -rf "$WORK"; mkdir -p "$WORK"/{ws,data,res/configs}
 cp services/collector/configs/sources.json "$WORK/res/configs/"
 
+# ---------- 0) 种子工作区：真实 PIT 库 ----------
+# kernel 的工具需要 series_obs 等真实表。这里显式播种，避免依赖某个手工留下的
+# build/kw（此前就是因为这个隐式依赖，冒烟在别人机器上必失败）。
+KW="$ROOT/build/kw"
+if [ ! -f "$KW/ws/test.duckdb" ]; then
+  PIT="${CBR_PIT_DB:-/mnt/shared/recently/commorcial/data/pit_real.duckdb}"
+  [ -f "$PIT" ] || fail "缺少真实 PIT 库 $PIT（可用 CBR_PIT_DB 指定）"
+  mkdir -p "$KW/ws" "$KW/data" "$KW/res"
+  cp "$PIT" "$KW/ws/test.duckdb"
+  echo "  已播种种子工作区：$PIT → $KW/ws/test.duckdb"
+fi
+
 # ---------- 1) collector：握手 + 清洗真实 CSV ----------
 COLL_OUT=$(printf '%s\n' \
   "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"initialize\",\"params\":{\"contract_version\":\"1.0.0\",\"client_version\":\"0.1.0\",\"workspace\":\"$WORK/ws\",\"data_home\":\"$WORK/data\",\"resource_home\":\"$WORK/res\",\"capabilities\":[]}}" \
