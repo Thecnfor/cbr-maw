@@ -75,3 +75,26 @@ fn rejects_unknown_store_and_missing_available_at() {
     assert!(memory.upsert(&mut missing).is_err(), "缺 available_at 必须拒绝");
 }
 
+
+#[test]
+fn same_day_rows_are_visible_when_querying_by_bare_date() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let memory = Memory::open(dir.path(), None).expect("open memory");
+
+    // available_at 是 RFC3339，查询用裸日期：当天 09:30 可得的记录必须可见。
+    let mut rows = vec![row("a", "mi", "2024-01-02T09:30:00Z", "当日盘中的情报")];
+    memory.upsert(&mut rows).expect("upsert");
+
+    let (hits, _) = memory
+        .search(&SearchRequest {
+            store: Some("mi"),
+            as_of: "2024-01-02",
+            text: "情报",
+            subject: None,
+            kind: None,
+            top_k: 5,
+            mmr_lambda: 1.0,
+        })
+        .expect("search");
+    assert_eq!(hits.len(), 1, "当日可得的记录不得被字符串比较误判为未来");
+}

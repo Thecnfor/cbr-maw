@@ -446,7 +446,95 @@ impl Kernel {
         }
         let written = self.memory()?.upsert(&mut rows)?;
         let embedding_ready = self.memory()?.embedding_ready();
-        Ok(json!({"written": written, "embedding_ready": embedding_ready}))
+        // HLR 结算：写 LLR 时顺带回填「已走完 horizon 天」的旧记录（docs/24 §D7）。
+        // 结算失败不影响写入结果，但要如实返回，不能假装结算成功。
+        let settled = self.settle_hlr().unwrap_or_else(|err| {
+            json!({"settled": 0, "error": err.message})
+        });
+        Ok(json!({
+            "written": written,
+            "embedding_ready": embedding_ready,
+            "hlr": settled,
+        }))
+    }
+
+    /// 结算 HLR：把已成熟（事后窗口走完）的 LLR 记录复盘成 HLR。
+    ///
+    /// 判定口径与 `reflection::deep` 一致：事后窗口内 CFSI 峰值 ≥ 当日 τ 视为
+    /// 「确实进入压力」。`available_at` 记为**结果可得日**（窗口末日），
+    /// 保证 HLR 记录在历史时点回放时不会被提前读到。
+    fn settle_hlr(&mut self) -> Result<Value> {
+        const HORIZON: usize = 20;
+        let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+        // 先取记忆（可变借用），再取工作区（不可变借用），避免同一时刻两次借用 self。
+        let pending = self.memory()?.list("llr", &today, 500)?;
+        let ws = self.workspace()?;
+        let calendar = reflection::trading_calendar(ws, &today)?;
+        let mut settled = 0usize;
+        let mut rows = Vec::new();
+        for hit in pending {
+            if hit.kind == "hlr_settled" {
+                continue;
+            }
+            let Some(pos) = calendar.iter().position(|d| d == &hit.as_of) else {
+                continue;
+            };
+            if pos + HORIZON >= calendar.len() {
+                continue; // 标签未成熟
+            }
+            let window = &calendar[pos + 1..=pos + HORIZON];
+            let Some(tau) = reflection::tau_on(ws, &hit.as_of)? else {
+                continue; // τ 缺失：不猜
+            };
+            let Some(peak) = reflection::peak_between(ws, window)? else {
+                continue;
+            };
+            let stressed = peak >= tau;
+            let outcome_day = window.last().cloned().unwrap_or_else(|| hit.as_of.clone());
+            let level = hit
+                .payload
+                .get("level")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            let alarmed = level == "high" || level == "critical";
+            rows.push(memory::MemoryRow {
+                id: format!("hlr:{}", hit.id),
+                store: "hlr".to_string(),
+                as_of: hit.as_of.clone(),
+                available_at: format!("{outcome_day}T15:00:00Z"),
+                subject: hit.subject.clone(),
+                kind: "hlr_settled".to_string(),
+                text: format!(
+                    "在 {} 判定 {}（{}）；事后 {HORIZON} 个交易日 CFSI 峰值 {:.4}，τ {:.4}，{}。",
+                    hit.as_of,
+                    level,
+                    if alarmed { "预警" } else { "未预警" },
+                    peak,
+                    tau,
+                    if stressed { "确实进入压力" } else { "未进入压力" }
+                ),
+                vector: None,
+                payload: json!({
+                    "source_llr": hit.id,
+                    "level": level,
+                    "alarmed": alarmed,
+                    "peak_after": peak,
+                    "tau": tau,
+                    "actually_stressed": stressed,
+                    "outcome": match (alarmed, stressed) {
+                        (true, true) => "hit",
+                        (true, false) => "false_alarm",
+                        (false, true) => "missed",
+                        (false, false) => "true_negative",
+                    },
+                }),
+            });
+            settled += 1;
+        }
+        if !rows.is_empty() {
+            self.memory()?.upsert(&mut rows)?;
+        }
+        Ok(json!({"settled": settled, "horizon": HORIZON}))
     }
 
     fn memory_search(&mut self, params: &Value) -> Result<Value> {

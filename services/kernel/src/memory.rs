@@ -106,6 +106,20 @@ fn schema() -> SchemaRef {
     ]))
 }
 
+/// 把 `as_of` 上界规范成「当日结束」。
+///
+/// `available_at` 是 RFC3339（`2024-01-02T09:30:00Z`），而调用方常传裸日期
+/// （`2024-01-02`）。直接做字符串比较时 `"2024-01-02T09:30:00Z" <= "2024-01-02"`
+/// 为假——**当日可得的记录会被误判成未来**。这里补齐到当日 23:59:59Z。
+fn as_of_upper_bound(as_of: &str) -> String {
+    let trimmed = as_of.trim();
+    if trimmed.len() == 10 && trimmed.as_bytes().get(4) == Some(&b'-') {
+        format!("{trimmed}T23:59:59Z")
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// 转义 SQL 字符串字面量（只用于我们自己的枚举值与 ISO 时间，仍做转义防注入）。
 fn quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
@@ -411,7 +425,8 @@ impl Memory {
 
     /// 检索：有向量走 ANN（多取候选再 MMR），无向量走 FTS。
     pub fn search(&self, req: &SearchRequest<'_>) -> Result<(Vec<MemoryHit>, &'static str)> {
-        let mut filter = format!("available_at <= {}", quote(req.as_of));
+        let upper = as_of_upper_bound(req.as_of);
+        let mut filter = format!("available_at <= {}", quote(&upper));
         if let Some(store) = req.store {
             if !STORES.contains(&store) {
                 return Err(KernelError::new(
@@ -473,6 +488,41 @@ impl Memory {
             hits.truncate(req.top_k);
         }
         Ok((hits, mode))
+    }
+
+    /// 按条件列举（不做向量检索）。用于 HLR 结算这类「按时间扫一遍」的场景。
+    pub fn list(
+        &self,
+        store: &str,
+        as_of_max: &str,
+        limit: usize,
+    ) -> Result<Vec<MemoryHit>> {
+        if !STORES.contains(&store) {
+            return Err(KernelError::new(
+                ErrorKind::InvalidParams,
+                format!("未知记忆库 {store}（只允许 mi/llr/hlr）"),
+            ));
+        }
+        let upper = as_of_upper_bound(as_of_max);
+        let filter = format!(
+            "store = {} AND available_at <= {}",
+            quote(store),
+            quote(&upper)
+        );
+        let batches = self.rt.block_on(async {
+            let stream = self
+                .table
+                .query()
+                .only_if(&filter)
+                .limit(limit.max(1))
+                .execute()
+                .await
+                .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("列举记忆失败: {e}")))?;
+            futures::TryStreamExt::try_collect::<Vec<RecordBatch>>(stream)
+                .await
+                .map_err(|e| KernelError::new(ErrorKind::DataMissing, format!("列举记忆读取失败: {e}")))
+        })?;
+        batches_to_hits(&batches)
     }
 
     fn embed_query(&self, text: &str) -> Result<Option<Vec<f32>>> {

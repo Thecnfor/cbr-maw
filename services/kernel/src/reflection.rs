@@ -119,7 +119,7 @@ pub fn deep(
     };
 
     // 日历：用 CFSI 历史表的交易日作为基准（信号表可能稀疏）。
-    let calendar = trading_days(ws, day)?;
+    let calendar = trading_calendar(ws, day)?;
     if calendar.is_empty() {
         return Err(KernelError::new(
             ErrorKind::DataMissing,
@@ -158,7 +158,7 @@ pub fn deep(
     // τ 必须取自当日 CFSI 行（缺维时已按 ADR-008 重估）。
     // 不得用硬编码兜底：缺失≠零值，拿一个常量冒充 τ 会把「不知道阈值」
     // 伪装成「知道」，正是红线禁止的做法。
-    let Some(tau) = load_tau(ws, day)? else {
+    let Some(tau) = tau_on(ws, day)? else {
         return Err(KernelError::new(
             ErrorKind::DataMissing,
             "当日 CFSI 行缺少 τ，无法判定是否命中（缺失不得用常量兜底）",
@@ -251,7 +251,7 @@ pub fn deep(
 }
 
 /// 交易日历（`cfsi_history` 的 as_of 列，升序）。
-fn trading_days(ws: &Workspace, as_of: &str) -> Result<Vec<String>> {
+pub fn trading_calendar(ws: &Workspace, as_of: &str) -> Result<Vec<String>> {
     let mut stmt = ws
         .conn
         .prepare(
@@ -294,8 +294,8 @@ fn load_signals_between(ws: &Workspace, from: &str, to: &str) -> Result<Vec<Valu
     Ok(out)
 }
 
-/// 当日 τ（缺维时按可用维度重估，ADR-008）。
-fn load_tau(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
+/// 指定日 τ（缺维时按可用维度重估，ADR-008）。
+pub fn tau_on(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
     let mut stmt = ws
         .conn
         .prepare("SELECT tau FROM cfsi_history WHERE as_of = CAST(? AS DATE)")
@@ -310,7 +310,7 @@ fn load_tau(ws: &Workspace, as_of: &str) -> Result<Option<f64>> {
 }
 
 /// 区间内 CFSI 的峰值。
-fn peak_between(ws: &Workspace, days: &[String]) -> Result<Option<f64>> {
+pub fn peak_between(ws: &Workspace, days: &[String]) -> Result<Option<f64>> {
     let Some(first) = days.first() else { return Ok(None) };
     let last = days.last().unwrap_or(first);
     let mut stmt = ws
