@@ -254,7 +254,13 @@ void main(List<String> args) {
       for (final item in stale) {
         errors.add('生成物漂移：$item');
       }
-      checked += stale.isEmpty ? 1 : 0;
+      // 真正的防漂移：重跑生成器，比对产物是否与仓库内一致。
+      // 只查 ToolName 枚举会漏掉字段类型、toJson、嵌套类型等所有其他漂移。
+      final diff = _regenerateAndDiff(root, generated);
+      if (diff != null) {
+        errors.add('生成物与契约不同源：$diff');
+      }
+      checked += (stale.isEmpty && diff == null) ? 1 : 0;
       print(
         stale.isEmpty
             ? '生成物与契约一致（工具枚举 ${toolRegistry.length} 项）'
@@ -366,3 +372,60 @@ List<String> _staleGeneratedNames(File generated, List<ToolSpec> registry) {
         '${spec.tool}：契约已登记但生成物 ToolName 枚举缺失（重跑 packages/contracts_dart/tool/generate_types.py）',
   ];
 }
+
+/// 重跑生成器并与仓库内生成物比对（备份 → 生成 → 比对 → 还原）。
+///
+/// 返回 null 表示一致或无法比对（环境缺 Python）；否则返回差异摘要。
+/// 只查 ToolName 枚举会漏掉字段类型、toJson、嵌套类型等全部其他漂移。
+String? _regenerateAndDiff(Directory root, File committed) {
+  final generator = File(
+    p.join(root.path, 'packages/contracts_dart/tool/generate_types.py'),
+  );
+  if (!generator.existsSync()) {
+    return null;
+  }
+  final python = Platform.environment['CBR_PYTHON'] ?? 'python3';
+  final backup = File('${committed.path}.drift-backup');
+  final original = committed.readAsStringSync();
+  backup.writeAsStringSync(original);
+  try {
+    final result = Process.runSync(
+      python,
+      [generator.path],
+      workingDirectory: root.path,
+    );
+    if (result.exitCode != 0) {
+      print('  ! 生成器未运行（exit ${result.exitCode}），跳过内容比对');
+      return null;
+    }
+    // 生成器输出未格式化，仓库内是 `dart format` 过的产物：
+    // 先格式化再比对，否则每一行都会被判为漂移。
+    Process.runSync('dart', ['format', committed.path], workingDirectory: root.path);
+    final regenerated = committed.readAsStringSync();
+    if (_normalized(regenerated) == _normalized(original)) {
+      return null;
+    }
+    // 找出第一处差异行，便于定位。
+    final a = _normalized(original).split('\n');
+    final b = _normalized(regenerated).split('\n');
+    for (var i = 0; i < a.length && i < b.length; i++) {
+      if (a[i] != b[i]) {
+        return 'methods.dart 第 ${i + 1} 行不一致：仓库=${a[i].trim()} '
+            '生成=${b[i].trim()}（重跑 packages/contracts_dart/tool/generate_types.py）';
+      }
+    }
+    return 'methods.dart 行数不一致：仓库 ${a.length} / 生成 ${b.length}';
+  } on ProcessException {
+    print('  ! 找不到 $python，跳过生成物内容比对');
+    return null;
+  } finally {
+    // 无论成败都还原：校验工具不得改动仓库内容。
+    committed.writeAsStringSync(original);
+    if (backup.existsSync()) {
+      backup.deleteSync();
+    }
+  }
+}
+
+String _normalized(String text) =>
+    text.replaceAll('\r\n', '\n').split('\n').map((l) => l.trimRight()).join('\n').trim();
