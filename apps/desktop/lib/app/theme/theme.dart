@@ -63,6 +63,14 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(Tokens.radiusControl),
           borderSide: BorderSide(color: isDark ? Tokens.n5d : Tokens.n5),
         ),
+        // 键盘焦点：2dp 实心环（docs/06 §5.2），不依赖 hover。
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Tokens.radiusControl),
+          borderSide: BorderSide(
+            color: isDark ? Tokens.focusRingD : Tokens.focusRing,
+            width: Tokens.focusRingWidth,
+          ),
+        ),
       ),
       tooltipTheme: const TooltipThemeData(
         waitDuration: Duration(milliseconds: 400),
@@ -71,8 +79,24 @@ abstract final class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
       // 统一焦点环：不依赖 hover，任何背景可见（docs/06 §5.2、docs/07 §5.3）。
+      // 规范要求 2dp 实心环 + 2dp 偏移；Material 的 focusColor 只是填充色，
+      // 24% 透明度在浅底上对比度约 1.4:1，远低于图形元素 3:1 的 AA 门槛。
+      // 这里把焦点环做成不透明描边，并用 focusColor 只作极淡的背景提示。
       focusColor: (isDark ? Tokens.focusRingD : Tokens.focusRing).withValues(
-        alpha: 0.24,
+        alpha: 0.12,
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: isDark ? Tokens.n5d : Tokens.n5),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
+              return (isDark ? Tokens.focusRingD : Tokens.focusRing)
+                  .withValues(alpha: 0.12);
+            }
+            return null;
+          }),
+        ),
       ),
     );
   }
