@@ -85,7 +85,16 @@ final class KernelKnowledgeSource {
           title: title,
           summary: text.length > 120 ? '${text.substring(0, 120)}…' : text,
           payload: payloadMap,
-          source: SourceRef(name: sourceId),
+          // 核验层要求 KB 证据必须带 chunk_id 与 publish_time，否则每条
+          // text claim 都会被判「缺出处」——整轮引文核验必挂。
+          source: SourceRef(
+            name: sourceId,
+            docId: item['document_id']?.toString(),
+            chunkId: chunkId,
+            releaseTime: published == null || published.isEmpty
+                ? null
+                : DateTime.tryParse(published),
+          ),
           producedBy: 'kb.search',
           createdAt: DateTime.now().toUtc(),
           hash: _hash(payloadMap),
