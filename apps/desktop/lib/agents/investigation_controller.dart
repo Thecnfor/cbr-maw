@@ -15,6 +15,7 @@ import 'conflict/conflict_loss.dart';
 import 'conflict/conflict_arbitrator.dart';
 import 'conflict/conflict_detector.dart';
 import 'llm/llm_channel.dart';
+import 'memory/memory_store.dart';
 import 'models/domain.dart';
 import 'roles/prompt_builder.dart';
 import 'roles/role_agent.dart';
@@ -41,6 +42,7 @@ final class AgentSettings {
     this.deepReflectionSource,
     this.knowledgeSource,
     this.runHooks,
+    this.memory,
     this.ablation = const AblationFlags(),
   });
 
@@ -84,6 +86,9 @@ final class AgentSettings {
 
   /// 每轮研判的生命周期钩子（基准 harness 用于落盘决策卡与审计）。
   final RunHooks? runHooks;
+
+  /// 三库记忆（null = 未接线，按「无记忆」执行）。
+  final MemoryStore? memory;
 
   /// 认知与证据消融开关（ADR-010 §1）。与协作模式正交。
   final AblationFlags ablation;
@@ -159,6 +164,18 @@ final class AgentRuntime {
     if (knowledge != null && knowledge.isNotEmpty) {
       gathered.evidence.addAll(knowledge);
     }
+    // MI 记忆：检索历史同类情报作为「参考」，不是证据（无 evidence_id）。
+    final priorContext = <String>[];
+    final memory = settings.memory;
+    if (settings.ablation.miMemory && memory != null && memory.available) {
+      try {
+        final hits = await memory.search(store: 'mi', asOf: asOf, query: question);
+        priorContext.addAll(hits.map((hit) => hit.render()));
+      } on Object {
+        // 记忆不可用不得阻断研判；原因由 RunSummary.limitations 说明。
+        priorContext.clear();
+      }
+    }
     // 工具调用事件（含失败）；越权在角色层发生，见 R0.2。
     for (final call in gathered.calls) {
       yield ToolInvoked(runId, call.tool, call.params, call.result, false);
@@ -191,6 +208,7 @@ final class AgentRuntime {
         guard: guard,
         reflection: reflection,
         performance: performance,
+        priorContext: priorContext,
       );
       if (single == null) {
         yield RunFailed(
@@ -228,6 +246,7 @@ final class AgentRuntime {
             signalRef: signal?.evidenceId,
             reflection: reflection,
             performance: performance,
+            priorContext: priorContext,
             weakEvidence:
                 settings.ablation.evidenceStrength == EvidenceStrength.weak,
           ),
@@ -550,6 +569,71 @@ final class AgentRuntime {
       'permissionViolations': report.permissionViolations,
     });
 
+    // 记忆写回（kernel 唯一写入者）：MI = 本期情报摘要，LLR = 本次归因。
+    // 失败不影响结论，但要如实上报——不能把「没写进去」当成「写进去了」。
+    if (memory != null && memory.available) {
+      final day = asOf.toUtc().toIso8601String().substring(0, 10);
+      final availableAt = '${day}T10:00:00Z';
+      final rows = <MemoryRecord>[
+        if (settings.ablation.miMemory)
+          MemoryRecord(
+            id: 'mi:$day:$runId',
+            store: 'mi',
+            asOf: day,
+            availableAt: availableAt,
+            kind: 'run_summary',
+            text: '本期信号分位 ${signal?.percentile?.toStringAsFixed(4) ?? "无"}'
+                '（${signal?.level.wire ?? "-"}），最终定级 ${finalLevel.wire}；'
+                '${conflicts.isEmpty ? "无冲突" : "冲突 ${conflicts.length} 条"}；'
+                '证据 ${board.items.length} 条。',
+            payload: {
+              'level': finalLevel.wire,
+              'signal_percentile': signal?.percentile,
+              'signal_level': signal?.level.wire,
+              'claims': decision.cards
+                  .fold<int>(0, (sum, card) => sum + card.claims.length),
+              'conflicts': conflicts.length,
+              'mode': mode.wire,
+            },
+          ),
+        if (settings.ablation.llrReflection)
+          MemoryRecord(
+            id: 'llr:$day:$runId',
+            store: 'llr',
+            asOf: day,
+            availableAt: availableAt,
+            kind: 'attribution',
+            text: '在 $day 判定 ${finalLevel.wire}；'
+                '三主体自评 ${decision.llmAssessments.entries.map((e) => "${e.key.wire}=${e.value.wire}").join("/")}；'
+                '分歧类型 ${conflicts.map((c) => c.type.wire).toSet().join(",") }。',
+            payload: {
+              'level': finalLevel.wire,
+              'assessments': {
+                for (final entry in decision.llmAssessments.entries)
+                  entry.key.wire: entry.value.wire,
+              },
+              'conflicts': [
+                for (final conflict in conflicts.take(6))
+                  {'type': conflict.type.wire, 'subject': conflict.subject},
+              ],
+              'verification_passed': report.passed,
+            },
+          ),
+      ];
+      if (rows.isNotEmpty) {
+        try {
+          await memory.upsert(rows);
+          yield AgentActivity(runId, 'coordinator', 'memory_written', {
+            'stores': [for (final row in rows) row.store],
+          });
+        } on Object catch (err) {
+          yield AgentActivity(runId, 'coordinator', 'memory_write_failed', {
+            'reason': '$err',
+          });
+        }
+      }
+    }
+
     yield RunFinished(
       runId,
       RunSummary(
@@ -721,6 +805,7 @@ final class AgentRuntime {
     required BudgetGuard guard,
     ReflectionEvidence? reflection,
     ReflectionPerformance? performance,
+    List<String> priorContext = const [],
   }) async {
     final generator = settings.generator;
     if (generator == null) {
@@ -747,6 +832,7 @@ final class AgentRuntime {
           signalRef: signal?.evidenceId,
           reflection: reflection,
           performance: performance,
+          priorContext: priorContext,
           weakEvidence:
               settings.ablation.evidenceStrength == EvidenceStrength.weak,
         ),

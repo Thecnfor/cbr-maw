@@ -31,6 +31,7 @@ final class RoleRunInput {
     this.round = 0,
     this.reflection,
     this.performance,
+    this.priorContext = const [],
     this.weakEvidence = false,
   });
 
@@ -69,6 +70,10 @@ final class RoleRunInput {
 
   /// 预警效能复盘（我们过去报得准不准）；null = 不复盘。
   final ReflectionPerformance? performance;
+
+  /// 三库记忆检索到的历史参考（MI/LLR）。**不是证据**：没有 evidence_id，
+  /// 角色不得写入 claim 的 evidence_ids，引文核验会拒绝。
+  final List<String> priorContext;
 
   /// 弱证据消融（docs/01 §2.3）：证据包**减少**但不伪造。
   ///
@@ -130,6 +135,8 @@ final class RoleAgent {
     final references = [
       if (input.reflection != null) input.reflection!.render(),
       if (input.performance != null) input.performance!.render(),
+      if (input.priorContext.isNotEmpty)
+        '【历史记忆参考（MI/LLR，非本次证据）】\n${input.priorContext.join('\n')}',
     ];
     final user = references.isEmpty
         ? basePrompt

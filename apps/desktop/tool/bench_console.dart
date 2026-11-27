@@ -21,6 +21,7 @@ import 'dart:math';
 
 import 'package:cbr_maw/agents/investigation_controller.dart';
 import 'package:cbr_maw/agents/llm/llm_channel.dart';
+import 'package:cbr_maw/agents/memory/memory_store.dart';
 import 'package:cbr_maw/agents/models/domain.dart';
 import 'package:cbr_maw/agents/orchestrator/mode_flags.dart';
 import 'package:cbr_maw/agents/roles/asset_source.dart';
@@ -121,6 +122,7 @@ Future<void> main(List<String> argv) async {
         generator: generator,
         judge: _NoJudge(),
         signalSource: KernelSignalSource(supervisor).read,
+        memory: args.memory ? SidecarMemoryStore(supervisor) : null,
         runHooks: RunHooks(onDecision: decisions.add),
       );
       final runtime = AgentRuntime(settings);
@@ -346,6 +348,7 @@ final class _Args {
     required this.pitDb,
     required this.color,
     required this.modelDir,
+    required this.memory,
   });
 
   final String root;
@@ -361,6 +364,7 @@ final class _Args {
   final String? pitDb;
   final bool color;
   final String modelDir;
+  final bool memory;
 
   static _Args parse(List<String> argv) {
     final opts = <String, String>{};
@@ -388,6 +392,7 @@ final class _Args {
       pitDb: opts['pit-db'],
       color: opts['no-color'] == null,
       modelDir: opts['model-dir'] ?? p.join(opts['root'] ?? _repoRoot(), '.cache/models'),
+      memory: opts['no-memory'] == null,
     );
   }
 

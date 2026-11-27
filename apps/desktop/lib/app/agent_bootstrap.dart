@@ -2,6 +2,7 @@ import 'package:cbr_maw_contracts/contracts_dart.dart';
 
 import '../agents/investigation_controller.dart';
 import '../agents/llm/llm_channel.dart';
+import '../agents/memory/memory_store.dart';
 import '../agents/roles/prompt_builder.dart';
 import '../agents/roles/role_config.dart';
 import '../agents/tools/tool_registry.dart';
@@ -48,6 +49,7 @@ final class AgentBootstrapFactory {
       knowledgeSource: (query, asOf) => KernelKnowledgeSource(
         state.supervisor,
       ).read(query: query, asOf: asOf),
+      memory: SidecarMemoryStore(state.supervisor),
     );
     return InvestigationController(
       runtime: AgentRuntime(settings),
