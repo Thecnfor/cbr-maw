@@ -261,6 +261,9 @@ final class AgentRuntime {
           'status': output.status.wire,
           'toolCalls': output.toolCalls,
           'tokens': output.tokens.total,
+          // LLM 自评是「模型怎么看」的唯一通道；不写进事件，终端与 UI 都看不到。
+          if (output.llmAssessment != null)
+            'assessment': output.llmAssessment!.wire,
           if (output.failure != null) 'error': output.failure!.message,
         });
       }

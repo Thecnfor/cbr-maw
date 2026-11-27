@@ -93,3 +93,23 @@ dart run tools/bench/self_check.dart
 `high_stress := (cfsi > τ)`，而 `y_20` 含当日 → `P(y=1 | hs_t=1) = 1.000`。
 任何 CFSI 派生信号的高 lift 都含"当日在压力区"的同义成分。`arms.py`
 的 `label_circularity` 用严格未来标签（不含当日）做对照，报告 §5.5 有量化。
+
+## 终端控制台（LLM 在环 · 可手动跑）
+
+```bash
+# 压力/平静各 30（默认 seed=11），三臂；每步流式打印角色/工具/主张/冲突/核验
+dart run apps/desktop/tool/bench_console.dart   --pairs 30 --arms collaborative,single,independent   --out artifacts/bench/console.json
+
+# 评分（复用现成评分器）
+~/.cache/cbr-venv/bin/python tools/bench/analysis/score_arms.py artifacts/bench/console.json
+```
+
+前置：
+- kernel：`cd services/kernel && cargo build`（dev profile，产物 `target/debug/cbr-kernel`）；
+- 生成端点：`--base-url/--key` 或 `CBR_API_BASE`/`DEEPSEEK_API_KEY`；
+- 真实 PIT 库：`--pit-db` 或 `CBR_PIT_DB`；
+- 向量模型（可选）：`python3 packaging/prefetch_embedding_model.py --out .cache/models`
+  （缺省读 `.cache/models`，缺失时诚实降级到 FTS）。
+
+产物结构对齐 `score_arms.py`（`records[].arms.<arm>.{risk,ms,tokens}`），
+并额外记录每臂的 claims/conflicts/verification 与抽样清单（可复现）。
