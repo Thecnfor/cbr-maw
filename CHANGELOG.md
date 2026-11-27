@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### refactor · A2UI 官方控制器迁移 + 工具链事故恢复
+
+- `surface_bridge` 497→243 行：手写 A2UI 解析/patch 状态机删除，改由 `package:genui`
+  的 `SurfaceController` 承载；白名单守卫保留并 fail-closed（净删生产代码 601 行）。
+- 环境事故：`/home/xrak/.rustup` 元数据损坏（文件在磁盘上消失，`ls`/`cksum` 报 EIO，
+  SMART 仍 PASSED），导致任何 `cargo` 子命令启动即 SIGBUS。工具链重装到 `/home/xrak/rt/tc`
+  （rustup 自身静默失败，改用手工 tarball + `install.sh`），registry 换到 `/home/xrak/rt/cargo`；
+  kernel 全量重编 17m39s 通过。
+
 ### feat · v3 三库记忆（ADR-010）与可复现基准控制台
 
 - **kernel 内嵌 LanceDB**：新增 `memory` 模块（`services/kernel/src/memory.rs`），单表 `memory`
