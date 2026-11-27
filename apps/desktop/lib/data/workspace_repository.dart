@@ -25,6 +25,30 @@ final class WorkspaceRepository {
   /// 开发日志。
   final AppLog log;
 
+  /// 三库记忆统计（kernel `memory.stats`）。
+  Future<Map<String, Object?>> memoryStats() => _call(
+    'memory.stats',
+    const <String, Object?>{},
+    (payload) => payload is Map<String, Object?> ? payload : const {},
+  );
+
+  /// 三库记忆检索（kernel `memory.search`）。
+  Future<List<Map<String, Object?>>> memorySearch({
+    required String asOf,
+    required String query,
+    String? store,
+    int topK = 8,
+  }) => _call(
+    'memory.search',
+    {'as_of': asOf, 'query': query, 'store': ?store, 'top_k': topK},
+    (payload) {
+      final hits = payload is Map<String, Object?> ? payload['hits'] : null;
+      return hits is List
+          ? hits.whereType<Map<String, Object?>>().toList(growable: false)
+          : const <Map<String, Object?>>[];
+    },
+  );
+
   Future<WorkspaceInfoResult> workspaceInfo() => _call(
     'workspace.info',
     const WorkspaceInfoParams().toJson(),

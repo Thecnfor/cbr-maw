@@ -44,6 +44,9 @@ abstract final class Routes {
   /// 诊断。
   static const diagnostics = '/diagnostics';
 
+  /// 记忆（三库 MI/LLR/HLR，ADR-010）。
+  static const memory = '/memory';
+
   /// 新手引导。
   static const onboarding = '/onboarding';
 
@@ -162,6 +165,12 @@ const List<NavItem> navItems = [
     label: '新手引导',
     icon: Icons.school_outlined,
     group: '系统',
+  ),
+  NavItem(
+    path: Routes.memory,
+    label: '记忆',
+    icon: Icons.psychology_outlined,
+    group: '分析',
   ),
   NavItem(
     path: Routes.diagnostics,

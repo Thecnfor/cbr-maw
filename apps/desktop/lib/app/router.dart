@@ -7,6 +7,7 @@ import './ui.dart';
 import '../agents/investigation_controller.dart';
 import '../features/data_cards/data_cards_page.dart';
 import '../features/diagnostics/diagnostics_page.dart';
+import '../features/memory/memory_page.dart';
 import '../features/evidence/evidence_page.dart';
 import '../features/inbox/inbox_page.dart';
 import '../features/investigation/investigation_page.dart';
@@ -192,6 +193,10 @@ final class AppRouter {
         GoRoute(
           path: Routes.onboarding,
           builder: (context, _) => const OnboardingPage(),
+        ),
+        GoRoute(
+          path: Routes.memory,
+          builder: (context, _) => const MemoryPage(),
         ),
         GoRoute(
           path: Routes.diagnostics,
