@@ -39,6 +39,7 @@ final class AgentSettings {
     this.signalSource,
     this.reflectionSource,
     this.deepReflectionSource,
+    this.knowledgeSource,
     this.runHooks,
     this.ablation = const AblationFlags(),
   });
@@ -72,6 +73,10 @@ final class AgentSettings {
 
   /// 浅层反思来源（`X-AlertAgent` 外环）；null = 不做跨时点归因。
   final Future<ReflectionEvidence?> Function(DateTime asOf)? reflectionSource;
+
+  /// 知识库检索来源（`text` claim 的唯一合法依据）；null = 不检索。
+  final Future<List<Evidence>> Function(String query, DateTime asOf)?
+  knowledgeSource;
 
   /// 深层反思来源（预警效能复盘）；null = 不复盘。
   final Future<ReflectionPerformance?> Function(DateTime asOf)?
@@ -149,6 +154,11 @@ final class AgentRuntime {
       registry: settings.registry,
       guard: guard,
     );
+    // 知识库证据：没有它，`text` claim 会全部因「无 kb 证据」被丢弃。
+    final knowledge = await settings.knowledgeSource?.call(question, asOf);
+    if (knowledge != null && knowledge.isNotEmpty) {
+      gathered.evidence.addAll(knowledge);
+    }
     // 工具调用事件（含失败）；越权在角色层发生，见 R0.2。
     for (final call in gathered.calls) {
       yield ToolInvoked(runId, call.tool, call.params, call.result, false);
@@ -721,7 +731,7 @@ final class AgentRuntime {
 }
 
 final class _Gathered {
-  const _Gathered(this.evidence, this.failures, this.calls);
+  _Gathered(this.evidence, this.failures, this.calls);
 
   final List<Evidence> evidence;
   final List<String> failures;
