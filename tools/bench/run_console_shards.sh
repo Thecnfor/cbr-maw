@@ -15,6 +15,7 @@ SHARDS="${SHARDS:-4}"
 ARMS="${ARMS:-collaborative,single,independent}"
 OUT="${OUT:-artifacts/bench}"
 SEED="${SEED:-11}"
+EXTRA_ARGS="${EXTRA_ARGS:-}"   # 额外控制台参数，如 --no-memory（不带引号展开）
 
 mkdir -p "$OUT"
 pids=()
@@ -23,7 +24,7 @@ for i in $(seq 0 $((SHARDS - 1))); do
   dart run apps/desktop/tool/bench_console.dart \
     --pairs "$PAIRS" --shards "$SHARDS" --shard "$i" \
     --arms "$ARMS" --seed "$SEED" \
-    --out "$OUT/shard$i.json" > "$OUT/shard$i.log" 2>&1 &
+    --out "$OUT/shard$i.json" $EXTRA_ARGS > "$OUT/shard$i.log" 2>&1 &
   pids+=($!)
 done
 
