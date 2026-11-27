@@ -89,3 +89,7 @@ apps/desktop/linux/flutter/ephemeral/
 
 # 本地模型与缓存（不入库）
 .cache/
+
+# Python 缓存
+__pycache__/
+*.pyc

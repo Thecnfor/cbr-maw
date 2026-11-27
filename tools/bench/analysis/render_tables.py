@@ -408,6 +408,10 @@ def summarize(data: dict[str, Any], golden: dict[str, Any], threshold: str) -> d
     for arm, p_adj in zip(BASE_ARMS, ps):
         comparisons[arm]['p_holm'] = p_adj
 
+    complete = (
+        len(rows_by_day) >= planned_total
+        and all(per_arm[arm]['attempted'] >= planned_total for arm in ARMS)
+    )
     circularity = compute_circularity(golden)
     placebo = {
         arm: placebo_test(per_arm[arm]['preds'], per_arm[arm]['truths'])
@@ -417,6 +421,7 @@ def summarize(data: dict[str, Any], golden: dict[str, Any], threshold: str) -> d
         'truth': truth,
         'planned': planned,
         'planned_total': planned_total,
+        'complete': complete,
         'records': data['records'],
         'per_arm': per_arm,
         'comparisons': comparisons,
@@ -426,7 +431,12 @@ def summarize(data: dict[str, Any], golden: dict[str, Any], threshold: str) -> d
 
 
 def compute_circularity(golden: dict[str, Any]) -> dict[str, Any]:
-    """标签循环性：high_stress 由 CFSI>τ 定义，与标签同源；并给严格对照。"""
+    """标签循环性：high_stress 由 CFSI>τ 定义，与标签同源；并给更严格对照。
+
+    两层对照：
+    - 未来窗口 t+1..t+20：用来核验 y_20 本身是否含当日（一致即不含当日）；
+    - 更严格标签 t+2..t+21：再推后一天，用来估计压力状态自相关带来的折扣。
+    """
     rows = golden.get('rows') or []
     hs = [int(r.get('high_stress') or 0) for r in rows]
     y20 = [r.get('y_20') for r in rows]
@@ -434,17 +444,21 @@ def compute_circularity(golden: dict[str, Any]) -> dict[str, Any]:
     hs1 = [y for y, h in pairs if h == 1]
     hs0 = [y for y, h in pairs if h == 0]
 
-    # 严格未来标签：t+1..t+20 内任一日 high_stress，尾部 20 行无法定义。
     horizon = 20
-    strict_pairs = []
+    future_pairs: list[tuple[int, int]] = []
     agree = 0
     for i in range(len(rows) - horizon):
         y = y20[i]
         if y is None:
             continue
-        strict = 1 if any(hs[i + 1:i + 1 + horizon]) else 0
+        future = 1 if any(hs[i + 1:i + 1 + horizon]) else 0
+        future_pairs.append((future, hs[i]))
+        agree += int(y == future)
+
+    strict_pairs: list[tuple[int, int]] = []
+    for i in range(len(rows) - horizon - 1):
+        strict = 1 if any(hs[i + 2:i + 2 + horizon]) else 0
         strict_pairs.append((strict, hs[i]))
-        agree += int(y == strict)
     s_hs1 = [s for s, h in strict_pairs if h == 1]
     s_hs0 = [s for s, h in strict_pairs if h == 0]
 
@@ -453,6 +467,7 @@ def compute_circularity(golden: dict[str, Any]) -> dict[str, Any]:
 
     return {
         'n': len(pairs),
+        'n_future': len(future_pairs),
         'n_strict': len(strict_pairs),
         'n_agree': agree,
         'base_y20': mean([y for y, _ in pairs]),
@@ -464,7 +479,6 @@ def compute_circularity(golden: dict[str, Any]) -> dict[str, Any]:
         'n_hs1': len(hs1),
         'n_hs0': len(hs0),
     }
-
 
 # ------------------------------------------------------------------ 格式化
 
@@ -537,7 +551,9 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
     circ = summary['circularity']
 
     macros: dict[str, str] = {
-        'meta@source': tex_escape(data['source']),
+        'meta@source': tex_escape(
+            data['source'].replace('（分片，部分产物）', '（分片，全部时点）')
+            if summary['complete'] else data['source']),
         'meta@model': tex_escape(data['model']),
         'meta@base_url': tex_escape(data['base_url']),
         'meta@seed': fmt(data['seed']),
@@ -547,7 +563,7 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
         'meta@n_scored': fmt(len({r['as_of'] for r in summary['records'] if r['as_of'] in summary['truth']})),
         'meta@n_shards': fmt(len(data['shards'])),
         'meta@generated_at': tex_escape(data['generated_at']),
-        'meta@partial': '是' if data['partial'] else '否',
+        'meta@partial': '否' if summary['complete'] else '是',
     }
 
     for arm in ARMS:
@@ -622,7 +638,7 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
             else ('异常' if item['p'] < 0.05 else '不显著')
         )
 
-    for key in ('n', 'n_strict', 'n_hs1', 'n_hs0', 'n_agree'):
+    for key in ('n', 'n_future', 'n_strict', 'n_hs1', 'n_hs0', 'n_agree'):
         macros[f'label@{key}'] = fmt_int(circ.get(key))
     for key in ('base_y20', 'base_strict', 'p_y_hs1', 'p_y_hs0',
                 'p_strict_hs1', 'p_strict_hs0'):
@@ -632,7 +648,7 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
     n_short = [ARM_LABEL[a] for a in ARMS
                if (per_arm[a]['metrics'] or {}).get('n') is not None
                and (per_arm[a]['metrics'] or {}).get('n') < 30]
-    short_note = ('；'.join(n_short) + ' 的 $n<30$，按协议不作显著性主张。') if n_short else ''
+    short_note = ('另：' + '、'.join(n_short) + ' 的 $n<30$，按协议不作显著性主张。') if n_short else ''
     main_rows = []
     for arm in ARMS:
         item = per_arm[arm]
@@ -643,9 +659,9 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
             f"{fmt(m.get('lift'))} & {fmt(m.get('trigger_rate'))} & "
             f"{fmt(m.get('balanced_accuracy'))} & {fmt_seconds(item['latency_s'])} & "
             f"{fmt_int(item['tokens'])} \\\\")
-    base_note = '缺失指标（含无正例预测时的 precision）写作 \\texttt{{--}}，不以 0 代替。'
+    base_note = '缺失指标（含无正例预测时的 precision）写作 \\texttt{--}，不以 0 代替。'
     if short_note:
-        base_note += '另：' + short_note
+        base_note += ' ' + short_note
     main = f"""% 由 tools/bench/analysis/render_tables.py 生成，请勿手改。
 % 数据源：{tex_escape(data['source'])}
 % 生成时间（UTC）：{datetime.now(timezone.utc).isoformat(timespec='seconds')}
@@ -770,8 +786,9 @@ verification 字段的累计计数；这些记录不会被改写成负例。
 基准发生率 $P(y_{{20}}=1)$ & {fmt(circ.get('base_y20'))} \\\\
 $P(y_{{20}}=1\\mid hs_t=1)$ & {fmt(circ.get('p_y_hs1'))} \\\\
 $P(y_{{20}}=1\\mid hs_t=0)$ & {fmt(circ.get('p_y_hs0'))} \\\\
-严格标签样本日数 & {fmt_int(circ.get('n_strict'))} \\\\
-$y_{{20}}$ 与严格标签一致的日数 & {fmt_int(circ.get('n_agree'))} \\\\
+$t+1$ 至 $t+20$ 未来窗口样本日数 & {fmt_int(circ.get('n_future'))} \\\\
+$y_{{20}}$ 与 $t+1$ 至 $t+20$ 窗口一致的日数 & {fmt_int(circ.get('n_agree'))} \\\\
+更严格标签 $y^{{\\mathrm{{strict}}}}$（$t+2$ 至 $t+21$）样本日数 & {fmt_int(circ.get('n_strict'))} \\\\
 基准发生率 $P(y^{{\\mathrm{{strict}}}}=1)$ & {fmt(circ.get('base_strict'))} \\\\
 $P(y^{{\\mathrm{{strict}}}}=1\\mid hs_t=1)$ & {fmt(circ.get('p_strict_hs1'))} \\\\
 $P(y^{{\\mathrm{{strict}}}}=1\\mid hs_t=0)$ & {fmt(circ.get('p_strict_hs0'))} \\\\
@@ -780,10 +797,9 @@ $P(y^{{\\mathrm{{strict}}}}=1\\mid hs_t=0)$ & {fmt(circ.get('p_strict_hs0'))} \\
 \\par\\smallskip
 \\raggedright\\scriptsize
 注：$hs_t$ 为当日 high\\_stress（定义即 CFSI $>\\tau$）。
-随附黄金向量中 $y_{{20}}$ 与 $t+1$ 至 $t+20$ 的严格未来标签逐日一致（见上行），
-即本产物口径不含当日（与 \\texttt{{docs/13}} §5.5 旧表述不一致，差异见附录 A.4）。
-无论口径如何，二者都与 CFSI 同源，
-$P(y\\mid hs_t=1)$ 只能作为循环性诊断，不能当作预测能力。
+$y_{{20}}$ 与 $t+1$ 至 $t+20$ 窗口逐日一致，说明本产物口径不含当日；
+更严格标签再从 $t+2$ 起算，用于量化压力状态自相关带来的折扣。
+两者都与 CFSI 同源，$P(y\\mid hs_t=1)$ 只能作为循环性诊断，不能当作预测能力。
 \\end{{table}}
 """
 
@@ -840,7 +856,9 @@ $P(y\\mid hs_t=1)$ 只能作为循环性诊断，不能当作预测能力。
 
 
 def print_summary(data: dict[str, Any], summary: dict[str, Any]) -> None:
-    print(f"数据源：{data['source']}")
+    state = '完整' if summary['complete'] else '部分'
+    suffix = '' if ('部分产物' in data['source'] or '全部时点' in data['source']) else f'（{state}）'
+    print(f"数据源：{data['source']}{suffix}")
     print(f"模型：{data['model']}  seed={data['seed']}  "
           f"记录 {len(summary['records'])}  计划评分时点 {summary['planned_total']}"
           f"（已见 {len(summary['planned'])}）")

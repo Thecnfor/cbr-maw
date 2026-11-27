@@ -74,11 +74,14 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ],
         ),
+        // 窄窗口（1280 及以下 + 侧栏）下三步横排会溢出：
+        // 每个标签用 Expanded + 省略号，保证永不越界（溢出条纹会掩盖真实内容）。
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Tokens.space5),
           child: Row(
             children: [
               for (var i = 0; i < steps.length; i++) ...[
+                if (i > 0) const SizedBox(width: Tokens.space4),
                 Icon(
                   i < _step
                       ? Icons.check_circle
@@ -91,8 +94,22 @@ class _SettingsPageState extends State<SettingsPage> {
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
-                Text(steps[i]),
-                if (i < steps.length - 1) const SizedBox(width: Tokens.space4),
+                Expanded(
+                  flex: i == _step ? 3 : 2,
+                  child: Text(
+                    steps[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: i == _step
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: i == _step
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
