@@ -25,6 +25,16 @@ step "评分（主表 + McNemar）"
 step "生成论文表格与宏"
 "$PY" tools/bench/analysis/render_tables.py --bench "$BENCH" || exit 1
 
+step "记忆消融（若两组产物齐备）"
+if [ -f "$BENCH/mem_on/console.json" ] && [ -f "$BENCH/mem_off/console.json" ]; then
+  "$PY" tools/bench/analysis/compare_conditions.py \
+    --a "$BENCH/mem_on/console.json" --label-a 记忆开 \
+    --b "$BENCH/mem_off/console.json" --label-b 记忆关 \
+    --macros-out docs/25-paper/tables/mem_ablation.tex || true
+else
+  printf '  (跳过：缺 %s/mem_on|mem_off/console.json)\n' "$BENCH"
+fi
+
 step "编译 PDF"
 HTTPS_PROXY="${HTTPS_PROXY:-http://127.0.0.1:7897}" \
   HTTP_PROXY="${HTTP_PROXY:-http://127.0.0.1:7897}" \

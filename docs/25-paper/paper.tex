@@ -16,6 +16,9 @@
 % 结果占位：正文中任何未完成的结论句都用 \TOPFILL 标记，避免手写数字。
 \newcommand{\TOPFILL}[1]{\textcolor{red}{[待填：{#1}]}}
 
+% 记忆消融宏（由 compare_conditions.py 生成；缺失时 \RESULT 展开为 --）
+\input{tables/mem_ablation}
+
 % 所有实验结果单元格只允许通过 \RESULT{臂}{指标} 取值；宏由
 % tools/bench/analysis/render_tables.py 从 artifacts/bench 生成。
 % 产物缺失时展开为 --，绝不回落到 0。
