@@ -160,6 +160,16 @@ ARRAY_READERS = {
 }
 
 
+def _allows_null(node):
+    """schema 是否显式允许 null。"""
+    t = node.get("type")
+    if isinstance(t, list) and "null" in t:
+        return True
+    if "oneOf" in node:
+        return any(sub.get("type") == "null" for sub in node["oneOf"])
+    return False
+
+
 def field_spec(name, node, required, reg):
     """返回 (dart 类型, 构造实参, 是否可空, 是否枚举, 描述)。"""
     desc = node.get("description", "")
@@ -291,11 +301,17 @@ def gen_method_class(class_name, fields, reg, method, kind, base_class):
         decls.append("  /// %s" % desc)
         decls.append("  final %s %s;" % (t, prop))
         args.append("      %s: %s," % (prop, expr))
+        # 可选参数若 schema 不允许 null（type 不含 "null"），发 null 会被
+        # 服务端判参数非法。这类字段在 toJson 里用 collection-if 省略。
+        allows_null = nullable and _allows_null(node)
         if is_enum:
-            # 可选枚举要空安全：`order.wire` 在 null 时直接抛 NoSuchMethod。
-            tojson.append("    '%s': %s%s," % (name, prop, "?.wire" if nullable else ".wire"))
+            value = "%s?.wire" % prop if nullable else "%s.wire" % prop
         else:
-            tojson.append("    '%s': %s," % (name, prop))
+            value = prop
+        if nullable and not allows_null:
+            tojson.append("    if (%s != null) '%s': %s," % (prop, name, value))
+        else:
+            tojson.append("    '%s': %s," % (name, value))
     lines = ["/// `%s` %s。" % (method, kind)]
     lines.append("final class %s extends %s {" % (class_name, base_class))
     if ctor:

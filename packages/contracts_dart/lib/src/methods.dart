@@ -1591,7 +1591,7 @@ final class DbQueryParams extends RpcParams {
     'filters': filters,
     'as_of': asOf,
     'limit': limit,
-    'order': order?.wire,
+    if (order != null) 'order': order?.wire,
   };
 }
 
@@ -2037,8 +2037,8 @@ final class ReflectionDeepParams extends RpcParams {
   @override
   Map<String, Object?> toJson() => {
     'as_of': asOf,
-    'lookback_days': lookbackDays,
-    'horizon': horizon,
+    if (lookbackDays != null) 'lookback_days': lookbackDays,
+    if (horizon != null) 'horizon': horizon,
   };
 }
 
@@ -2133,8 +2133,8 @@ final class ReflectionShallowParams extends RpcParams {
   @override
   Map<String, Object?> toJson() => {
     'as_of': asOf,
-    'top_k': topK,
-    'horizon': horizon,
+    if (topK != null) 'top_k': topK,
+    if (horizon != null) 'horizon': horizon,
   };
 }
 
