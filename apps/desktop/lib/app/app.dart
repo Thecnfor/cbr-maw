@@ -107,14 +107,23 @@ class _CbrMawAppState extends State<CbrMawApp> {
           darkTheme: AppTheme.dark(),
           themeMode: widget.preferences.themeMode,
           routerConfig: router,
-          builder: (context, child) => CallbackShortcuts(
-            bindings: _shortcuts(context),
-            child: Focus(
-              autofocus: true,
-              // 窗口任意位置都可拖入文件。
-              child: WindowDropZone(child: child ?? const SizedBox.shrink()),
-            ),
-          ),
+          builder: (context, child) {
+            // 根 DefaultTextStyle 必须来自主题：Material 之外的文本（页头、步骤条、
+            // 壳层标签）会继承 WidgetsApp 的调试样式，带上黄色下划线与等宽字体。
+            // 主题的 textTheme 显式带 TextDecoration.none，从根注入一次性解决。
+            final base = Theme.of(context).textTheme.bodyMedium;
+            final body = CallbackShortcuts(
+              bindings: _shortcuts(context),
+              child: Focus(
+                autofocus: true,
+                // 窗口任意位置都可拖入文件。
+                child: WindowDropZone(child: child ?? const SizedBox.shrink()),
+              ),
+            );
+            return base == null
+                ? body
+                : DefaultTextStyle(style: base, child: body);
+          },
         ),
       ),
     );

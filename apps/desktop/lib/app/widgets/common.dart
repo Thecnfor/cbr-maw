@@ -43,7 +43,10 @@ final class PageHeader extends StatelessWidget {
                   const SizedBox(height: Tokens.space1),
                   Text(
                     subtitle!,
-                    style: TextStyle(
+                    // 必须从主题派生：裸 TextStyle 会继承 ambient
+                    // DefaultTextStyle 的 decoration（Material 之外的文本会带上
+                    // 调试用的黄色下划线），主题样式则显式带 TextDecoration.none。
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),

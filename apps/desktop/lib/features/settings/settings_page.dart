@@ -101,6 +101,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      decoration: TextDecoration.none,
                       fontWeight: i == _step
                           ? FontWeight.w600
                           : FontWeight.w400,
