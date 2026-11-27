@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:cbr_maw_contracts/contracts_dart.dart';
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrEvidenceCard;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../app/app_state.dart';
@@ -186,9 +188,18 @@ class _EvidencePageState extends State<EvidencePage> {
                           label: '来源',
                           value: fields['source_id']?.toString() ?? '未登记来源',
                         ),
-                        KeyValueRow(
-                          label: '原文片段',
-                          value: fields['text']?.toString() ?? '该证据不含原文片段',
+                        // 原文片段用证据卡（长文本可展开），而不是塞进
+                        // KeyValueRow 的一行里。
+                        CbrEvidenceCard(
+                          excerpt:
+                              fields['text']?.toString() ?? '该证据不含原文片段',
+                          sourceName:
+                              fields['source_id']?.toString() ?? '未登记来源',
+                          timestamp: Clock.display(
+                            fields['published_at']?.toString() ??
+                                fields['as_of']?.toString(),
+                          ),
+                          title: fields['locator']?.toString(),
                         ),
                         KeyValueRow(
                           label: '定位符',
