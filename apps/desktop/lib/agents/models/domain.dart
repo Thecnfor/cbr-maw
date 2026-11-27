@@ -974,6 +974,7 @@ final class DecisionCard {
     this.llmAssessments = const {},
     this.conflictLoss = const {},
     this.ablation = const {},
+    this.reflection = const {},
   });
 
   /// run id。
@@ -1029,6 +1030,12 @@ final class DecisionCard {
 
   /// 本轮消融开关快照（复现实验必须知道对照组配了什么）。
   final Map<String, Object?> ablation;
+
+  /// 跨时点反思摘要（`X-AlertAgent` 外环）：这次研判看到了什么历史归因。
+  ///
+  /// 不含正文，只记「检索到了几个相似案例 / 效能复盘的关键指标」——
+  /// 决策卡要能解释「模型为什么这么说」，但不能把参考材料伪装成证据。
+  final Map<String, Object?> reflection;
 
   /// 冲突接入决策损失的分解（ADR-010 §1、docs/02 F5）。
   ///

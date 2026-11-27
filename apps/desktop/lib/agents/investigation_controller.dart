@@ -477,6 +477,19 @@ final class AgentRuntime {
             entry.key: entry.value.llmAssessment!,
       },
       ablation: settings.ablation.toJson(),
+      reflection: {
+        if (reflection != null) ...{
+          'similar_cases': reflection.cases.length,
+          'history_size': reflection.historySize,
+          'nearest_distance': reflection.cases.first.distance,
+        },
+        if (performance != null) ...{
+          'evaluable_days': performance.evaluableDays,
+          'precision': performance.precision,
+          'recall': performance.recall,
+          'lift': performance.lift,
+        },
+      },
       conflictLoss: conflictLossBreakdown(
         conflicts: conflicts,
         escalated: escalated,
