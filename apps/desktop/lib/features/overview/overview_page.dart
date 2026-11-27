@@ -1,6 +1,6 @@
 import 'package:cbr_maw_contracts/contracts_dart.dart';
 import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
-    show CbrChartCard, CbrSeries;
+    show CbrChartCard, CbrKpiCard, CbrRiskLevel, CbrSeries;
 
 import '../../app/app_state.dart';
 import '../../app/shell/app_shell.dart';
@@ -145,15 +145,17 @@ class _OverviewPageState extends State<OverviewPage> {
                   ],
                   MetricStrip(
                     metrics: [
-                      MetricTile(
-                        label: '内核状态',
+                      // 内核状态用设计系统 KPI 卡：状态色与"不可用"文案
+                      // 由设计系统统一，app 侧不再自绘第二套。
+                      CbrKpiCard(
+                        title: '内核状态',
                         value: state.kernelState.label,
-                        hint: state.supervisor.handshake?.version == null
+                        caption: state.supervisor.handshake?.version == null
                             ? '尚未握手'
                             : '内核 ${state.supervisor.handshake!.version}',
-                        tone: state.kernelState == SidecarState.ready
-                            ? BannerTone.ok
-                            : BannerTone.warn,
+                        level: state.kernelState == SidecarState.ready
+                            ? CbrRiskLevel.low
+                            : CbrRiskLevel.high,
                       ),
                       MetricTile(
                         label: '工作区序列数',
