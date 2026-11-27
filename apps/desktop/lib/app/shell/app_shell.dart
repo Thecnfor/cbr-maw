@@ -1,3 +1,5 @@
+import 'package:cbr_maw_design_system/cbr_maw_design_system.dart'
+    show CbrLayoutBuilder;
 import 'package:go_router/go_router.dart';
 
 import '../ui.dart';
@@ -84,8 +86,11 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
+    // 用 CbrLayoutBuilder 而不是裸 LayoutBuilder：设计系统组件靠
+    // CbrBreakpointScope 取内容宽度断点，缺了它图表等组件会回退到
+    // MediaQuery 的全窗宽（docs/07 §3.3 明确禁止）。
+    return CbrLayoutBuilder(
+      builder: (context, _, constraints) {
         final breakpoint = Breakpoint.of(constraints.maxWidth);
         final layout = NavLayout.forBreakpoint(breakpoint);
         final compact = breakpoint == Breakpoint.compact;
