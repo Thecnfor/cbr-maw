@@ -54,7 +54,22 @@ for line in sys.stdin:
         print(f"  health OK: {len(e)} 条，freshness 取值={sorted(x for x in fr if x)}")
 ' || fail "collector 阶段失败"
 
-# ---------- 2) kernel：三个工具 ----------
+# ---------- 2) kernel：先算 CFSI（工具依赖 cfsi_history），再跑三个工具 ----------
+# 真实 PIT 库只有 series_obs/documents，`dimension_dispersion` 依赖 cfsi_history
+# 六维宽表，必须先 cfsi.compute 一次；否则会（正确地）报 E_DATA_MISSING。
+CFSI=$(printf '%s\n' \
+  "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"initialize\",\"params\":{\"contract_version\":\"1.0.0\",\"client_version\":\"0.1.0\",\"workspace\":\"$ROOT/build/kw/ws/test.duckdb\",\"data_home\":\"$ROOT/build/kw/data\",\"resource_home\":\"$ROOT/build/kw/res\",\"capabilities\":[]}}" \
+  "{\"jsonrpc\":\"2.0\",\"id\":\"2\",\"method\":\"cfsi.compute\",\"params\":{\"as_of\":\"$AS_OF\"}}" \
+  | timeout 180 "$KERNEL" --workspace "$ROOT/build/kw/ws/test.duckdb" --data-home "$ROOT/build/kw/data" --resource-home "$ROOT/build/kw/res" --log-level error 2>/dev/null | tail -1)
+echo "$CFSI" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read())
+assert "result" in d, f"cfsi.compute: {d.get(chr(101)+chr(114)+chr(114)+chr(111)+chr(114))}"
+r=d["result"]
+assert r["tau"] > 0 and r.get("dims"), "CFSI 需返回 tau 与六维"
+print("  cfsi.compute OK: %.4f（level=%s, tau=%.4f）" % (r["cfsi"], r["level"], r["tau"]))
+' || fail "kernel cfsi.compute 失败"
+
 for T in dimension_dispersion capital_linkage risk_measure; do
   RES=$(printf '%s\n' \
     "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"initialize\",\"params\":{\"contract_version\":\"1.0.0\",\"client_version\":\"0.1.0\",\"workspace\":\"$WORK/data/../ws\",\"data_home\":\"$WORK/data\",\"resource_home\":\"$WORK/res\",\"capabilities\":[]}}" \
