@@ -638,6 +638,80 @@ def build_outputs(data: dict[str, Any], summary: dict[str, Any], threshold: str)
             else ('异常' if item['p'] < 0.05 else '不显著')
         )
 
+    # ---------------- 结论句宏（正文用 \CONCLUSION 引用，不手写数字）
+    # 规则：所有句子只陈述脚本可判定的事实；判定不成立时输出「不成立/无法判定」，
+    # 而不是挑一个好看的说法。这样跑批完成后正文自动变成真实结论。
+    collab = per_arm['collaborative']['metrics'] or {}
+    single = per_arm['single']['metrics'] or {}
+    indep = per_arm['independent']['metrics'] or {}
+
+    def _delta(a, b):
+        if a is None or b is None:
+            return None
+        return a - b
+
+    bal_delta_single = _delta(collab.get('balanced_accuracy'),
+                              single.get('balanced_accuracy'))
+    bal_delta_indep = _delta(collab.get('balanced_accuracy'),
+                             indep.get('balanced_accuracy'))
+    p_single = comparisons['single'].get('p_holm')
+    p_indep = comparisons['independent'].get('p_holm')
+    enough = all((per_arm[a]['metrics'] or {}).get('n') is not None
+                 and (per_arm[a]['metrics'] or {}).get('n') >= 30 for a in ARMS)
+
+    def _verdict(delta, p):
+        if delta is None or p is None or not enough:
+            return '无法判定（样本不足或指标缺失）'
+        if p < 0.05 and delta > 0:
+            return '显著优于'
+        if p < 0.05 and delta < 0:
+            return '显著劣于'
+        return '无显著差异'
+
+    macros['concl@balacc_delta_single'] = (
+        '--' if bal_delta_single is None else f'{bal_delta_single:+.3f}')
+    macros['concl@balacc_delta_indep'] = (
+        '--' if bal_delta_indep is None else f'{bal_delta_indep:+.3f}')
+    macros['concl@vs_single'] = tex_escape(_verdict(bal_delta_single, p_single))
+    macros['concl@vs_indep'] = tex_escape(_verdict(bal_delta_indep, p_indep))
+    macros['concl@enough_n'] = '是' if enough else '否'
+
+    # 成本对比：协同相对单智能体的 token 与耗时倍数。
+    tok_ratio = None
+    sec_ratio = None
+    if single.get('n') and collab.get('n'):
+        st = per_arm['single']['tokens']
+        ct = per_arm['collaborative']['tokens']
+        if st:
+            tok_ratio = ct / st
+        ss = per_arm['single']['latency_s']
+        cs = per_arm['collaborative']['latency_s']
+        if ss:
+            sec_ratio = cs / ss
+    macros['concl@token_ratio'] = '--' if tok_ratio is None else f'{tok_ratio:.2f}'
+    macros['concl@latency_ratio'] = '--' if sec_ratio is None else f'{sec_ratio:.2f}'
+
+    # 判别力同形判定：三臂预测向量是否逐点一致（协同无增量的最直接证据）。
+    same_single = comparisons['single']['only_collab'] == 0 and comparisons['single']['only_base'] == 0
+    same_indep = (comparisons['independent']['only_collab'] == 0
+                  and comparisons['independent']['only_base'] == 0)
+    if not enough:
+        macros['concl@identical'] = '无法判定（样本不足）'
+    elif same_single and same_indep:
+        macros['concl@identical'] = '是（三臂在全部配对时点上预测一致）'
+    elif same_single:
+        macros['concl@identical'] = '与单智能体一致，与独立臂存在差异'
+    else:
+        macros['concl@identical'] = '否（存在配对不一致）'
+
+    # 覆盖与降级：会不会「看起来跑完其实没跑」。
+    min_cov = min((per_arm[a]['coverage'] or 0) for a in ARMS)
+    macros['concl@min_coverage'] = fmt(min_cov, 3)
+    max_degraded = max((per_arm[a]['degraded_rate'] or 0) for a in ARMS)
+    macros['concl@max_degraded'] = fmt(max_degraded, 3)
+    macros['concl@partial_any'] = (
+        '是' if any((per_arm[a]['partial_rate'] or 0) > 0 for a in ARMS) else '否')
+
     for key in ('n', 'n_future', 'n_strict', 'n_hs1', 'n_hs0', 'n_agree'):
         macros[f'label@{key}'] = fmt_int(circ.get(key))
     for key in ('base_y20', 'base_strict', 'p_y_hs1', 'p_y_hs0',
