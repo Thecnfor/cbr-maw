@@ -144,6 +144,9 @@ def main() -> int:
             'only_a': str(only_a),
             'only_b': str(only_b),
             'p': pfmt(p),
+            # 正文用 p_text：没有不一致对时不该出现 `p = --` 这种半成品渲染。
+            'p_text': ('无不一致对（检验不适用）' if p is None
+                       else ('$p<0.001$' if p < 0.001 else f'$p={p:.3f}$')),
             'verdict': ('无显著差异' if (p is None or p >= 0.05) else
                         ('显著更高' if delta > 0 else '显著更低'))
             if len(pa) >= 30 else '样本不足，不作显著性主张',

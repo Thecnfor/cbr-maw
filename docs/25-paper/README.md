@@ -11,7 +11,8 @@
 | `paper.tex` | 手写（方法/协议/讨论） | 中文正文 + 英文摘要；结果句一律 `\RESULT{臂}{指标}` |
 | `refs.bib` | 手写（逐条核实） | 经 DOI / arXiv API 核对标题、作者、年份 |
 | `tables/*.tex` | **脚本生成**，勿手改 | 主表、McNemar、覆盖率、安慰剂、循环性、宏 |
-| `paper.pdf` | `tectonic` 编译 | 当前批次可能只是部分产物 |
+| `paper.pdf` | `tectonic` 编译 | 21 页；三张 TikZ 图（拓扑、记忆检索、评估窗口） |
+| `tables/` | 脚本生成 | 6 张表 + 149 个宏，正文数字全部经 `\RESULT` 注入 |
 | `results.scored.json` | `score_arms.py` 输出副本 | 聚合指标（precision/CI/recall/lift/McNemar），供审计；逐时点原始产物在 `artifacts/bench/`（gitignored） |
 
 ## 复现
@@ -32,6 +33,14 @@ bash tools/bench/finalize.sh
 ~/.cache/cbr-venv/bin/python tools/bench/analysis/render_tables.py --bench artifacts/bench
 HTTPS_PROXY=http://127.0.0.1:7897 /home/xrak/rt/bin/tectonic docs/25-paper/paper.tex
 ```
+
+## 版式约定
+
+- `ctexart` + `fontset=fandol`：中文字形为 SC（不依赖系统字体，任何人重编译结果一致）；
+  曾试 Noto CJK，但 TTC 会解析到 JP 字面，标题字形不对。
+- 页边距 2.5cm、行距 1.38、首行缩进 2 字符、段间距 0（学术惯例，不同时用缩进与段距）。
+- 图表标题 `caption` 小一号、标签加粗；`\RESULT`/`\TOPFILL` 之外禁止出现裸数字。
+- 编译产物要求：**0 overfull hbox、0 undefined reference**（当前满足）。
 
 ## 生成规则（保证不编造）
 
