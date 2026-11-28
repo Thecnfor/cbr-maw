@@ -15,6 +15,22 @@
 | `tables/` | 脚本生成 | 6 张表 + 149 个宏，正文数字全部经 `\RESULT` 注入 |
 | `results.scored.json` | `score_arms.py` 输出副本 | 聚合指标（precision/CI/recall/lift/McNemar），供审计；逐时点原始产物在 `artifacts/bench/`（gitignored） |
 
+## Word 版
+
+- `CBR-MAW-论文.docx`：与 PDF 同源（`paper.tex` + `artifacts/bench`），24 页。
+  正文宋体/Times 10.5pt、行距 1.5、首行缩进 2 字符；标题黑体；表格 8.5pt 带边框且表题
+  「表 N」加粗；图注「图 N」加粗居中；页眉短标题、页脚居中页码；参考文献 IEEE 数字制。
+- 重新生成（跑批更新数字后）：
+
+  ```bash
+  bash docs/25-paper/word/build_word.sh
+  ```
+
+  流水线：TikZ 图 → 300dpi PNG → 展开 `\RESULT` 宏 → 中文断行去空格 → pandoc（IEEE CSL）
+  → python-docx 套版式。中间产物 `paper_docx.tex` / `paper_raw.docx` 不入库。
+- 为什么不能直接 `pandoc paper.tex`：TikZ 图、自定义宏与浮动体 pandoc 都不处理，
+  直接转会丢图、丢数字。
+
 ## 复现
 
 ```bash

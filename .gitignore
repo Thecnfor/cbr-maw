@@ -93,3 +93,8 @@ apps/desktop/linux/flutter/ephemeral/
 # Python 缓存
 __pycache__/
 *.pyc
+
+# Word 构建中间产物（最终 docx 入库，中间件不入库）
+docs/25-paper/word/paper_raw.docx
+docs/25-paper/word/paper_docx.tex
+docs/25-paper/word/CBR-MAW-论文.docx
